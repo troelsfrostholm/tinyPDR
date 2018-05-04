@@ -1,0 +1,5 @@
+*.dSYM
+*.o
+*.mod
+bin/tinyPDR
+shielding/test_richings
