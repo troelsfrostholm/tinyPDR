@@ -12,7 +12,7 @@ module richtings_dissociation_rates
   real*8, parameter :: fav = 4d-22                  ! N(H_tot) -> Av conversion factor from R14II eq. 3.4
   real*8, parameter :: gamma_H2_d = 3.74            ! Draine and Bertoldi 1996
   real*8, parameter :: gamma_CO_d = 3.53            ! R14II
-  character(len=*),parameter :: data_dir="../../data/"
+  character(len=*),parameter :: data_dir="../../dat/"
 
   contains
 

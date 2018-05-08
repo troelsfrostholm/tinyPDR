@@ -4,16 +4,20 @@ module solver
 contains
 
   subroutine step(dt)
-    use krome_user, only : krome_nmols, krome_nPhotoBins, krome_set_photoBinJ, krome_get_opacity_size_d2g
+    use krome_user, only : krome_nmols, krome_nPhotoBins, krome_set_photoBinJ, krome_get_opacity_size_d2g, krome_idx_H2, krome_idx_CO, krome_set_user_gamma_H2, krome_set_user_gamma_CO
     use krome_main, only : krome
+    use richtings_dissociation_rates, only : S_H2, S_H2_d, S_CO, S_CO_d, gamma_H2_thin, gamma_CO_thin
     use parameters, only : d2g, ngrid
-    use grid, only : n, Tgas, tau, dr
+    use grid, only : n, nHtot, Tgas, tau, dr
     use rt, only : j0
+    use util, only : cumsum
     implicit none
     real*8, intent(in) :: dt
     real*8, dimension(krome_nPhotoBins) :: dtau, dtau_prev, tau_max
     real*8, dimension(krome_nPhotoBins,ngrid) :: mu
     real*8, dimension(krome_nPhotoBins,ngrid) :: j
+    real*8, dimension(krome_nPhotoBins) :: j_H2, j_CO
+    real*8, dimension(ngrid) :: N_H2, N_CO, N_Htot, gamma_H2, gamma_CO, mu_H2, mu_CO
     real*8, dimension(krome_nmols) :: nn
     integer :: i
 
@@ -43,6 +47,29 @@ contains
       j(:,i) = j0(:)*mu(:,i)
     end do
 
+    ! Self-shielding species
+    !------------------------
+
+    ! Column densities - to cell centers
+    N_H2 = (cumsum(n(krome_idx_H2,:),ngrid) - 0.5_8*n(krome_idx_H2,:))*dr
+    N_CO = (cumsum(n(krome_idx_CO,:),ngrid) - 0.5_8*n(krome_idx_CO,:))*dr
+    N_Htot = (cumsum(nHtot(:),ngrid)) - 0.5_8*nHtot(:)*dr
+
+    ! Reverse direction of column densities, so they measure the density from the end of array (cloud outer surface)
+    N_H2 = maxval(N_H2(:)) + 0.5_8*n(krome_idx_H2,ngrid)*dr - N_H2(:)
+    N_CO = maxval(N_CO(:)) + 0.5_8*n(krome_idx_CO,ngrid)*dr - N_CO(:)
+    N_Htot = maxval(N_Htot(:)) + 0.5_8*nHtot(:)*dr - N_Htot(:)
+    
+    ! Look up shielding factors
+    do i=1,ngrid
+      mu_H2(i) = S_H2(N_H2(i), Tgas(i))*S_H2_d(N_Htot(i))
+      mu_CO(i) = S_CO(N_CO(i), N_Htot(i),Tgas(i))*S_CO_d(N_Htot(i))
+    end do
+
+    ! Compute attenuated H2 and CO dissociation rates
+    gamma_H2(:) = mu_H2(:)*gamma_H2_thin
+    gamma_CO(:) = mu_CO(:)*gamma_CO_thin
+
     ! ------------------------------------------------------------
     ! Chemistry
     ! ------------------------------------------------------------
@@ -52,8 +79,8 @@ contains
       call krome_set_photoBinJ(j(:,i))
 
       ! Set dissociation rates
-      ! call krome_set_user_gamma_H2(gamma_thick(ibin_H2,i))
-      ! call krome_set_user_gamma_CO(gamma_thick(ibin_CO,i))
+      call krome_set_user_gamma_H2(gamma_H2(i))
+      call krome_set_user_gamma_CO(gamma_CO(i))
 
       !call KROME to do chemistry
       nn = n(:,i)
