@@ -1,0 +1,12 @@
+&PARAMS
+ngrid=64
+tend=1.0
+ntime=100
+datadir='.'
+/
+
+&INITCOND
+Av_max = 10.0
+n0=1d-2
+n1=1d3
+/

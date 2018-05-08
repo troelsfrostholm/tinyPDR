@@ -21,24 +21,23 @@ VPATH=$(KROME_BUILD):$(SHIELDING_DIR):$(SRC)
 
 #flags
 switchDBG = -fbacktrace -g -ffpe-trap=zero,overflow,invalid -fbounds-check -ffree-line-length-none
-switchSOLVER = -D$(SOLVER) -cpp
 
 #default switch
-switch = $(switchDBG) $(switchSOLVER)
+switch = $(switchDBG)
 
 #no warning switch (for DLSODES)
 nowarnIfort = -nowarn
 nowarnGNU = -w
 
 #objects
-objs = opkda2.o
-objs += opkda1.o
-objs += opkdmain.o
-objs += krome_user_commons.o
-objs += krome_all.o
-objs += leiden_shielding.o
-objs += richings_dissociation_rates.o
-objs += main.o
+SRCDIRS := $(subst :, ,$(VPATH))
+#files := $(foreach dir,$(SRCDIRS),$(wildcard $(dir)/*.f90))
+EXTENTIONS := .f90 .f
+objs := \
+$(foreach ext,$(EXTENTIONS),\
+	$(foreach dir,$(SRCDIRS),\
+		$(patsubst $(dir)/%$(ext),%.o,$(wildcard $(dir)/*$(ext)))))
+objs := $(objs)
 
 default: debug
 
@@ -62,3 +61,12 @@ clean:
 #rule for f
 %.o:%.f
 	$(fc) $(switch) $(nowarn) -c $^ -o $@
+
+DEPFILE = Makefile.dep
+sinclude $(DEPFILE)
+
+.PHONY: dependencies
+dependencies:
+	fortrandep "$(VPATH)" " " > $(DEPFILE)
+
+print-%  : ; @echo $* = $($*)

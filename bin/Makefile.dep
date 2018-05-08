@@ -1,0 +1,13 @@
+grid.o: krome_all.o
+grid.o: parameters.o
+initcond.o: grid.o
+initcond.o: parameters.o
+krome_all.o: krome_user_commons.o
+leiden_shielding.o: krome_all.o
+main.o: output.o
+output.o: grid.o
+output.o: krome_all.o
+output.o: parameters.o
+richings_dissociation_rates.o: leiden_shielding.o
+test_leiden_shielding.o: leiden_shielding.o
+test_richings.o: richings_dissociation_rates.o
