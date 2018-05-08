@@ -1,8 +1,9 @@
 &PARAMS
 ngrid=64
-tend=1.0
+tend=1d6
 ntime=100
-datadir='.'
+outputdir='.'
+photobin_limits=5.0d0,11.26d0,13.6d0,24.6d0,54.4d0,1d2
 /
 
 &INITCOND

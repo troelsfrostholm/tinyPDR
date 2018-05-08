@@ -6,7 +6,7 @@ module grid
   real*8, allocatable :: nHtot(:)       ! Total number of H nuclei
   real*8, allocatable :: Tgas(:)        ! Gas temperature
   real*8, allocatable :: Av(:)          ! Visual extinction
-  real*8, allocatable :: dtau(:,:)        ! Optical depth
+  real*8, allocatable :: tau(:,:)        ! Optical depth
   real*8              :: dr             ! Cell size
   real*8              :: rmax           ! Simulation physical size
 
@@ -22,7 +22,7 @@ contains
     allocate(nHtot(ngrid))
     allocate(Tgas(ngrid))
     allocate(Av(ngrid))
-    allocate(dtau(krome_nPhotoBins,ngrid))
+    allocate(tau(krome_nPhotoBins,ngrid))
 
     ! Initialize arrays to zero
     r(:) = 0d0
@@ -30,14 +30,14 @@ contains
     nHtot(:) = 0d0
     Tgas(:) = 0d0
     Av(:) = 0d0
-    dtau(:,:) = 0d0
+    tau(:,:) = 0d0
 
   end subroutine
 
   subroutine cleanup_grid
     implicit none
 
-    deallocate(r, n, nHtot, Tgas, Av, dtau)
+    deallocate(r, n, nHtot, Tgas, Av, tau)
   end subroutine
 
   subroutine centered_uniform
