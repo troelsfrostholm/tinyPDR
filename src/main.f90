@@ -13,6 +13,7 @@ contains
     use grid, only : init_grid
     use initcond, only : MC_in_ISM
     use output, only : dump_header
+    use extinction, only : init_extinction
     use rt, only : init_rt
     implicit none
 
@@ -20,6 +21,7 @@ contains
     call read_parameters
     call init_grid
     call MC_in_ISM
+    call init_extinction
     call init_rt
     call dump_header
 

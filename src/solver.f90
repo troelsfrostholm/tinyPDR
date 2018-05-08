@@ -7,19 +7,20 @@ contains
     use krome_user, only : krome_nmols, krome_nPhotoBins, krome_set_photoBinJ, krome_get_opacity_size_d2g, krome_idx_H2, krome_idx_CO, krome_set_user_gamma_H2, krome_set_user_gamma_CO
     use krome_main, only : krome
     use richtings_dissociation_rates, only : S_H2, S_H2_d, S_CO, S_CO_d, gamma_H2_thin, gamma_CO_thin
-    use parameters, only : d2g, ngrid
+    use parameters, only : d2g, ngrid, extinction_type
     use grid, only : n, nHtot, Tgas, tau, dr
     use rt, only : j0
+    use extinction, only : extinction_single_direction, extinction_spherical_cloud_uniform_incidence
     use util, only : cumsum
     implicit none
     real*8, intent(in) :: dt
     real*8, dimension(krome_nPhotoBins) :: dtau, dtau_prev, tau_max
-    real*8, dimension(krome_nPhotoBins,ngrid) :: mu
+    real*8, dimension(krome_nPhotoBins,ngrid) :: mu, mu_spherical
     real*8, dimension(krome_nPhotoBins,ngrid) :: j
     real*8, dimension(krome_nPhotoBins) :: j_H2, j_CO
     real*8, dimension(ngrid) :: N_H2, N_CO, N_Htot, gamma_H2, gamma_CO, mu_H2, mu_CO
     real*8, dimension(krome_nmols) :: nn
-    integer :: i
+    integer :: i, ibin
 
     ! ------------------------------------------------------------
     ! Radiative transfer
@@ -38,9 +39,23 @@ contains
     end do
     
     ! Total extinction (cm^-1)
-    do i=1,ngrid
-      mu(:,i) = exp(tau(:,i) - tau_max(:))
-    end do
+    select case (trim(extinction_type))
+      case("single direction")
+        do i=1,ngrid
+          do ibin=1,krome_nPhotoBins
+            mu(ibin,i) = 2d0*extinction_single_direction(tau(ibin,i), tau_max(ibin))
+          end do
+        end do
+      case("spherical uniform")
+        do i=1,ngrid
+          do ibin=1,krome_nPhotoBins
+            mu(ibin,i) = 2d0*extinction_spherical_cloud_uniform_incidence(tau(ibin,i), tau_max(ibin))
+          end do
+        end do
+      case default
+        print*, "Extinction type not supported: ", extinction_type
+        stop
+    end select
 
     ! Mean intensity (directional average)
     do i=1,ngrid

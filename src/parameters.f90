@@ -18,12 +18,13 @@ module parameters
   character(len=255) :: opacityfile  ! File name for loading opacities
   character(len=255) :: unitenergy  ! Energy unit in opacity file (e.g. "micron" - see Krome's documentation)
   real*8 :: crate                   ! Cosmic ray rate
+  character(len=255) :: extinction_type
 
 contains
 
   subroutine read_parameters
     implicit none
-    namelist/params/ngrid,tend,ntime,outputdir,datadir,d2g,photobin_limits,sedfile,opacityfile,unitenergy,crate
+    namelist/params/ngrid,tend,ntime,outputdir,datadir,d2g,photobin_limits,sedfile,opacityfile,unitenergy,crate,extinction_type
 
     call init_to_defaults
 
@@ -60,6 +61,7 @@ contains
     sedfile="black87_eV.interp"
     opacityfile="opacityDraineR35.dat"
     unitenergy="micron"
+    extinction_type="single direction"
 
   end subroutine
 
