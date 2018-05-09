@@ -3,3 +3,4 @@
 *.mod
 bin/tinyPDR
 shielding/test_richings
+output.dat

@@ -20,7 +20,7 @@ SRC=../src
 VPATH=$(KROME_BUILD):$(SHIELDING_DIR):$(SRC)
 
 #flags
-switchDBG = -fbacktrace -g -ffpe-trap=zero,overflow,invalid -fbounds-check -ffree-line-length-none
+switchDBG = -fbacktrace -g -O0 -ffpe-trap=zero,overflow,invalid -fbounds-check -ffree-line-length-none
 
 #default switch
 switch = $(switchDBG)

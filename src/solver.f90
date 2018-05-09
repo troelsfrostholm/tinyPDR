@@ -18,8 +18,9 @@ contains
     real*8, dimension(krome_nPhotoBins,ngrid) :: mu, mu_spherical
     real*8, dimension(krome_nPhotoBins,ngrid) :: j
     real*8, dimension(krome_nPhotoBins) :: j_H2, j_CO
-    real*8, dimension(ngrid) :: N_H2, N_CO, N_Htot, gamma_H2, gamma_CO, mu_H2, mu_CO
+    real*8, dimension(ngrid) :: N_H2, N_CO, N_Htot, gamma_H2, gamma_CO, mu_H2, mu_CO, tau_H2, tau_CO
     real*8, dimension(krome_nmols) :: nn
+    real*8 :: N_H2_max, N_CO_max, N_Htot_max, tau_H2_0, tau_CO_0, Tgas_ss, mu_H2_0, mu_CO_0
     integer :: i, ibin
 
     ! ------------------------------------------------------------
@@ -68,18 +69,45 @@ contains
     ! Column densities - to cell centers
     N_H2 = (cumsum(n(krome_idx_H2,:),ngrid) - 0.5_8*n(krome_idx_H2,:))*dr
     N_CO = (cumsum(n(krome_idx_CO,:),ngrid) - 0.5_8*n(krome_idx_CO,:))*dr
-    N_Htot = (cumsum(nHtot(:),ngrid)) - 0.5_8*nHtot(:)*dr
+    N_Htot = (cumsum(nHtot(:),ngrid) - 0.5_8*nHtot(:))*dr
 
+    ! Column densities to rmax
+    N_H2_max = maxval(N_H2(:)) + 0.5_8*n(krome_idx_H2,ngrid)*dr
+    N_CO_max = maxval(N_CO(:)) + 0.5_8*n(krome_idx_CO,ngrid)*dr
+    N_Htot_max = maxval(N_Htot(:)) + 0.5_8*nHtot(ngrid)*dr
+    
     ! Reverse direction of column densities, so they measure the density from the end of array (cloud outer surface)
-    N_H2 = maxval(N_H2(:)) + 0.5_8*n(krome_idx_H2,ngrid)*dr - N_H2(:)
-    N_CO = maxval(N_CO(:)) + 0.5_8*n(krome_idx_CO,ngrid)*dr - N_CO(:)
-    N_Htot = maxval(N_Htot(:)) + 0.5_8*nHtot(:)*dr - N_Htot(:)
+    N_H2 = N_H2_max - N_H2(:)
+    N_CO = N_CO_max - N_CO(:)
+    N_Htot = N_Htot_max - N_Htot(:)
     
     ! Look up shielding factors
+    Tgas_ss = 10.0
     do i=1,ngrid
-      mu_H2(i) = S_H2(N_H2(i), Tgas(i))*S_H2_d(N_Htot(i))
-      mu_CO(i) = S_CO(N_CO(i), N_Htot(i),Tgas(i))*S_CO_d(N_Htot(i))
+      mu_H2(i) = S_H2(N_H2(i), Tgas_ss)*S_H2_d(N_Htot(i))
+      mu_CO(i) = S_CO(N_CO(i), N_Htot(i),Tgas_ss)*S_CO_d(N_Htot(i))
     end do
+
+    mu_H2_0 = S_H2(N_H2_max, Tgas_ss)*S_H2_d(N_Htot_max)
+    mu_CO_0 = S_CO(N_CO_max, N_Htot_max,Tgas_ss)*S_CO_d(N_Htot_max)
+
+    if(trim(extinction_type) == "spherical uniform") then
+      ! Go from extinction to optical depth
+      tau_H2 = -log(mu_H2(:))
+      tau_CO = -log(mu_CO(:))
+      tau_H2_0 = -log(mu_H2_0)
+      tau_CO_0 = -log(mu_CO_0)
+
+      ! Reverse tau direction to measure from center of cloud
+      tau_H2 = tau_H2_0 - tau_H2
+      tau_CO = tau_CO_0 - tau_CO
+
+      ! and back to extinction - now assuming a spherical cloud
+      do i=1,ngrid
+        mu_H2(i) = 2.0_8*extinction_spherical_cloud_uniform_incidence(tau_H2(i), tau_H2_0)
+        mu_CO(i) = 2.0_8*extinction_spherical_cloud_uniform_incidence(tau_CO(i), tau_CO_0)
+      end do
+    endif
 
     ! Compute attenuated H2 and CO dissociation rates
     gamma_H2(:) = mu_H2(:)*gamma_H2_thin
