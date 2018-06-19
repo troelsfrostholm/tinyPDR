@@ -9,6 +9,8 @@ module parameters
   integer :: ngrid    ! Number of grid points
   integer :: ntime    ! Number of time steps
   real*8  :: tend
+  real*8  :: rmax     ! Simulation physical size
+  real*8  :: rmin     ! Location of least grid point for logarithmic grids
   real*8  :: d2g      ! Dust to gas mass ratio
   character(len=255) :: inputfile  ! Input namelist file
   character(len=255) :: outputdir
@@ -19,12 +21,14 @@ module parameters
   character(len=255) :: unitenergy  ! Energy unit in opacity file (e.g. "micron" - see Krome's documentation)
   real*8 :: crate                   ! Cosmic ray rate
   character(len=255) :: extinction_type
+  character(len=255) :: initcond
+  character(len=255) :: grid_type
 
 contains
 
   subroutine read_parameters
     implicit none
-    namelist/params/ngrid,tend,ntime,outputdir,datadir,d2g,photobin_limits,sedfile,opacityfile,unitenergy,crate,extinction_type
+    namelist/params/ngrid,tend,ntime,rmax,rmin,outputdir,datadir,d2g,photobin_limits,sedfile,opacityfile,unitenergy,crate,extinction_type,initcond,grid_type
 
     call init_to_defaults
 
@@ -51,6 +55,8 @@ contains
 
     ngrid = 128
     ntime = 100
+    rmin = 0d0
+    rmax = 1d0*pc
     outputdir="."
     datadir="../../dat"
     tend = 1d0
@@ -62,6 +68,8 @@ contains
     opacityfile="opacityDraineR35.dat"
     unitenergy="micron"
     extinction_type="single direction"
+    initcond="uniform"
+    grid_type="centered"
 
   end subroutine
 

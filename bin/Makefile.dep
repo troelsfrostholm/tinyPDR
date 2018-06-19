@@ -1,11 +1,14 @@
 extinction.o: exponential_integral.o
 grid.o: krome_all.o
 grid.o: parameters.o
+grid.o: util.o
 initcond.o: grid.o
 initcond.o: krome_all.o
 initcond.o: parameters.o
+initcond.o: util.o
 krome_all.o: krome_user_commons.o
 leiden_shielding.o: krome_all.o
+main.o: extinction.o
 main.o: grid.o
 main.o: initcond.o
 main.o: krome_all.o

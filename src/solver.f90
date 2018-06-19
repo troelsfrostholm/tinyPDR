@@ -13,14 +13,14 @@ contains
     use extinction, only : extinction_single_direction, extinction_spherical_cloud_uniform_incidence
     use util, only : cumsum
     implicit none
-    real*8, intent(in) :: dt
-    real*8, dimension(krome_nPhotoBins) :: dtau, dtau_prev, tau_max
-    real*8, dimension(krome_nPhotoBins,ngrid) :: mu, mu_spherical
-    real*8, dimension(krome_nPhotoBins,ngrid) :: j
-    real*8, dimension(krome_nPhotoBins) :: j_H2, j_CO
-    real*8, dimension(ngrid) :: N_H2, N_CO, N_Htot, gamma_H2, gamma_CO, mu_H2, mu_CO, tau_H2, tau_CO
-    real*8, dimension(krome_nmols) :: nn
-    real*8 :: N_H2_max, N_CO_max, N_Htot_max, tau_H2_0, tau_CO_0, Tgas_ss, mu_H2_0, mu_CO_0
+    real(kind=8), intent(in) :: dt
+    real(kind=8), dimension(krome_nPhotoBins) :: dtau, dtau_prev, tau_max
+    real(kind=8), dimension(krome_nPhotoBins,ngrid) :: mu, mu_spherical
+    real(kind=8), dimension(krome_nPhotoBins,ngrid) :: j
+    real(kind=8), dimension(krome_nPhotoBins) :: j_H2, j_CO
+    real(kind=8), dimension(ngrid) :: N_H2, N_CO, N_Htot, T_col, gamma_H2, gamma_CO, mu_H2, mu_CO, tau_H2, tau_CO
+    real(kind=8), dimension(krome_nmols) :: nn
+    real(kind=8) :: N_H2_max, N_CO_max, N_Htot_max, T_col_max, tau_H2_0, tau_CO_0, Tgas_ss, mu_H2_0, mu_CO_0
     integer :: i, ibin
 
     ! ------------------------------------------------------------
@@ -70,20 +70,27 @@ contains
     N_H2 = (cumsum(n(krome_idx_H2,:),ngrid) - 0.5_8*n(krome_idx_H2,:))*dr
     N_CO = (cumsum(n(krome_idx_CO,:),ngrid) - 0.5_8*n(krome_idx_CO,:))*dr
     N_Htot = (cumsum(nHtot(:),ngrid) - 0.5_8*nHtot(:))*dr
+    T_col = (cumsum(n(krome_idx_H2,:)*Tgas(:),ngrid) - 0.5_8*n(krome_idx_H2,:)*Tgas(:))*dr
 
     ! Column densities to rmax
     N_H2_max = maxval(N_H2(:)) + 0.5_8*n(krome_idx_H2,ngrid)*dr
     N_CO_max = maxval(N_CO(:)) + 0.5_8*n(krome_idx_CO,ngrid)*dr
     N_Htot_max = maxval(N_Htot(:)) + 0.5_8*nHtot(ngrid)*dr
+    T_col_max = maxval(T_col(:)) + 0.5_8*n(krome_idx_H2,ngrid)*Tgas(ngrid)*dr
     
     ! Reverse direction of column densities, so they measure the density from the end of array (cloud outer surface)
     N_H2 = N_H2_max - N_H2(:)
     N_CO = N_CO_max - N_CO(:)
     N_Htot = N_Htot_max - N_Htot(:)
+    T_col = T_col_max - T_col(:)
     
     ! Look up shielding factors
-    Tgas_ss = 10.0
     do i=1,ngrid
+      if(N_H2(i) < 1e-20) then
+        Tgas_ss = Tgas(i)
+      else
+        Tgas_ss = T_col(i) / N_H2(i)
+      endif
       mu_H2(i) = S_H2(N_H2(i), Tgas_ss)*S_H2_d(N_Htot(i))
       mu_CO(i) = S_CO(N_CO(i), N_Htot(i),Tgas_ss)*S_CO_d(N_Htot(i))
     end do

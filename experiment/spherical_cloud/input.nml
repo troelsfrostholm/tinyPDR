@@ -5,6 +5,7 @@ ntime=100
 outputdir='.'
 photobin_limits=5.0d0,11.26d0,13.6d0,24.6d0,54.4d0,1d2
 extinction_type="spherical uniform"
+initcond='MC_in_ISM'
 /
 
 &INITCOND

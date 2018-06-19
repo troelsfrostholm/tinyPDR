@@ -1,0 +1,19 @@
+&PARAMS
+ngrid=256
+tend=1d6
+ntime=100
+outputdir='.'
+photobin_limits=5.0d0,11.26d0,13.6d0,24.6d0,54.4d0,1d2
+extinction_type="single direction"
+initcond='uniform'
+rmax=1d22
+rmin=1d12
+grid_type='log'
+/
+
+&INITCOND
+ntot=0.7676d2
+T=3d2
+!       H       He   H2      C       O
+x=4*0d0,0.33333,1d-1,0.33333,2.46d-4,4.9d-4,24*0d0
+/

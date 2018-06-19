@@ -18,4 +18,21 @@ contains
       cumsum(i) = acc
     end do
   end function
+
+  ! Prints msg and stops if expr is false
+  subroutine assert(expr, msg, val)
+    implicit none
+    logical, intent(in) :: expr
+    character(len=*), intent(in) :: msg
+    real*8, optional, intent(in) :: val
+
+    if(.not.expr) then
+      if(present(val)) then
+        print*, "Assertion failed: "//msg, val
+      else
+        print*, "Assertion failed: "//msg
+      endif
+      stop
+    endif
+  end subroutine
 end module

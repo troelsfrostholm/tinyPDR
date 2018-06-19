@@ -11,7 +11,7 @@ contains
     use krome_main, only : krome_init
     use parameters, only : read_parameters
     use grid, only : init_grid
-    use initcond, only : MC_in_ISM
+    use initcond, only : initial_condition
     use output, only : dump_header
     use extinction, only : init_extinction
     use rt, only : init_rt
@@ -20,7 +20,7 @@ contains
     call krome_init
     call read_parameters
     call init_grid
-    call MC_in_ISM
+    call initial_condition
     call init_extinction
     call init_rt
     call dump_header
