@@ -4,7 +4,7 @@ module solver
 contains
 
   subroutine step(dt)
-    use krome_user, only : krome_nmols, krome_nPhotoBins, krome_set_photoBinJ, krome_get_opacity_size_d2g, krome_idx_H2, krome_idx_CO, krome_set_user_gamma_H2, krome_set_user_gamma_CO, krome_idx_HEj, krome_print_best_flux
+    use krome_user
     use krome_main, only : krome
     use richtings_dissociation_rates, only : S_H2, S_H2_d, S_CO, S_CO_d, gamma_H2_thin, gamma_CO_thin
     use parameters, only : d2g, ngrid, extinction_type, rmin, grid_type
@@ -104,6 +104,7 @@ contains
       case("log")
         N_H2(1) = n(krome_idx_H2,1)*rmin
         N_CO(1) = n(krome_idx_CO,1)*rmin
+        T_col(1) = n(krome_idx_H2,1)*Tgas(1)*dr
         do i=2,ngrid
           dr = r(i)-r(i-1)
           N_H2(i) = N_H2(i-1) + n(krome_idx_H2,i)*dr
@@ -181,9 +182,6 @@ contains
 
       !call KROME to do chemistry
       nn = n(:,i)
-      ! if(i==114 .or. i==1) then
-      !   call krome_print_best_flux(nn,Tgas(i),10)
-      ! end if
       call krome(nn,Tgas(i),dt)
       n(:,i) = nn
     end do
