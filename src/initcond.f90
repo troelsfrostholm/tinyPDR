@@ -98,15 +98,16 @@ contains
   subroutine uniform
     use krome_user
     use util, only : assert
-    use parameters, only : ngrid, inputfile, fav, rmax
-    use grid, only : centered_uniform, n, nHtot, Tgas, Av, r, dr
+    use parameters, only : ngrid, inputfile, fav, rmin, rmax
+    use grid, only : centered_uniform, n, nHtotGrid => nHtot , Tgas, Av, r, dr
     implicit none
-    real*8 :: ntot, T, x(krome_nmols)
+    real*8 :: ntot, T, x(krome_nmols), nHtot
     integer :: i
-    namelist/initcond/ntot,T,x
+    namelist/initcond/ntot,T,x,nHtot
 
     ! Default values
     ntot = 1d0
+    nHtot = 1d0
     T = 10d0
     x(:) = 0d0
 
@@ -122,6 +123,7 @@ contains
     call assert(T > 0d0, "T must be > 0. It was ", T)
     call assert(all(x(:) >= 0d0), "All x must be positive ")
     call assert(.not. all(x(:) == 0d0), "At least one x must be above 0")
+    nHtotGrid(:) = nHtot
 
     ! Normalize fractions
     x(:) = x(:) / sum(x(:))
@@ -133,6 +135,9 @@ contains
 
     ! Set gas temperature
     Tgas(:) = T
+
+    ! Compute visual extinction
+    Av(:) = nHtot*r(:) / fav
 
   end subroutine
 

@@ -11,12 +11,20 @@ contains
 
   end subroutine
 
-  pure function extinction_single_direction(tau, tau_max)
+  pure function extinction_single_direction_left(tau, tau_max)
     implicit none
     real*8, intent(in) :: tau, tau_max
-    real*8 :: extinction_single_direction
+    real*8 :: extinction_single_direction_left
 
-    extinction_single_direction = 0.5d0*exp(tau - tau_max)
+    extinction_single_direction_left = 0.5d0*exp(-tau)
+  end function
+
+  pure function extinction_single_direction_right(tau, tau_max)
+    implicit none
+    real*8, intent(in) :: tau, tau_max
+    real*8 :: extinction_single_direction_right
+
+    extinction_single_direction_right = 0.5d0*exp(tau - tau_max)
   end function
 
   pure function extinction_spherical_cloud_uniform_incidence(tau, tau_max)

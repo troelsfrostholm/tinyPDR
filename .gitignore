@@ -1,6 +1,8 @@
 *.dSYM
 *.o
 *.mod
+*.pyc
+*.pdf
 bin/tinyPDR
 shielding/test_richings
 output.dat
