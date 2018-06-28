@@ -3,6 +3,7 @@
 *.mod
 *.pyc
 *.pdf
+*.interp
 bin/tinyPDR
 shielding/test_richings
 output.dat
