@@ -8,7 +8,7 @@ contains
     use krome_main, only : krome
     use richtings_dissociation_rates, only : S_H2, S_H2_d, S_CO, S_CO_d, gamma_H2_thin, gamma_CO_thin
     use parameters, only : d2g, ngrid, extinction_type, rmin, grid_type
-    use grid, only : n, nHtot, Tgas, tau, r, dr
+    use grid, only : n, nHtot, Tgas, tau, r, dr, Av
     use rt, only : j0
     use extinction, only : extinction_single_direction_left, extinction_single_direction_right, extinction_spherical_cloud_uniform_incidence
     use util, only : cumsum
@@ -22,6 +22,8 @@ contains
     real(kind=8), dimension(krome_nmols) :: nn
     real(kind=8) :: N_H2_max, N_CO_max, N_Htot_max, T_col_max, tau_H2_0, tau_CO_0, Tgas_ss, mu_H2_0, mu_CO_0
     integer :: i, ibin
+
+    real(kind=8) :: G0, Av_f
 
     ! ------------------------------------------------------------
     ! Radiative transfer
@@ -182,6 +184,14 @@ contains
 
       !call KROME to do chemistry
       nn = n(:,i)
+      if(i==ngrid) then
+        call krome_print_best_flux_spec(nn,Tgas(i),20,krome_idx_HEj)
+        !call krome_print_best_flux(nn,Tgas(i),10)
+      end if
+      call krome_find_G0_Av(G0, Av_f, nn, d2g)
+      write(10,*) i, G0, Av(i), Av_f, Av_f - 0.4d0*log(G0), (Av_f-Av(i))/log(G0)
+      call krome_set_user_Av(Av_f)
+      call krome_set_user_G0(G0)
       call krome(nn,Tgas(i),dt)
       n(:,i) = nn
     end do

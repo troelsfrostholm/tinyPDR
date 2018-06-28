@@ -7,7 +7,7 @@ module rt
 contains
   
   subroutine init_rt
-    use krome_user, only : krome_set_photobinE_limits, krome_load_photoBin_file_2col, krome_load_opacity_table,krome_get_photoBinJ, krome_set_user_crate, krome_load_average_kabs
+    use krome_user
     use parameters, only : photobin_limits, datadir, sedfile, opacityfile, unitenergy, crate
     use grid, only : Tgas
     implicit none

@@ -26,6 +26,17 @@ def totalNumberDensity(atom):
 
 atoms = ["H", "He", "C", "O"]
 ntot_atom = { a : totalNumberDensity(a) for a in atoms}
+
+# Correct for ices
+iH2O       = info.symbol2id("H2O")
+iH2O_total = info.symbol2id("H2O_total")
+iCO        = info.symbol2id("CO")
+iCO_total  = info.symbol2id("CO_total")
+
+ntot_atom["H"] += 2*(abundances[:,iH2O_total] - abundances[:,iH2O])
+ntot_atom["O"] += abundances[:,iH2O_total] - abundances[:,iH2O] + abundances[:,iCO_total] - abundances[:,iCO]
+ntot_atom["C"] += abundances[:,iCO_total] - abundances[:,iCO]
+
 colors = ['black', 'brown', 'red', 'green', 'purple', 'orange', 'blue']
 species = ["E", "H", "H+", "He", "He+", "He++", "C+"]
 normalized_to = ["H", "H", "H", "He", "He", "He", "C"]
@@ -41,7 +52,7 @@ r.plot_abundance('HeII', relative_to="He", color="purple", linestyle="--", plott
 r.plot_abundance('HeIII', relative_to="He", color="orange", linestyle="--", plotting_function=axarr[1].loglog)
 r.plot_abundance('CII', relative_to="C", color="blue", linestyle="--", plotting_function=axarr[1].loglog)
 
-axarr[1].set_ylim(3e-5,2)
+axarr[1].set_ylim(3e-8,2)
 #plt.xlim(1e-6,1e2)
 plt.xlabel(r"$A_v$")
 axarr[1].set_ylabel("Ionization Fraction")
@@ -50,11 +61,16 @@ axarr[1].legend(loc="best")
 # Plot molecular fractions
 species = ["H2", "CO", "OH"]
 normalized_to = ["H", "C", "O"]
-colors = ['black', 'blue', 'red']
+colors = ['black', 'blue', 'red', 'brown', 'purple']
 axarr[0].set_prop_cycle(cycler('color', colors))
 abundances[:,info.symbol2i("H2")] *= 2.0         # Like Richings, we plot 2*n_H2/n_Htot
 for s, n in zip(species, normalized_to):
   axarr[0].loglog(axis, abundances[:,info.symbol2i(s)]/ntot_atom[n], label=s)
+
+nH2OIce = abundances[:,info.symbol2i("H2O_total")] - abundances[:,info.symbol2i("H2O")]
+axarr[0].loglog(axis, nH2OIce/ntot_atom["O"], label="H2O ice")
+nCOIce = abundances[:,info.symbol2i("CO_total")] - abundances[:,info.symbol2i("CO")]
+axarr[0].loglog(axis, nCOIce/ntot_atom["C"], label="CO ice")
 
 r.plot_abundance('H2', factor=2.0, color="black", label="Richings", linestyle="--", plotting_function=axarr[0].loglog)
 r.plot_abundance('CO', relative_to="C", color="blue", linestyle="--", plotting_function=axarr[0].loglog)

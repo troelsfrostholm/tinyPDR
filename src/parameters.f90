@@ -2,7 +2,8 @@ module parameters
   use krome_user, only : krome_seconds_per_year, krome_nPhotoBins
   implicit none
 
-  real*8, parameter :: fav = 1d0/4d-22
+  !real*8, parameter :: fav = 1d0/4d-22
+  real*8, parameter :: fav = 1.8d21
   real*8, parameter :: pc = 3.085d18 !1 pc in cm
   real*8, parameter :: spy = krome_seconds_per_year !s
 

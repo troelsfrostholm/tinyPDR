@@ -9,7 +9,7 @@ lib = -llapack
 
 #Krome build folder
 KROME_BUILD=/Users/troels/Code/forks/krome/build
-#KROME_BUILD=../../krome-builds/build-HCO-black
+#KROME_BUILD=../krome/HCO
 
 #Shielding functions folder
 SHIELDING_DIR=../shielding
