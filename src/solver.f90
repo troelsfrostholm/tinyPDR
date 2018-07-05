@@ -21,7 +21,9 @@ contains
     real(kind=8), dimension(ngrid) :: N_H2, N_CO, N_Htot, T_col, gamma_H2, gamma_CO, mu_H2, mu_CO, tau_H2, tau_CO
     real(kind=8), dimension(krome_nmols) :: nn
     real(kind=8) :: N_H2_max, N_CO_max, N_Htot_max, T_col_max, tau_H2_0, tau_CO_0, Tgas_ss, mu_H2_0, mu_CO_0
-    integer :: i, ibin
+    integer :: i, ibin, iflux
+    integer, parameter :: print_fluxes_for(6) = (/krome_idx_E, krome_idx_Cj, krome_idx_HEj, krome_idx_OH, krome_idx_CO, krome_idx_Hj/)
+    character*16 :: names(krome_nmols)
 
     real(kind=8) :: G0, Av_f
 
@@ -173,6 +175,7 @@ contains
     ! Chemistry
     ! ------------------------------------------------------------
 
+    names = krome_get_names()
     do i=1,ngrid
       ! Set flux in Krome
       call krome_set_photoBinJ(j(:,i))
@@ -185,8 +188,11 @@ contains
       !call KROME to do chemistry
       nn = n(:,i)
       if(i==ngrid) then
-        call krome_print_best_flux_spec(nn,Tgas(i),20,krome_idx_HEj)
-        !call krome_print_best_flux(nn,Tgas(i),10)
+        do iflux=1,size(print_fluxes_for)
+          print*, "Best fluxes for species ", names(print_fluxes_for(iflux))
+          call krome_print_best_flux_spec(nn,Tgas(i),20,print_fluxes_for(iflux))
+          print*
+        end do
       end if
       call krome_find_G0_Av(G0, Av_f, nn, d2g)
       write(10,*) i, G0, Av(i), Av_f, Av_f - 0.4d0*log(G0), (Av_f-Av(i))/log(G0)
