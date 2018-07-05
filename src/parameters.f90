@@ -6,6 +6,7 @@ module parameters
   real*8, parameter :: fav = 1.8d21
   real*8, parameter :: pc = 3.085d18 !1 pc in cm
   real*8, parameter :: spy = krome_seconds_per_year !s
+  integer, parameter :: nmaxprintfluxesfor = 30
 
   integer :: ngrid    ! Number of grid points
   integer :: ntime    ! Number of time steps
@@ -24,12 +25,14 @@ module parameters
   character(len=255) :: extinction_type
   character(len=255) :: initcond
   character(len=255) :: grid_type
+  character(len=16)  :: print_fluxes_for(nmaxprintfluxesfor)
+  integer :: print_fluxes_for_ids(nmaxprintfluxesfor), nprintfluxesfor
 
 contains
 
   subroutine read_parameters
     implicit none
-    namelist/params/ngrid,tend,ntime,rmax,rmin,outputdir,datadir,d2g,photobin_limits,sedfile,opacityfile,unitenergy,crate,extinction_type,initcond,grid_type
+    namelist/params/ngrid,tend,ntime,rmax,rmin,outputdir,datadir,d2g,photobin_limits,sedfile,opacityfile,unitenergy,crate,extinction_type,initcond,grid_type,print_fluxes_for
 
     call init_to_defaults
 
@@ -49,6 +52,10 @@ contains
 
     write(*,params)
 
+    print_fluxes_for_ids = mol_names_to_ids(print_fluxes_for)
+    print*, print_fluxes_for_ids
+    print*, nprintfluxesfor
+
   end subroutine
 
   subroutine init_to_defaults
@@ -63,6 +70,7 @@ contains
     tend = 1d0
     d2g = 1d-2
     crate = 2.5d-17
+    print_fluxes_for(:) = ""
 
     photobin_limits = 0d0
     sedfile="black87_eV.interp"
@@ -73,5 +81,32 @@ contains
     grid_type="centered"
 
   end subroutine
+
+  ! Maps a list of molecule names to krome ids
+  function mol_names_to_ids(names)
+    use util, only : indexof
+    use krome_user, only : krome_get_names, krome_nmols
+    implicit none
+    character*16 :: names(nmaxprintfluxesfor), all_names(krome_nmols), mol
+    integer :: mol_names_to_ids(nmaxprintfluxesfor), i
+
+    mol_names_to_ids(:) = 0
+    all_names(:) = krome_get_names()
+    do i=1,nmaxprintfluxesfor
+      mol = trim(names(i))
+      if(mol .ne. "") then
+        mol_names_to_ids(i) = indexof(mol, all_names, krome_nmols)
+        if(mol_names_to_ids(i) == -1) then  ! Exit with error if not found
+          print*, "Error in read_parameters: Molecule in namelist parameter print_fluxes_for not found in network. "
+          print*, "Molecule: ", mol
+          print*, "Molecules in network: ", all_names
+          stop
+        end if
+      else
+        nprintfluxesfor = i-1
+        exit
+      end if
+    end do
+  end function
 
 end module

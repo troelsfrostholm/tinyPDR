@@ -11,6 +11,7 @@ rmin=1d12
 grid_type='log'
 sedfile='black87_eV.dat'
 opacityfile='kabs_draine_Rv31.dat'
+!print_fluxes_for='E','C+','HE+','OH','CO','H+'
 /
 
 &INITCOND

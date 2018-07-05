@@ -20,6 +20,7 @@ output.o: grid.o
 output.o: krome_all.o
 output.o: parameters.o
 parameters.o: krome_all.o
+parameters.o: util.o
 richings_dissociation_rates.o: leiden_shielding.o
 rt.o: grid.o
 rt.o: krome_all.o

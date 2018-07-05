@@ -35,4 +35,22 @@ contains
       stop
     endif
   end subroutine
+
+  ! Finds the index in array_of_strings of the first occurance of string
+  ! Returns -1 if it is not found
+  function indexof(string, array_of_strings, nelem)
+    character(len=*), intent(in) :: string, array_of_strings(nelem)
+    integer, intent(in) :: nelem
+    integer :: indexof
+    integer :: i
+
+    indexof = -1
+    do i=1,nelem
+      if(string == array_of_strings(i)) then
+        indexof = i
+        exit
+      end if
+    end do
+
+  end function
 end module
