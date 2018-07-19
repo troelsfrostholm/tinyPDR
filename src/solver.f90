@@ -3,17 +3,18 @@ module solver
 
 contains
 
-  subroutine step(dt)
+  subroutine step(t, dt)
     use krome_user
     use krome_main, only : krome
     use richtings_dissociation_rates, only : S_H2, S_H2_d, S_CO, S_CO_d, gamma_H2_thin, gamma_CO_thin
-    use parameters, only : d2g, ngrid, extinction_type, rmin, grid_type, print_fluxes_for, print_fluxes_for_ids, nprintfluxesfor
+    use parameters, only : d2g, ngrid, extinction_type, rmin, grid_type, print_fluxes_for, print_fluxes_for_ids, nprintfluxesfor, pc, spy
     use grid, only : n, nHtot, Tgas, tau, r, dr, Av
     use rt, only : j0
     use extinction, only : extinction_single_direction_left, extinction_single_direction_right, extinction_spherical_cloud_uniform_incidence
     use util, only : cumsum
+    use output, only : outfile_fluxes
     implicit none
-    real(kind=8), intent(in) :: dt
+    real(kind=8), intent(in) :: t, dt
     real(kind=8), dimension(krome_nPhotoBins) :: dtau, dtau_prev, tau_max
     real(kind=8), dimension(krome_nPhotoBins,ngrid) :: mu, mu_spherical
     real(kind=8), dimension(krome_nPhotoBins,ngrid) :: j
@@ -22,6 +23,8 @@ contains
     real(kind=8), dimension(krome_nmols) :: nn
     real(kind=8) :: N_H2_max, N_CO_max, N_Htot_max, T_col_max, tau_H2_0, tau_CO_0, Tgas_ss, mu_H2_0, mu_CO_0
     integer :: i, ibin, iflux
+    real*8::fluxes(krome_nrea)
+    integer :: unit
 
     real(kind=8) :: G0, Av_f
 
@@ -106,7 +109,7 @@ contains
       case("log")
         N_H2(1) = n(krome_idx_H2,1)*rmin
         N_CO(1) = n(krome_idx_CO,1)*rmin
-        T_col(1) = n(krome_idx_H2,1)*Tgas(1)*dr
+        T_col(1) = n(krome_idx_H2,1)*Tgas(1)*rmin
         do i=2,ngrid
           dr = r(i)-r(i-1)
           N_H2(i) = N_H2(i-1) + n(krome_idx_H2,i)*dr
@@ -144,6 +147,7 @@ contains
       mu_CO(i) = S_CO(N_CO(i), N_Htot(i),Tgas_ss)*S_CO_d(N_Htot(i))
     end do
 
+
     mu_H2_0 = S_H2(N_H2_max, Tgas_ss)*S_H2_d(N_Htot_max)
     mu_CO_0 = S_CO(N_CO_max, N_Htot_max,Tgas_ss)*S_CO_d(N_Htot_max)
 
@@ -173,6 +177,8 @@ contains
     ! Chemistry
     ! ------------------------------------------------------------
 
+    open(newunit=unit,file=trim(outfile_fluxes), access='append', action="write")
+
     do i=1,ngrid
       ! Set flux in Krome
       call krome_set_photoBinJ(j(:,i))
@@ -195,9 +201,15 @@ contains
       write(10,*) i, G0, Av(i), Av_f, Av_f - 0.4d0*log(G0), (Av_f-Av(i))/log(G0)
       call krome_set_user_Av(Av_f)
       call krome_set_user_G0(G0)
+
+      fluxes = krome_get_flux(n(:,i), Tgas(i))
+      write(unit,*) t/spy,r(i)/pc,Av(i),fluxes(:)
+
       call krome(nn,Tgas(i),dt)
       n(:,i) = nn
     end do
+
+    close(unit)
 
   end subroutine
 end module

@@ -13,6 +13,7 @@ contains
     implicit none
 
     call krome_set_photobinE_limits(photobin_limits, Tgas(1))
+    !call krome_set_photobinE_log(5d0, 1d2)
     call krome_load_photoBin_file_2col(trim(datadir)//"/"//trim(sedfile), logarithmic=.true.)
     call krome_load_opacity_table(trim(datadir)//"/"//trim(opacityfile),unitEnergy=trim(unitenergy))
     j0 = krome_get_photoBinJ()

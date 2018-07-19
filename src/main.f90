@@ -39,7 +39,7 @@ contains
     t = 0d0
     do itime=1,ntime
       call dump_snapshot(t)
-      call step(dt)
+      call step(t, dt)
       t = t + dt
     end do
     call dump_snapshot(t)

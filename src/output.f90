@@ -2,12 +2,13 @@ module output
   implicit none
 
   character(len=255) :: outfile
+  character(len=255) :: outfile_fluxes
 
 contains
 
   subroutine dump_header
     use parameters, only : ngrid, ntime, outputdir
-    use krome_user, only : krome_nmols, krome_nPhotoBins
+    use krome_user, only : krome_nmols, krome_nPhotoBins, krome_nrea
     implicit none
     integer :: unit
 
@@ -15,6 +16,12 @@ contains
     outfile = trim(outputdir)//"/output.dat"
     open(newunit=unit,file=trim(outfile), status="replace", action="write")
     write(unit,*) ngrid, ntime+1, krome_nmols, krome_nPhotoBins
+    close(unit)
+
+    ! Write header for fluxes
+    outfile_fluxes = trim(outputdir)//"/fluxes.dat"
+    open(newunit=unit,file=trim(outfile_fluxes), status="replace", action="write")
+    write(unit,*) ngrid, ntime, krome_nrea
     close(unit)
   end subroutine
 
