@@ -17,7 +17,7 @@ objs += richings_dissociation_rates.o
 exec=test_leiden_shielding
 
 # Include location of KROME
-VPATH=../krome-builds/build-HCO-black
+VPATH=../krome/HCO
 
 default : all
 
