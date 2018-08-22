@@ -212,8 +212,9 @@ H2O_ice -> H2O
 CO_ice -> CO
 H -> H+ + E
 HE -> HE+ + E
-C -> C+ + E
+HE+ -> HE++ + E
 O -> O+ + E
+C -> C+ + E
 H2 -> H2+ + E
 H- -> H + E
 CH -> C + H
