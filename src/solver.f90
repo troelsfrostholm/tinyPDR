@@ -6,9 +6,13 @@ contains
   subroutine step(t, dt)
     use krome_user
     use krome_main, only : krome
+#ifdef USE_DUST_TABLE
+    use krome_dust, only : setup_2d_dust_tables
+#endif
+    use krome_constants, only : ev_to_erg
     use richtings_dissociation_rates, only : S_H2, S_H2_d, S_CO, S_CO_d, gamma_H2_thin, gamma_CO_thin
-    use parameters, only : d2g, ngrid, extinction_type, rmin, grid_type, print_fluxes_for, print_fluxes_for_ids, nprintfluxesfor, pc, spy
-    use grid, only : n, nHtot, Tgas, tau, r, dr, Av
+    use parameters, only : d2g, ngrid, extinction_type, rmin, grid_type, print_fluxes_for, print_fluxes_for_ids, nprintfluxesfor, pc, spy, h, pi, sigma
+    use grid, only : n, nHtot, Tgas, Tdust, tau, r, dr, Av
     use rt, only : j0
     use extinction, only : extinction_single_direction_left, extinction_single_direction_right, extinction_spherical_cloud_uniform_incidence
     use util, only : cumsum
@@ -144,12 +148,12 @@ contains
         Tgas_ss = T_col(i) / N_H2(i)
       endif
       mu_H2(i) = S_H2(N_H2(i), Tgas_ss)*S_H2_d(N_Htot(i))
-      mu_CO(i) = S_CO(N_CO(i), N_Htot(i),Tgas_ss)*S_CO_d(N_Htot(i))
+      mu_CO(i) = S_CO(N_CO(i), N_H2(i),Tgas_ss)*S_CO_d(N_Htot(i))
     end do
 
 
     mu_H2_0 = S_H2(N_H2_max, Tgas_ss)*S_H2_d(N_Htot_max)
-    mu_CO_0 = S_CO(N_CO_max, N_Htot_max,Tgas_ss)*S_CO_d(N_Htot_max)
+    mu_CO_0 = S_CO(N_CO_max, N_H2_max,Tgas_ss)*S_CO_d(N_Htot_max)
 
     if(trim(extinction_type) == "spherical uniform") then
       ! Go from extinction to optical depth
@@ -183,10 +187,14 @@ contains
       ! Set flux in Krome
       call krome_set_photoBinJ(j(:,i))
 
+
       ! Set dissociation rates
       call krome_set_user_gamma_H2(gamma_H2(i))
       call krome_set_user_gamma_CO(gamma_CO(i))
 
+#ifdef USE_DUST_TABLE
+      call setup_2d_dust_tables()
+#endif
 
       !call KROME to do chemistry
       nn = n(:,i)
@@ -207,6 +215,10 @@ contains
 
       call krome(nn,Tgas(i),dt)
       n(:,i) = nn
+#ifdef USE_DUST_TABLE
+      Tdust(i) = krome_get_Tdust(n(:,i),Tgas(i))
+      !print*, (4*pi*sum(j(:,i)*krome_get_photoBinE_delta()/h)*ev_to_erg/sigma)**0.25 ! sigma*T**4 = sum(j*dE/h)
+#endif
     end do
 
     close(unit)

@@ -6,7 +6,11 @@ module parameters
   real*8, parameter :: fav = 1.8d21
   real*8, parameter :: pc = 3.085d18 !1 pc in cm
   real*8, parameter :: spy = krome_seconds_per_year !s
+  real*8, parameter :: h = 4.13566766d-15 ! plancks constant in eV s
+  real*8, parameter :: pi = 3.14159265359 ! pi
+  real*8, parameter :: sigma = 5.6704d-5 ! Stefan-boltzmann constant (erg K-1 cm-2)
   integer, parameter :: nmaxprintfluxesfor = 30
+
 
   integer :: ngrid    ! Number of grid points
   integer :: ntime    ! Number of time steps

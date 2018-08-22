@@ -126,4 +126,6 @@ plt.savefig("plots/He.pdf")
 
 plt.figure()
 plt.loglog(axis, run.getTgas(itime=run.ntime-1))
+plt.loglog(axis, run.getTdust(itime=run.ntime-1))
 plt.savefig("plots/Tgas.pdf")
+

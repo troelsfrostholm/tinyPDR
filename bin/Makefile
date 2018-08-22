@@ -20,10 +20,13 @@ SRC=../src
 VPATH=$(KROME_BUILD):$(SHIELDING_DIR):$(SRC)
 
 #flags
-switchDBG = -fbacktrace -g -O0 -ffpe-trap=zero,overflow,invalid -fbounds-check -ffree-line-length-none -finit-real=nan
+switchDBG = -fbacktrace -g -O0 -ffpe-trap=zero,overflow,invalid -fbounds-check -ffree-line-length-none -finit-real=nan -cpp
+
+#switchDustTable = -DUSE_DUST_TABLE
+#switchDustTable=
 
 #default switch
-switch = $(switchDBG)
+switch = $(switchDBG) $(switchDustTable)
 
 #no warning switch (for DLSODES)
 nowarnIfort = -nowarn
@@ -50,6 +53,9 @@ all: 	$(objs)
 debug: nowarn = $(nowarnGNU)
 debug: all
 
+DEPFILE = Makefile.dep
+sinclude $(DEPFILE)
+
 #clean target
 clean:
 	rm -f *.o *.mod *__genmod.f90 *~ $(exec)
@@ -62,8 +68,6 @@ clean:
 %.o:%.f
 	$(fc) $(switch) $(nowarn) -c $^ -o $@
 
-DEPFILE = Makefile.dep
-sinclude $(DEPFILE)
 
 .PHONY: dependencies
 dependencies:

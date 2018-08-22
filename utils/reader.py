@@ -8,7 +8,7 @@ class Run:
       header = f.readline().split()
       self.ngrid, self.ntime, self.nmols, self.nbins = map(int, header)
       self.data = np.loadtxt(f)
-      self.offset_mol = 4
+      self.offset_mol = 5
       self.offset_tau = self.offset_mol + self.nmols
       self.data.shape=(self.ntime, self.ngrid, self.offset_mol+self.nmols+self.nbins)
 
@@ -50,6 +50,12 @@ class Run:
     if itime:
       return Tgas[itime,:]
     return Tgas
+
+  def getTdust(self, itime=None):
+    Tdust = self.data[:,:,4]
+    if itime:
+      return Tdust[itime,:]
+    return Tdust
 
 class FluxFile:
   def __init__(self, filename):
@@ -104,7 +110,7 @@ class Reactions:
 
   def sorted(self):
     i = np.argsort(-self.fluxes)
-    return Reactions(self.reaction_names[i], self.fluxes[i])
+    return Reactions(self.reaction_names[i], self.fluxes[:,:,i])
 
   def iter(self):
     current = 0
@@ -115,6 +121,7 @@ class Reactions:
   @staticmethod
   def reactionContainsMolecule(reaction_name, molecule):
     import re
+    molecule = re.escape(molecule)
     p1 = re.search('^'+molecule+' ', reaction_name)
     p2 = re.search(' '+molecule+'$', reaction_name)
     p3 = re.search(' '+molecule+' ', reaction_name)

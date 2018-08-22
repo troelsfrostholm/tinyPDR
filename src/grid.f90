@@ -5,6 +5,7 @@ module grid
   real*8, allocatable :: n(:,:)         ! Number density of chemical species = n(ispecies, igrid)
   real*8, allocatable :: nHtot(:)       ! Total number of H nuclei
   real*8, allocatable :: Tgas(:)        ! Gas temperature
+  real*8, allocatable :: Tdust(:)       ! Dust temperature
   real*8, allocatable :: Av(:)          ! Visual extinction
   real*8, allocatable :: tau(:,:)       ! Optical depth
   real*8              :: dr             ! Cell size
@@ -20,6 +21,7 @@ contains
     allocate(n(krome_nmols, ngrid))
     allocate(nHtot(ngrid))
     allocate(Tgas(ngrid))
+    allocate(Tdust(ngrid))
     allocate(Av(ngrid))
     allocate(tau(krome_nPhotoBins,ngrid))
 
@@ -28,6 +30,7 @@ contains
     n(:,:) = 0d0
     nHtot(:) = 0d0
     Tgas(:) = 0d0
+    Tdust(:) = 0d0
     Av(:) = 0d0
     tau(:,:) = 0d0
 

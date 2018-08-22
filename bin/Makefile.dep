@@ -29,6 +29,8 @@ solver.o: extinction.o
 solver.o: grid.o
 solver.o: krome_all.o
 solver.o: krome_all.o
+solver.o: krome_all.o
+solver.o: output.o
 solver.o: parameters.o
 solver.o: richings_dissociation_rates.o
 solver.o: rt.o

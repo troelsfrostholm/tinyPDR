@@ -27,14 +27,14 @@ contains
 
   subroutine dump_snapshot(t)
     use parameters, only : ngrid, pc, spy
-    use grid, only : r, n, nHtot, Tgas, Av, dr, tau
+    use grid, only : r, n, nHtot, Tgas, Tdust, Av, dr, tau
     implicit none
     real*8, intent(in) :: t
     integer :: i, unit
 
     open(newunit=unit,file=trim(outfile), access='append', status='old')
     do i=1,ngrid
-      write(unit,'(200E17.8e3)') t/spy,r(i)/pc,Av(i),Tgas(i),n(:,i),tau(:,i)
+      write(unit,'(200E17.8e3)') t/spy,r(i)/pc,Av(i),Tgas(i),Tdust(i),n(:,i),tau(:,i)
     end do
     write(unit,*)
     close(unit)
