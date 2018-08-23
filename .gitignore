@@ -4,6 +4,8 @@
 *.pyc
 *.pdf
 *.interp
+*.dat.fit
+*.dat.org
 fort.[0-9]
 fort.[0-9][0-9]
 fort.[0-9][0-9][0-9]
