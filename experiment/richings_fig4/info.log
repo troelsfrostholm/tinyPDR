@@ -20,31 +20,29 @@
 15	HCO	krome_idx_HCO
 16	H2O	krome_idx_H2O
 17	O2	krome_idx_O2
-18	CO_total	krome_idx_CO_total
-19	H2O_total	krome_idx_H2O_total
-20	H+	krome_idx_Hj
-21	HE+	krome_idx_HEj
-22	H2+	krome_idx_H2j
-23	C+	krome_idx_Cj
-24	O+	krome_idx_Oj
-25	HOC+	krome_idx_HOCj
-26	HCO+	krome_idx_HCOj
-27	H3+	krome_idx_H3j
-28	CH+	krome_idx_CHj
-29	CH2+	krome_idx_CH2j
-30	CO+	krome_idx_COj
-31	CH3+	krome_idx_CH3j
-32	OH+	krome_idx_OHj
-33	H2O+	krome_idx_H2Oj
-34	H3O+	krome_idx_H3Oj
-35	O2+	krome_idx_O2j
-36	HE++	krome_idx_HEjj
-37	CR	krome_idx_CR
-38	g	krome_idx_g
-39	Tgas	krome_idx_Tgas
-40	dummy	krome_idx_dummy
+18	H+	krome_idx_Hj
+19	HE+	krome_idx_HEj
+20	H2+	krome_idx_H2j
+21	C+	krome_idx_Cj
+22	O+	krome_idx_Oj
+23	HOC+	krome_idx_HOCj
+24	HCO+	krome_idx_HCOj
+25	H3+	krome_idx_H3j
+26	CH+	krome_idx_CHj
+27	CH2+	krome_idx_CH2j
+28	CO+	krome_idx_COj
+29	CH3+	krome_idx_CH3j
+30	OH+	krome_idx_OHj
+31	H2O+	krome_idx_H2Oj
+32	H3O+	krome_idx_H3Oj
+33	O2+	krome_idx_O2j
+34	HE++	krome_idx_HEjj
+35	CR	krome_idx_CR
+36	g	krome_idx_g
+37	Tgas	krome_idx_Tgas
+38	dummy	krome_idx_dummy
 
-#Note: the first 36 variables above should be used
+#Note: the first 34 variables above should be used
 # as framework code passive scalars, while the last 4
 # are employed inside KROME.
 
@@ -52,20 +50,19 @@
 #********************************
 # Species in a Python list of strings
 ["E", "H-", "C-", "O-", "H", "HE", "H2", "C", "O", "OH", \
- "CO", "CH", "CH2", "C2", "HCO", "H2O", "O2", "CO_total", "H2O_total", "H+", \
- "HE+", "H2+", "C+", "O+", "HOC+", "HCO+", "H3+", "CH+", "CH2+", "CO+", \
- "CH3+", "OH+", "H2O+", "H3O+", "O2+", "HE++", "CR", "g", "Tgas", "dummy", \
- ]
+ "CO", "CH", "CH2", "C2", "HCO", "H2O", "O2", "H+", "HE+", "H2+", \
+ "C+", "O+", "HOC+", "HCO+", "H3+", "CH+", "CH2+", "CO+", "CH3+", "OH+", \
+ "H2O+", "H3O+", "O2+", "HE++", "CR", "g", "Tgas", "dummy", ]
 
 
 #********************************
 #useful parameters
-krome_nrea           = 281  !number of reactions
-krome_nmols          = 36   !number of chemical species
-krome_nspec          = 40   !number of species including Tgas,CR,...
+krome_nrea           = 276  !number of reactions
+krome_nmols          = 34   !number of chemical species
+krome_nspec          = 38   !number of species including Tgas,CR,...
 krome_ndust          = 0    !number of dust bins (total)
 krome_ndustTypes     = 0    !number of dust types
-krome_nPhotoBins     = 100  !number of radiation bins
+krome_nPhotoBins     = 7    !number of radiation bins
 krome_nPhotoRates    = 17   !number of photochemical reactions
 
 
@@ -278,80 +275,75 @@ krome_nPhotoRates    = 17   !number of photochemical reactions
 205	O + O -> O2
 206	OH + H -> H2O
 207	H + H -> H2
-208	CO -> CO_ice
-209	CO_ice -> CO
-210	H2O -> H2O_ice
-211	H2O_ice -> H2O
-212	CO_ice -> CO
-213	H -> H+ + E
-214	HE -> HE+ + E
-215	HE+ -> HE++ + E
-216	O -> O+ + E
-217	C -> C+ + E
-218	H2 -> H2+ + E
-219	H- -> H + E
-220	CH -> C + H
-221	CH -> CH+ + E
-222	C2 -> C + C
-223	OH -> O + H
-224	OH -> OH+ + E
-225	H2O -> OH + H
-226	H2O -> H2O+ + E
-227	O2 -> O2+ + E
-228	O2 -> O + O
-229	H2 -> H+ + H + E
-230	CO -> C + O
-231	H2 -> H + H
-232	H2+ -> H + H+
-233	H3+ -> H2 + H+
-234	H3+ -> H2+ + H
-235	C- -> C + E
-236	CH+ -> C + H+
-237	CH2 -> CH + H
-238	CH2 -> CH2+ + E
-239	CH2+ -> CH+ + H
-240	CH3+ -> CH2+ + H
-241	CH3+ -> CH+ + H2
-242	O- -> O + E
-243	OH+ -> O + H+
-244	H2O+ -> H2+ + O
-245	H2O+ -> H+ + OH
-246	H2O+ -> O+ + H2
-247	H2O+ -> OH+ + H
-248	H3O+ -> H+ + H2O
-249	H3O+ -> H2+ + OH
-250	H3O+ -> H2O+ + H
-251	H3O+ -> OH+ + H2
-252	H -> H+ + E
-253	HE -> HE+ + E
-254	O -> O+ + E
-255	CO -> C + O
-256	CO -> CO+ + E
-257	C2 -> C + C
-258	H2 -> H + H
-259	H2 -> H+ + H-
-260	H2 -> H2+ + E
-261	C -> C+ + E
-262	CH -> C + H
-263	O2 -> O + O
-264	O2 -> O2+ + E
-265	OH -> O + H
-266	CH2 -> CH2+ + E
-267	H2O -> OH + H
-268	HCO -> CO + H
-269	HCO -> HCO+ + E
-270	H2 -> H + H+ + E
-271	C + C -> C2
-272	C + C -> C2
-273	C + O -> CO
-274	C + O -> CO
-275	C+ + O -> CO+
-276	C+ + O -> CO+
-277	C + O+ -> CO+
-278	C + O+ -> CO+
-279	H + O -> OH
-280	OH + H -> H2O
-281	O + O -> O2
+208	H -> H+ + E
+209	HE -> HE+ + E
+210	HE+ -> HE++ + E
+211	O -> O+ + E
+212	C -> C+ + E
+213	H2 -> H2+ + E
+214	H- -> H + E
+215	CH -> C + H
+216	CH -> CH+ + E
+217	C2 -> C + C
+218	OH -> O + H
+219	OH -> OH+ + E
+220	H2O -> OH + H
+221	H2O -> H2O+ + E
+222	O2 -> O2+ + E
+223	O2 -> O + O
+224	H2 -> H+ + H + E
+225	CO -> C + O
+226	H2 -> H + H
+227	H2+ -> H + H+
+228	H3+ -> H2 + H+
+229	H3+ -> H2+ + H
+230	C- -> C + E
+231	CH+ -> C + H+
+232	CH2 -> CH + H
+233	CH2 -> CH2+ + E
+234	CH2+ -> CH+ + H
+235	CH3+ -> CH2+ + H
+236	CH3+ -> CH+ + H2
+237	O- -> O + E
+238	OH+ -> O + H+
+239	H2O+ -> H2+ + O
+240	H2O+ -> H+ + OH
+241	H2O+ -> O+ + H2
+242	H2O+ -> OH+ + H
+243	H3O+ -> H+ + H2O
+244	H3O+ -> H2+ + OH
+245	H3O+ -> H2O+ + H
+246	H3O+ -> OH+ + H2
+247	H -> H+ + E
+248	HE -> HE+ + E
+249	O -> O+ + E
+250	CO -> C + O
+251	CO -> CO+ + E
+252	C2 -> C + C
+253	H2 -> H + H
+254	H2 -> H+ + H-
+255	H2 -> H2+ + E
+256	C -> C+ + E
+257	CH -> C + H
+258	O2 -> O + O
+259	O2 -> O2+ + E
+260	OH -> O + H
+261	CH2 -> CH2+ + E
+262	H2O -> OH + H
+263	HCO -> CO + H
+264	HCO -> HCO+ + E
+265	H2 -> H + H+ + E
+266	C + C -> C2
+267	C + C -> C2
+268	C + O -> CO
+269	C + O -> CO
+270	C+ + O -> CO+
+271	C+ + O -> CO+
+272	C + O+ -> CO+
+273	C + O+ -> CO+
+274	H + O -> OH
+275	OH + H -> H2O
+276	O + O -> O2
 
 
 #********************************
@@ -383,200 +375,196 @@ krome_nPhotoRates    = 17   !number of photochemical reactions
 25	OH+ + H2 -> H2O+ + H
 26	CH2 + O -> HCO + H
 27	O + E -> O+ + E + E
-28	H2O_ice -> H2O
-29	H2+ + H -> H2 + H+
-30	H2O+ + E -> OH + H
-31	H2O -> H2O_ice
-32	CH3+ -> CH+ + H2
-33	OH + C+ -> H + CO+
-34	H- + H+ -> H2+ + E
-35	HE + E -> HE+ + E + E
-36	CH3+ -> CH2+ + H
-37	C + HE+ -> C+ + HE
-38	OH + H -> O + H2
-39	CH+ + H -> C+ + H2
-40	H2 -> H2+ + E
-41	C + H+ -> C+ + H
-42	H2 + H+ -> H2+ + H
-43	OH + H -> O + H + H
-44	O2 + CH2+ -> HCO+ + OH
-45	CH2+ + E -> CH + H
-46	CH + H+ -> CH+ + H
-47	CH2 + H+ -> H + CH2+
-48	H- + H+ -> H + H
-49	H2+ -> H + H+
-50	H- -> H + E
-51	O2 + C+ -> CO+ + O
-52	OH + H+ -> OH+ + H
-53	OH -> OH+ + E
-54	H3+ -> H2 + H+
-55	HOC+ + H2 -> HCO+ + H2
-56	H2O+ -> H+ + OH
-57	H + H -> H2
-58	HCO -> CO + H
-59	H2 + HE+ -> HE + H + H+
-60	H3+ -> H2+ + H
-61	H + H + H -> H2 + H
-62	HCO+ + C -> CO + CH+
-63	H+ + E -> H
-64	CH2 + HE+ -> HE + H2 + C+
-65	H- + OH -> H2O + E
-66	CH + O -> HCO+ + E
-67	CH2+ + E -> C + H + H
-68	O2 + H2 -> OH + OH
-69	H3O+ -> H+ + H2O
-70	H2 -> H + H
-71	CH3+ + O -> HOC+ + H2
-72	C+ + O -> CO+
-73	C + E -> C-
-74	C- + H+ -> C + H
-75	C -> C+ + E
-76	CH3+ + E -> CH + H2
-77	H -> H+ + E
-78	O2 + C -> CO + O
-79	CH + O -> CO + H
-80	O2+ + E -> O + O
-81	H3+ + E -> H2 + H
-82	HCO+ + H2O -> CO + H3O+
-83	O- -> O + E
-84	H2 + H -> H + H + H
-85	C + H3+ -> CH+ + H2
-86	CH2+ + H -> CH+ + H2
-87	C + H3+ -> CH2+ + H
-88	C2 + O -> CO + C
-89	CO+ + E -> C + O
-90	H3O+ -> H2O+ + H
-91	H2+ + H2 -> H3+ + H
-92	CO + HE+ -> C + HE + O+
-93	H3O+ + E -> O + H + H2
-94	O2 + HE+ -> O2+ + HE
-95	O + HE+ -> O+ + HE
-96	O- + H+ -> O + H
-97	H2O+ -> OH+ + H
-98	HE+ + H -> HE + H+
-99	CH2 + O -> CO + H + H
-100	H + H+ -> H2+
-101	HE+ + E -> HE
-102	C + OH -> H + CO
-103	C+ + E -> C
-104	CH + H -> C + H2
-105	C- + H2 -> CH2 + E
-106	OH + HE+ -> O+ + HE + H
-107	CH2 + O -> CH + OH
-108	H + E -> H+ + E + E
-109	H2+ + E -> H + H
-110	O2 + HE+ -> O+ + HE + O
-111	H + E -> H-
-112	C + H -> CH
-113	CH2+ + H2 -> CH3+ + H
-114	CO_ice -> CO
-115	C + H2+ -> CH+ + H
-116	CH2 + HE+ -> HE + H + CH+
-117	H2O + H+ -> H + H2O+
-118	CO + H3+ -> H2 + HOC+
-119	H- + E -> H + E + E
-120	CH2 + H -> CH + H2
-121	C + O2+ -> O2 + C+
-122	CH+ + O -> CO+ + H
-123	H + O -> OH
-124	CH -> C + H
-125	H3O+ + E -> OH + H2
-126	H3+ + E -> H + H + H
-127	CH2 + H+ -> H2 + CH+
-128	O2 -> O + O
-129	CO -> CO_ice
-130	C2 -> C + C
-131	H2O+ + E -> O + H + H
-132	CH3+ + O -> HCO+ + H2
-133	C + H2 -> CH + H
-134	CH2+ + O -> HCO+ + H
-135	O2 + H+ -> O2+ + H
-136	H- + H -> H + H + E
-137	CH+ + H2 -> CH2+ + H
-138	C + O2+ -> O + CO+
-139	O- + H2 -> H2O + E
-140	O2 + C+ -> CO + O+
-141	O + H3+ -> H + H2O+
-142	H2 + H2 -> H2 + H + H
-143	C + O+ -> CO+
-144	H3+ + H -> H2+ + H2
-145	H3O+ + C -> HCO+ + H2
-146	O+ + H2 -> H + OH+
-147	H3O+ -> OH+ + H2
-148	C- + H -> CH + E
-149	OH + H -> H2O
-150	C+ + H -> CH+
-151	CO -> C + O
-152	H2O+ -> O+ + H2
-153	O + E -> O-
-154	OH+ + E -> O + H
-155	O+ + H -> O + H+
-156	O- + C -> CO + E
-157	H2O + C+ -> HOC+ + H
-158	H3O+ + E -> OH + H + H
-159	CH+ + E -> C + H
-160	H + H + HE -> H2 + HE
-161	H2 -> H + H+ + E
-162	O2 -> O2+ + E
-163	OH -> O + H
-164	O2 + H -> OH + O
-165	O + O -> O2
-166	HCO -> HCO+ + E
-167	HOC+ + CO -> HCO+ + CO
-168	H- + C -> CH + E
-169	O + H3+ -> H2 + OH+
-170	H2 + H+ -> H + H + H+
-171	CH3+ + H -> CH2+ + H2
-172	CH3+ + E -> CH + H + H
-173	O + H2 -> OH + H
-174	H2O + HE+ -> HE + OH+ + H
-175	CO -> CO+ + E
-176	HE + H+ -> HE+ + H
-177	C + E -> C+ + E + E
-178	OH+ -> O + H+
-179	H2O + HE+ -> HE + OH + H+
-180	O + H+ -> O+ + H
-181	OH + H3+ -> H2 + H2O+
-182	CH -> CH+ + E
-183	HE+ + E -> HE++ + E + E
-184	C2 + HE+ -> C+ + C + HE
-185	C + H2 -> CH2
-186	H2O + C+ -> HCO+ + H
-187	O + OH -> H + O2
-188	C + O -> CO
-189	HCO+ + E -> CO + H
-190	CH + C -> C2 + H
-191	H2 -> H+ + H + E
-192	CH2 -> CH2+ + E
-193	C+ + H -> C + H+
-194	O- + H -> OH + E
-195	HE -> HE+ + E
-196	H2O+ + E -> O + H2
-197	CH2+ + E -> C + H2
-198	C+ + H2 -> CH+ + H
-199	CH2 + O -> CO + H2
-200	C- + O -> CO + E
-201	HE++ + E -> HE+
-202	H2O + H3+ -> H2 + H3O+
-203	CO + H -> C + OH
-204	CO + H3+ -> H2 + HCO+
-205	HE+ + H- -> H + HE
-206	HOC+ + E -> CO + H
-207	HE+ -> HE++ + E
-208	H2 + E -> H + H + E
-209	CH3+ + E -> CH2 + H
-210	CH + H2 -> CH2 + H
-211	H3O+ -> H2+ + OH
-212	H2O -> H2O+ + E
-213	CH2+ -> CH+ + H
-214	HCO+ + E -> OH + C
-215	H2 -> H+ + H-
-216	H- + H -> H2 + E
-217	C- -> C + E
-218	H2O+ + H2 -> H3O+ + H
-219	O + H -> OH
-220	CH2 -> CH + H
-221	C+ + H2 -> CH2+
+28	H2+ + H -> H2 + H+
+29	H2O+ + E -> OH + H
+30	CH3+ -> CH+ + H2
+31	OH + C+ -> H + CO+
+32	H- + H+ -> H2+ + E
+33	HE + E -> HE+ + E + E
+34	CH3+ -> CH2+ + H
+35	C + HE+ -> C+ + HE
+36	OH + H -> O + H2
+37	CH+ + H -> C+ + H2
+38	H2 -> H2+ + E
+39	C + H+ -> C+ + H
+40	H2 + H+ -> H2+ + H
+41	OH + H -> O + H + H
+42	O2 + CH2+ -> HCO+ + OH
+43	CH2+ + E -> CH + H
+44	CH + H+ -> CH+ + H
+45	CH2 + H+ -> H + CH2+
+46	H- + H+ -> H + H
+47	H2+ -> H + H+
+48	H- -> H + E
+49	O2 + C+ -> CO+ + O
+50	OH + H+ -> OH+ + H
+51	OH -> OH+ + E
+52	H3+ -> H2 + H+
+53	HOC+ + H2 -> HCO+ + H2
+54	H2O+ -> H+ + OH
+55	H + H -> H2
+56	HCO -> CO + H
+57	H2 + HE+ -> HE + H + H+
+58	H3+ -> H2+ + H
+59	H + H + H -> H2 + H
+60	HCO+ + C -> CO + CH+
+61	H+ + E -> H
+62	CH2 + HE+ -> HE + H2 + C+
+63	H- + OH -> H2O + E
+64	CH + O -> HCO+ + E
+65	CH2+ + E -> C + H + H
+66	O2 + H2 -> OH + OH
+67	H3O+ -> H+ + H2O
+68	CH3+ + O -> HOC+ + H2
+69	C+ + O -> CO+
+70	C + E -> C-
+71	C- + H+ -> C + H
+72	C -> C+ + E
+73	CH3+ + E -> CH + H2
+74	H -> H+ + E
+75	O2 + C -> CO + O
+76	CH + O -> CO + H
+77	O2+ + E -> O + O
+78	H3+ + E -> H2 + H
+79	HCO+ + H2O -> CO + H3O+
+80	O- -> O + E
+81	H2 + H -> H + H + H
+82	C + H3+ -> CH+ + H2
+83	CH2+ + H -> CH+ + H2
+84	C + H3+ -> CH2+ + H
+85	C2 + O -> CO + C
+86	CO+ + E -> C + O
+87	H3O+ -> H2O+ + H
+88	H2+ + H2 -> H3+ + H
+89	CO + HE+ -> C + HE + O+
+90	H3O+ + E -> O + H + H2
+91	O2 + HE+ -> O2+ + HE
+92	O + HE+ -> O+ + HE
+93	O- + H+ -> O + H
+94	H2O+ -> OH+ + H
+95	HE+ + H -> HE + H+
+96	CH2 + O -> CO + H + H
+97	H + H+ -> H2+
+98	HE+ + E -> HE
+99	C + OH -> H + CO
+100	C+ + E -> C
+101	CH + H -> C + H2
+102	C- + H2 -> CH2 + E
+103	OH + HE+ -> O+ + HE + H
+104	CH2 + O -> CH + OH
+105	H + E -> H+ + E + E
+106	H2+ + E -> H + H
+107	O2 + HE+ -> O+ + HE + O
+108	H + E -> H-
+109	C + H -> CH
+110	CH2+ + H2 -> CH3+ + H
+111	C + H2+ -> CH+ + H
+112	CH2 + HE+ -> HE + H + CH+
+113	H2O + H+ -> H + H2O+
+114	CO + H3+ -> H2 + HOC+
+115	H- + E -> H + E + E
+116	CH2 + H -> CH + H2
+117	C + O2+ -> O2 + C+
+118	CH+ + O -> CO+ + H
+119	H + O -> OH
+120	CH -> C + H
+121	H3O+ + E -> OH + H2
+122	H3+ + E -> H + H + H
+123	CH2 + H+ -> H2 + CH+
+124	O2 -> O + O
+125	H2 -> H + H
+126	C2 -> C + C
+127	H2O+ + E -> O + H + H
+128	CH3+ + O -> HCO+ + H2
+129	C + H2 -> CH + H
+130	CH2+ + O -> HCO+ + H
+131	O2 + H+ -> O2+ + H
+132	H- + H -> H + H + E
+133	CH+ + H2 -> CH2+ + H
+134	C + O2+ -> O + CO+
+135	O- + H2 -> H2O + E
+136	O2 + C+ -> CO + O+
+137	O + H3+ -> H + H2O+
+138	H2 + H2 -> H2 + H + H
+139	C + O+ -> CO+
+140	H3+ + H -> H2+ + H2
+141	H3O+ + C -> HCO+ + H2
+142	O+ + H2 -> H + OH+
+143	H3O+ -> OH+ + H2
+144	C- + H -> CH + E
+145	OH + H -> H2O
+146	C+ + H -> CH+
+147	CO -> C + O
+148	H2O+ -> O+ + H2
+149	O + E -> O-
+150	OH+ + E -> O + H
+151	O+ + H -> O + H+
+152	O- + C -> CO + E
+153	H2O + C+ -> HOC+ + H
+154	H3O+ + E -> OH + H + H
+155	CH+ + E -> C + H
+156	H + H + HE -> H2 + HE
+157	H2 -> H + H+ + E
+158	O2 -> O2+ + E
+159	OH -> O + H
+160	O2 + H -> OH + O
+161	O + O -> O2
+162	HCO -> HCO+ + E
+163	HOC+ + CO -> HCO+ + CO
+164	H- + C -> CH + E
+165	O + H3+ -> H2 + OH+
+166	H2 + H+ -> H + H + H+
+167	CH3+ + H -> CH2+ + H2
+168	CH3+ + E -> CH + H + H
+169	O + H2 -> OH + H
+170	H2O + HE+ -> HE + OH+ + H
+171	CO -> CO+ + E
+172	HE + H+ -> HE+ + H
+173	C + E -> C+ + E + E
+174	OH+ -> O + H+
+175	H2O + HE+ -> HE + OH + H+
+176	O + H+ -> O+ + H
+177	OH + H3+ -> H2 + H2O+
+178	CH -> CH+ + E
+179	HE+ + E -> HE++ + E + E
+180	C2 + HE+ -> C+ + C + HE
+181	C + H2 -> CH2
+182	H2O + C+ -> HCO+ + H
+183	O + OH -> H + O2
+184	C + O -> CO
+185	HCO+ + E -> CO + H
+186	CH + C -> C2 + H
+187	H2 -> H+ + H + E
+188	CH2 -> CH2+ + E
+189	C+ + H -> C + H+
+190	O- + H -> OH + E
+191	HE -> HE+ + E
+192	H2O+ + E -> O + H2
+193	CH2+ + E -> C + H2
+194	C+ + H2 -> CH+ + H
+195	CH2 + O -> CO + H2
+196	C- + O -> CO + E
+197	HE++ + E -> HE+
+198	H2O + H3+ -> H2 + H3O+
+199	CO + H -> C + OH
+200	CO + H3+ -> H2 + HCO+
+201	HE+ + H- -> H + HE
+202	HOC+ + E -> CO + H
+203	HE+ -> HE++ + E
+204	H2 + E -> H + H + E
+205	CH3+ + E -> CH2 + H
+206	CH + H2 -> CH2 + H
+207	H3O+ -> H2+ + OH
+208	H2O -> H2O+ + E
+209	CH2+ -> CH+ + H
+210	HCO+ + E -> OH + C
+211	H2 -> H+ + H-
+212	H- + H -> H2 + E
+213	C- -> C + E
+214	H2O+ + H2 -> H3O+ + H
+215	O + H -> OH
+216	CH2 -> CH + H
+217	C+ + H2 -> CH2+
 
 
 #********************************
@@ -789,77 +777,72 @@ krome_nPhotoRates    = 17   !number of photochemical reactions
  205 & O & + & O & & & $\to$ & O$_2$ & & & + & \\
  206 & OH & + & H & & & $\to$ & H$_2$O & & & + & \\
  207 & H & + & H & & & $\to$ & H$_2$ & & & + & \\
- 208 &  & & & + &  & $\to$ &  & & & + & \\
- 209 &  & & & + &  & $\to$ &  & & & + & \\
- 210 &  & & & + &  & $\to$ &  & & & + & \\
- 211 &  & & & + &  & $\to$ &  & & & + & \\
- 212 &  & & & + &  & $\to$ &  & & & + & \\
- 213 & H & & & + &  & $\to$ & H$^+$ & + & e$^-$ & + & \\
- 214 & HE & & & + &  & $\to$ & HE$^+$ & + & e$^-$ & + & \\
- 215 & HE$^+$ & & & + &  & $\to$ & HE$^+$$^+$ & + & e$^-$ & + & \\
- 216 & O & & & + &  & $\to$ & O$^+$ & + & e$^-$ & + & \\
- 217 & C & & & + &  & $\to$ & C$^+$ & + & e$^-$ & + & \\
- 218 & H$_2$ & & & + &  & $\to$ & H$_2$$^+$ & + & e$^-$ & + & \\
- 219 & H$^-$ & & & + &  & $\to$ & H & + & e$^-$ & + & \\
- 220 & CH & & & + &  & $\to$ & C & + & H & + & \\
- 221 & CH & & & + &  & $\to$ & CH$^+$ & + & e$^-$ & + & \\
- 222 & C$_2$ & & & + &  & $\to$ & C & + & C & + & \\
- 223 & OH & & & + &  & $\to$ & O & + & H & + & \\
- 224 & OH & & & + &  & $\to$ & OH$^+$ & + & e$^-$ & + & \\
- 225 & H$_2$O & & & + &  & $\to$ & OH & + & H & + & \\
- 226 & H$_2$O & & & + &  & $\to$ & H$_2$O$^+$ & + & e$^-$ & + & \\
- 227 & O$_2$ & & & + &  & $\to$ & O$_2$$^+$ & + & e$^-$ & + & \\
- 228 & O$_2$ & & & + &  & $\to$ & O & + & O & + & \\
- 229 & H$_2$ & & & + &  & $\to$ & H$^+$ & + & H & + & e$^-$\\
- 230 & CO & & & + &  & $\to$ & C & + & O & + & \\
- 231 & H$_2$ & & & + &  & $\to$ & H & + & H & + & \\
- 232 & H$_2$$^+$ & & & + &  & $\to$ & H & + & H$^+$ & + & \\
- 233 & H$_3$$^+$ & & & + &  & $\to$ & H$_2$ & + & H$^+$ & + & \\
- 234 & H$_3$$^+$ & & & + &  & $\to$ & H$_2$$^+$ & + & H & + & \\
- 235 & C$^-$ & & & + &  & $\to$ & C & + & e$^-$ & + & \\
- 236 & CH$^+$ & & & + &  & $\to$ & C & + & H$^+$ & + & \\
- 237 & CH$_2$ & & & + &  & $\to$ & CH & + & H & + & \\
- 238 & CH$_2$ & & & + &  & $\to$ & CH$_2$$^+$ & + & e$^-$ & + & \\
- 239 & CH$_2$$^+$ & & & + &  & $\to$ & CH$^+$ & + & H & + & \\
- 240 & CH$_3$$^+$ & & & + &  & $\to$ & CH$_2$$^+$ & + & H & + & \\
- 241 & CH$_3$$^+$ & & & + &  & $\to$ & CH$^+$ & + & H$_2$ & + & \\
- 242 & O$^-$ & & & + &  & $\to$ & O & + & e$^-$ & + & \\
- 243 & OH$^+$ & & & + &  & $\to$ & O & + & H$^+$ & + & \\
- 244 & H$_2$O$^+$ & & & + &  & $\to$ & H$_2$$^+$ & + & O & + & \\
- 245 & H$_2$O$^+$ & & & + &  & $\to$ & H$^+$ & + & OH & + & \\
- 246 & H$_2$O$^+$ & & & + &  & $\to$ & O$^+$ & + & H$_2$ & + & \\
- 247 & H$_2$O$^+$ & & & + &  & $\to$ & OH$^+$ & + & H & + & \\
- 248 & H$_3$O$^+$ & & & + &  & $\to$ & H$^+$ & + & H$_2$O & + & \\
- 249 & H$_3$O$^+$ & & & + &  & $\to$ & H$_2$$^+$ & + & OH & + & \\
- 250 & H$_3$O$^+$ & & & + &  & $\to$ & H$_2$O$^+$ & + & H & + & \\
- 251 & H$_3$O$^+$ & & & + &  & $\to$ & OH$^+$ & + & H$_2$ & + & \\
- 252 & H & & & + &  & $\to$ & H$^+$ & + & e$^-$ & + & \\
- 253 & HE & & & + &  & $\to$ & HE$^+$ & + & e$^-$ & + & \\
- 254 & O & & & + &  & $\to$ & O$^+$ & + & e$^-$ & + & \\
- 255 & CO & & & + &  & $\to$ & C & + & O & + & \\
- 256 & CO & & & + &  & $\to$ & CO$^+$ & + & e$^-$ & + & \\
- 257 & C$_2$ & & & + &  & $\to$ & C & + & C & + & \\
- 258 & H$_2$ & & & + &  & $\to$ & H & + & H & + & \\
- 259 & H$_2$ & & & + &  & $\to$ & H$^+$ & + & H$^-$ & + & \\
- 260 & H$_2$ & & & + &  & $\to$ & H$_2$$^+$ & + & e$^-$ & + & \\
- 261 & C & & & + &  & $\to$ & C$^+$ & + & e$^-$ & + & \\
- 262 & CH & & & + &  & $\to$ & C & + & H & + & \\
- 263 & O$_2$ & & & + &  & $\to$ & O & + & O & + & \\
- 264 & O$_2$ & & & + &  & $\to$ & O$_2$$^+$ & + & e$^-$ & + & \\
- 265 & OH & & & + &  & $\to$ & O & + & H & + & \\
- 266 & CH$_2$ & & & + &  & $\to$ & CH$_2$$^+$ & + & e$^-$ & + & \\
- 267 & H$_2$O & & & + &  & $\to$ & OH & + & H & + & \\
- 268 & HCO & & & + &  & $\to$ & CO & + & H & + & \\
- 269 & HCO & & & + &  & $\to$ & HCO$^+$ & + & e$^-$ & + & \\
- 270 & H$_2$ & & & + &  & $\to$ & H & + & H$^+$ & + & e$^-$\\
- 271 & C & + & C & & & $\to$ & C$_2$ & & & + & \\
- 272 & C & + & C & & & $\to$ & C$_2$ & & & + & \\
- 273 & C & + & O & & & $\to$ & CO & & & + & \\
- 274 & C & + & O & & & $\to$ & CO & & & + & \\
- 275 & C$^+$ & + & O & & & $\to$ & CO$^+$ & & & + & \\
- 276 & C$^+$ & + & O & & & $\to$ & CO$^+$ & & & + & \\
- 277 & C & + & O$^+$ & & & $\to$ & CO$^+$ & & & + & \\
- 278 & C & + & O$^+$ & & & $\to$ & CO$^+$ & & & + & \\
- 279 & H & + & O & & & $\to$ & OH & & & + & \\
- 280 & OH & + & H & & & $\to$ & H$_2$O & & & + & \\
- 281 & O & + & O & & & $\to$ & O$_2$ & & & + & \\
+ 208 & H & & & + &  & $\to$ & H$^+$ & + & e$^-$ & + & \\
+ 209 & HE & & & + &  & $\to$ & HE$^+$ & + & e$^-$ & + & \\
+ 210 & HE$^+$ & & & + &  & $\to$ & HE$^+$$^+$ & + & e$^-$ & + & \\
+ 211 & O & & & + &  & $\to$ & O$^+$ & + & e$^-$ & + & \\
+ 212 & C & & & + &  & $\to$ & C$^+$ & + & e$^-$ & + & \\
+ 213 & H$_2$ & & & + &  & $\to$ & H$_2$$^+$ & + & e$^-$ & + & \\
+ 214 & H$^-$ & & & + &  & $\to$ & H & + & e$^-$ & + & \\
+ 215 & CH & & & + &  & $\to$ & C & + & H & + & \\
+ 216 & CH & & & + &  & $\to$ & CH$^+$ & + & e$^-$ & + & \\
+ 217 & C$_2$ & & & + &  & $\to$ & C & + & C & + & \\
+ 218 & OH & & & + &  & $\to$ & O & + & H & + & \\
+ 219 & OH & & & + &  & $\to$ & OH$^+$ & + & e$^-$ & + & \\
+ 220 & H$_2$O & & & + &  & $\to$ & OH & + & H & + & \\
+ 221 & H$_2$O & & & + &  & $\to$ & H$_2$O$^+$ & + & e$^-$ & + & \\
+ 222 & O$_2$ & & & + &  & $\to$ & O$_2$$^+$ & + & e$^-$ & + & \\
+ 223 & O$_2$ & & & + &  & $\to$ & O & + & O & + & \\
+ 224 & H$_2$ & & & + &  & $\to$ & H$^+$ & + & H & + & e$^-$\\
+ 225 & CO & & & + &  & $\to$ & C & + & O & + & \\
+ 226 & H$_2$ & & & + &  & $\to$ & H & + & H & + & \\
+ 227 & H$_2$$^+$ & & & + &  & $\to$ & H & + & H$^+$ & + & \\
+ 228 & H$_3$$^+$ & & & + &  & $\to$ & H$_2$ & + & H$^+$ & + & \\
+ 229 & H$_3$$^+$ & & & + &  & $\to$ & H$_2$$^+$ & + & H & + & \\
+ 230 & C$^-$ & & & + &  & $\to$ & C & + & e$^-$ & + & \\
+ 231 & CH$^+$ & & & + &  & $\to$ & C & + & H$^+$ & + & \\
+ 232 & CH$_2$ & & & + &  & $\to$ & CH & + & H & + & \\
+ 233 & CH$_2$ & & & + &  & $\to$ & CH$_2$$^+$ & + & e$^-$ & + & \\
+ 234 & CH$_2$$^+$ & & & + &  & $\to$ & CH$^+$ & + & H & + & \\
+ 235 & CH$_3$$^+$ & & & + &  & $\to$ & CH$_2$$^+$ & + & H & + & \\
+ 236 & CH$_3$$^+$ & & & + &  & $\to$ & CH$^+$ & + & H$_2$ & + & \\
+ 237 & O$^-$ & & & + &  & $\to$ & O & + & e$^-$ & + & \\
+ 238 & OH$^+$ & & & + &  & $\to$ & O & + & H$^+$ & + & \\
+ 239 & H$_2$O$^+$ & & & + &  & $\to$ & H$_2$$^+$ & + & O & + & \\
+ 240 & H$_2$O$^+$ & & & + &  & $\to$ & H$^+$ & + & OH & + & \\
+ 241 & H$_2$O$^+$ & & & + &  & $\to$ & O$^+$ & + & H$_2$ & + & \\
+ 242 & H$_2$O$^+$ & & & + &  & $\to$ & OH$^+$ & + & H & + & \\
+ 243 & H$_3$O$^+$ & & & + &  & $\to$ & H$^+$ & + & H$_2$O & + & \\
+ 244 & H$_3$O$^+$ & & & + &  & $\to$ & H$_2$$^+$ & + & OH & + & \\
+ 245 & H$_3$O$^+$ & & & + &  & $\to$ & H$_2$O$^+$ & + & H & + & \\
+ 246 & H$_3$O$^+$ & & & + &  & $\to$ & OH$^+$ & + & H$_2$ & + & \\
+ 247 & H & & & + &  & $\to$ & H$^+$ & + & e$^-$ & + & \\
+ 248 & HE & & & + &  & $\to$ & HE$^+$ & + & e$^-$ & + & \\
+ 249 & O & & & + &  & $\to$ & O$^+$ & + & e$^-$ & + & \\
+ 250 & CO & & & + &  & $\to$ & C & + & O & + & \\
+ 251 & CO & & & + &  & $\to$ & CO$^+$ & + & e$^-$ & + & \\
+ 252 & C$_2$ & & & + &  & $\to$ & C & + & C & + & \\
+ 253 & H$_2$ & & & + &  & $\to$ & H & + & H & + & \\
+ 254 & H$_2$ & & & + &  & $\to$ & H$^+$ & + & H$^-$ & + & \\
+ 255 & H$_2$ & & & + &  & $\to$ & H$_2$$^+$ & + & e$^-$ & + & \\
+ 256 & C & & & + &  & $\to$ & C$^+$ & + & e$^-$ & + & \\
+ 257 & CH & & & + &  & $\to$ & C & + & H & + & \\
+ 258 & O$_2$ & & & + &  & $\to$ & O & + & O & + & \\
+ 259 & O$_2$ & & & + &  & $\to$ & O$_2$$^+$ & + & e$^-$ & + & \\
+ 260 & OH & & & + &  & $\to$ & O & + & H & + & \\
+ 261 & CH$_2$ & & & + &  & $\to$ & CH$_2$$^+$ & + & e$^-$ & + & \\
+ 262 & H$_2$O & & & + &  & $\to$ & OH & + & H & + & \\
+ 263 & HCO & & & + &  & $\to$ & CO & + & H & + & \\
+ 264 & HCO & & & + &  & $\to$ & HCO$^+$ & + & e$^-$ & + & \\
+ 265 & H$_2$ & & & + &  & $\to$ & H & + & H$^+$ & + & e$^-$\\
+ 266 & C & + & C & & & $\to$ & C$_2$ & & & + & \\
+ 267 & C & + & C & & & $\to$ & C$_2$ & & & + & \\
+ 268 & C & + & O & & & $\to$ & CO & & & + & \\
+ 269 & C & + & O & & & $\to$ & CO & & & + & \\
+ 270 & C$^+$ & + & O & & & $\to$ & CO$^+$ & & & + & \\
+ 271 & C$^+$ & + & O & & & $\to$ & CO$^+$ & & & + & \\
+ 272 & C & + & O$^+$ & & & $\to$ & CO$^+$ & & & + & \\
+ 273 & C & + & O$^+$ & & & $\to$ & CO$^+$ & & & + & \\
+ 274 & H & + & O & & & $\to$ & OH & & & + & \\
+ 275 & OH & + & H & & & $\to$ & H$_2$O & & & + & \\
+ 276 & O & + & O & & & $\to$ & O$_2$ & & & + & \\

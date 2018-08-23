@@ -205,11 +205,6 @@ O + H -> OH
 O + O -> O2
 OH + H -> H2O
 H + H -> H2
-CO -> CO_ice
-CO_ice -> CO
-H2O -> H2O_ice
-H2O_ice -> H2O
-CO_ice -> CO
 H -> H+ + E
 HE -> HE+ + E
 HE+ -> HE++ + E

@@ -143,31 +143,48 @@ contains
 
   end subroutine
 
-    ! Density and temperature from file, uniform composition 
+  ! Density and temperature from file, uniform composition
   subroutine file
     use krome_user
     use util, only : assert
     use parameters, only : ngrid, inputfile, fav, rmin, rmax
-    use grid, only : centered_uniform, n, nHtotGrid => nHtot, TgasGrid => Tgas, Av, r, dr
+    use grid, only : centered_uniform, n, nHtot, Tgas, Av, r, dr
     implicit none
-    real*8 :: rx(ngrid), nHtot(ngrid), Tgas(ngrid), x(krome_nmols)
-    integer :: unit
+    real*8 :: x(krome_nmols)
+    integer :: unit, i
+    namelist/initcond/x
 
     unit = 30
 
+    ! Read namelist file
+    print*, "Reading namelist 'initcond' from : ", trim(inputfile)
+    open(unit, file=trim(inputfile))
+    read(unit,nml=initcond)
+    close(unit)
+    write(*,initcond)
+
     ! Load grid, total number density and temperature from file
     open(unit, file="initcond.dat", action="read")
-    read(unit,*) rx
+    read(unit,*) r
     read(unit,*) nHtot
     read(unit,*) Tgas
     close(unit)
-    rmax = maxval(rx)
-    !dr = rmax/ngrid
-    print*, rx
-    print*, nHtot
-    print*, Tgas
-    print*, rmax
-    stop
+
+    ! Grid bounds
+    rmax = maxval(r)
+    rmin = minval(r)
+
+    ! Compute number density of species
+    do i=1,ngrid
+      n(:,i) = x(:)*nHtot(i)
+    end do
+
+    ! Compute visual extinction
+    Av(1) = nHtot(1)*rmin / fav
+    do i=2,ngrid
+      Av(i) = Av(i-1) + 0.5_8*(nHtot(i-1)+nHtot(i))*(r(i)-r(i-1)) / fav
+    end do
+
   end subroutine
 
 end module

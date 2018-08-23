@@ -10,6 +10,7 @@
 fort.[0-9]
 fort.[0-9][0-9]
 fort.[0-9][0-9][0-9]
+opacityDust.org
 bin/tinyPDR
 shielding/test_richings
 fluxes.dat

@@ -11,11 +11,10 @@ pc = 3.08567758e18  # parsec in cm
 n = loadtxt(datadir+"/n.csv")
 T = loadtxt(datadir+"/T.csv")
 
-# Find distance to first point with known density, 
-# assuming constant density below this point
+# Find distance to first point with known density
 n0 = n[0,1]   # First density point
 N0 = 3e20     # Column depth to this point, read off from R14II fig 4
-x0 = N0/n0    # Estimated distance
+x0 = 2*N0/n0  # Estimated distance - density 
 
 # Find column depth and distance axis for the number density series
 N = n[:,0]                          # Column depth
@@ -26,9 +25,13 @@ dx[0] = 0
 dx[1:] = dN/(0.5*(n[0:-1]+n[1:]))   # Distance element is column depth element over average number density
 x = cumsum(dx) + x0                 # Distance axis is the cumulative sum + distance to the first point
 
+nn = empty(len(x)+1)
+nn[0] = 0
+nn[1:] = n[:]
+
 # Find distance for the temperature series by interpolating the axis above
 xx = empty(len(x)+1)                # Create new distance axis that includes zero
-xx[0] = 0e0
+xx[0] = 1
 xx[1:] = x
 NN = empty(len(N)+1)                # same for column depth axis
 NN[0] = 0e0
@@ -37,9 +40,9 @@ N_T = T[:,0]                        # column depth for temperature series
 x_T = interp(N_T, NN, xx)           # interpolate to find distance axis for temperature series
 
 # Interpolate to logarithmic grid
-Ngrid = 256
+Ngrid = 512
 x_u = logspace(log10(2e2),log10(6e3),num=Ngrid)*pc
-n_u = interp(x_u, x, n, left=n0, right=n[-1])
+n_u = interp(x_u, xx, nn, right=n[-1])
 T_u = interp(x_u, x_T, T[:,1], left=T[0,1], right=T[-1,1])
 
 # Optionally plot the series
