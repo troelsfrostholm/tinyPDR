@@ -11,6 +11,8 @@ contains
         call MC_in_ISM
       case ("uniform")
         call uniform
+      case ("file")
+        call file
       case default
         print*, "Unknown initial condition"
         stop
@@ -139,6 +141,33 @@ contains
     ! Compute visual extinction
     Av(:) = nHtot*r(:) / fav
 
+  end subroutine
+
+    ! Density and temperature from file, uniform composition 
+  subroutine file
+    use krome_user
+    use util, only : assert
+    use parameters, only : ngrid, inputfile, fav, rmin, rmax
+    use grid, only : centered_uniform, n, nHtotGrid => nHtot, TgasGrid => Tgas, Av, r, dr
+    implicit none
+    real*8 :: rx(ngrid), nHtot(ngrid), Tgas(ngrid), x(krome_nmols)
+    integer :: unit
+
+    unit = 30
+
+    ! Load grid, total number density and temperature from file
+    open(unit, file="initcond.dat", action="read")
+    read(unit,*) rx
+    read(unit,*) nHtot
+    read(unit,*) Tgas
+    close(unit)
+    rmax = maxval(rx)
+    !dr = rmax/ngrid
+    print*, rx
+    print*, nHtot
+    print*, Tgas
+    print*, rmax
+    stop
   end subroutine
 
 end module
