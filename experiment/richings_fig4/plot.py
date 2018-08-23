@@ -55,11 +55,11 @@ for s, n in zip(species, normalized_to):
 # Plot series from R14II fig. 4 for comparison
 R14II_dir = "R14IIfig4/"
 R_HI = np.loadtxt(R14II_dir+"HI.csv")
-axarr[1].semilogy(R_HI[:,0]/fav, R_HI[:,1], color="brown", linestyle="--", label="Richings")
+axarr[1].semilogy(R_HI[:,0]/fav, R_HI[:,1], color="brown", linestyle="--")
 R_CII = np.loadtxt(R14II_dir+"CII.csv")
 axarr[1].semilogy(R_CII[:,0]/fav, R_CII[:,1], color="blue", linestyle="--")
 R_E = np.loadtxt(R14II_dir+"E.csv")
-axarr[1].semilogy(R_E[:,0]/fav, R_E[:,1], color="black", label="Richings", linestyle="--")
+axarr[1].semilogy(R_E[:,0]/fav, R_E[:,1], color="black", linestyle="--")
 
 plt.xlim(min(axis),max(axis))
 axarr[1].set_ylim(3e-5,2)
@@ -109,6 +109,7 @@ ax_n = axarr[2].twinx()
 ax_n.loglog(n[:,0]/fav, n[:,1], label=r"$n_{H_{tot}}$", color='lightseagreen')
 ax_n.loglog(0,0,color='black',label="T")   # Hack: Add empty series to get a label for the temperature
 ax_n.set_ylabel(r"$cm^{-3}$")
+ax_n.set_ylim(1.1e-1,3e1)
 ax_n.legend(loc=3)
 
 f.subplots_adjust(hspace=0)
