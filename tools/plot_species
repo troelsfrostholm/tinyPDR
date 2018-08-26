@@ -1,0 +1,37 @@
+#!/usr/local/bin/python
+import sys
+sys.path.append('../../utils')
+import numpy as np
+from matplotlib import pyplot as plt
+from cycler import cycler
+import richings as r
+import KromeInfo as I
+import reader
+
+run = reader.Run("output.dat")
+itime = run.ntime-1
+
+if len(sys.argv) > 1:
+  itime = int(sys.argv[1])
+
+species = ["H"]
+
+print "Snapshot :", itime
+print "Species :", species
+
+if len(sys.argv) > 2:
+  species = sys.argv[2:]
+
+info = I.KromeInfo()
+abundances = run.getMolecules(itime=itime)
+axis = run.getR(itime=itime)
+
+ntot = np.sum(abundances, axis=1)
+
+for sym in species:
+  i = info.symbol2i(sym)
+  print "plotting ", sym, " with id ", i
+  plt.semilogy(axis, abundances[:,i]/ntot, label=sym)
+
+plt.legend()
+plt.show()
