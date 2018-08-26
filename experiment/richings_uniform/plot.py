@@ -39,9 +39,9 @@ if ice:
   ntot_atom["O"] += abundances[:,iH2O_total] - abundances[:,iH2O] + abundances[:,iCO_total] - abundances[:,iCO]
   ntot_atom["C"] += abundances[:,iCO_total] - abundances[:,iCO]
 
-colors = ['black', 'brown', 'red', 'green', 'purple', 'orange', 'blue', 'magenta', 'lightblue']
-species =       ["E", "H", "H+", "He", "He+", "HCO+", "C+", "C"]
-normalized_to = ["H", "H", "H" , "He", "He" , "C"   , "C" , "C"]
+colors = ['black', 'brown', 'red', 'green', 'purple', 'orange', 'blue', 'magenta', 'lightblue', 'grey', 'pink']
+species =       ["E", "H", "H+", "He", "He+", "HCO+", "C+", "C", "O", "O+"]
+normalized_to = ["H", "H", "H" , "He", "He" , "C"   , "C" , "C", "O", "O"]
 axarr[1].set_prop_cycle(cycler('color', colors))
 for s, n in zip(species, normalized_to):
   axarr[1].loglog(axis, abundances[:,info.symbol2i(s)]/ntot_atom[n], label=s)
