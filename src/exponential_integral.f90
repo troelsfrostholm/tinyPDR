@@ -22,7 +22,7 @@ contains
 
     xmax = maxval(table(1,:))
     xmin = minval(table(1,:))
-    dx = xmax/N_value
+    dx = (xmax-xmin)/(N_value-1)
   end subroutine
 
   pure function expn(n, x)
@@ -38,7 +38,7 @@ contains
       return
     end if
 
-    if(x > xmax) then
+    if(x >= xmax) then
       expn = table(n+1,N_value)
       return
     end if
