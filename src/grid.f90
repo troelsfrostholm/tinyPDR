@@ -35,7 +35,7 @@ contains
     tau(:,:) = 0d0
 
     select case(trim(grid_type))
-      case("centered")
+      case("uniform")
         call centered_uniform
       case("log")
         call logarithmic
