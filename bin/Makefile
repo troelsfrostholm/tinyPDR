@@ -22,7 +22,7 @@ VPATH=$(KROME_BUILD):$(SHIELDING_DIR):$(SRC)
 #flags
 switchDBG = -fbacktrace -g -O0 -ffpe-trap=zero,overflow,invalid -fbounds-check -ffree-line-length-none -finit-real=nan -cpp
 
-#switchDustTable = -DUSE_DUST_TABLE
+switchDustTable = -DUSE_DUST_TABLE
 #switchDustTable=
 
 #default switch
