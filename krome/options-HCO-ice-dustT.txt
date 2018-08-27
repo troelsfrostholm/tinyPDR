@@ -1,0 +1,6 @@
+-photoBins=7
+-n=networks/react_COthin_ice_rt
+-compact
+-noExample
+-dustTabs=HM2012,H2,Photo3D
+-project=HCO-ice-dust-table

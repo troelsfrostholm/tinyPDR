@@ -1,0 +1,5 @@
+-photoBins=7
+-n=networks/react_COthin_ice_rt
+-compact
+-noExample
+-project=HCO-noice

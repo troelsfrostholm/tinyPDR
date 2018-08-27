@@ -1,0 +1,16586 @@
+
+!############### MODULE ##############
+module krome_commons
+  implicit none
+
+  ! *************************************************************
+  !  This file has been generated with:
+  !  KROME 14.08.dev on 2018-08-27 09:46:28
+  !  Changeset be164d7
+  !  see http://kromepackage.org
+  !
+  !  Written and developed by Tommaso Grassi and Stefano Bovino
+  !
+  !  Contributors:
+  !  J.Boulangier, T.Frostholm, D.Galli, F.A.Gianturco, T.Haugboelle,
+  !  A.Lupi, J.Prieto, J.Ramsey, D.R.G.Schleicher, D.Seifried, E.Simoncini,
+  !  E.Tognelli
+  !  KROME is provided "as it is", without any warranty.
+  ! *************************************************************
+  integer,parameter::idx_E=1
+  integer,parameter::idx_Hk=2
+  integer,parameter::idx_Ck=3
+  integer,parameter::idx_Ok=4
+  integer,parameter::idx_H=5
+  integer,parameter::idx_HE=6
+  integer,parameter::idx_H2=7
+  integer,parameter::idx_C=8
+  integer,parameter::idx_O=9
+  integer,parameter::idx_OH=10
+  integer,parameter::idx_CO=11
+  integer,parameter::idx_CH=12
+  integer,parameter::idx_CH2=13
+  integer,parameter::idx_C2=14
+  integer,parameter::idx_HCO=15
+  integer,parameter::idx_H2O=16
+  integer,parameter::idx_O2=17
+  integer,parameter::idx_Hj=18
+  integer,parameter::idx_HEj=19
+  integer,parameter::idx_H2j=20
+  integer,parameter::idx_Cj=21
+  integer,parameter::idx_Oj=22
+  integer,parameter::idx_HOCj=23
+  integer,parameter::idx_HCOj=24
+  integer,parameter::idx_H3j=25
+  integer,parameter::idx_CHj=26
+  integer,parameter::idx_CH2j=27
+  integer,parameter::idx_COj=28
+  integer,parameter::idx_CH3j=29
+  integer,parameter::idx_OHj=30
+  integer,parameter::idx_H2Oj=31
+  integer,parameter::idx_H3Oj=32
+  integer,parameter::idx_O2j=33
+  integer,parameter::idx_HEjj=34
+  integer,parameter::idx_CR=35
+  integer,parameter::idx_g=36
+  integer,parameter::idx_Tgas=37
+  integer,parameter::idx_dummy=38
+  integer,parameter::nrea=275
+  integer,parameter::nmols=34
+  integer,parameter::nspec=38
+  integer,parameter::natoms=5
+  integer,parameter::ndust=0
+  integer,parameter::ndustTypes=0
+  integer,parameter::nPhotoBins=7
+  integer,parameter::nPhotoRea=17
+
+  !cooling index
+  integer,parameter::idx_cool_h2 = 1
+  integer,parameter::idx_cool_h2gp = 2
+  integer,parameter::idx_cool_atomic = 3
+  integer,parameter::idx_cool_cen = 3
+  integer,parameter::idx_cool_hd = 4
+  integer,parameter::idx_cool_metal = 5
+  integer,parameter::idx_cool_z = 5
+  integer,parameter::idx_cool_dh = 6
+  integer,parameter::idx_cool_enthalpic = 6
+  integer,parameter::idx_cool_dust = 7
+  integer,parameter::idx_cool_compton = 8
+  integer,parameter::idx_cool_cie = 9
+  integer,parameter::idx_cool_cont = 10
+  integer,parameter::idx_cool_continuum = 10
+  integer,parameter::idx_cool_expansion = 11
+  integer,parameter::idx_cool_exp = 11
+  integer,parameter::idx_cool_ff = 12
+  integer,parameter::idx_cool_bss = 12
+  integer,parameter::idx_cool_custom = 13
+  integer,parameter::idx_cool_co = 14
+  integer,parameter::idx_cool_zcie = 15
+  integer,parameter::idx_cool_zcienouv = 16
+  integer,parameter::idx_cool_zextend = 17
+  integer,parameter::idx_cool_gh = 18
+  integer,parameter::ncools = 18
+
+  !heating index
+  integer,parameter::idx_heat_chem = 1
+  integer,parameter::idx_heat_compress = 2
+  integer,parameter::idx_heat_compr = 2
+  integer,parameter::idx_heat_photo = 3
+  integer,parameter::idx_heat_dh = 4
+  integer,parameter::idx_heat_enthalpic = 4
+  integer,parameter::idx_heat_av = 5
+  integer,parameter::idx_heat_photoav = 5
+  integer,parameter::idx_heat_cr = 6
+  integer,parameter::idx_heat_dust = 7
+  integer,parameter::idx_heat_xray = 8
+  integer,parameter::idx_heat_viscous = 9
+  integer,parameter::idx_heat_visc = 9
+  integer,parameter::idx_heat_custom = 10
+  integer,parameter::idx_heat_zcie = 11
+  integer,parameter::nheats = 11
+
+  real*8::arr_k(nrea)
+
+  !commons for rate tables
+  !modify ktab_n according to the required precision
+  integer,parameter::ktab_n=int(1e3)
+  real*8::ktab(nrea,ktab_n),ktab_logTlow, ktab_logTup, ktab_T(ktab_n)
+  real*8::inv_ktab_T(ktab_n-1), inv_ktab_idx
+
+  !thermo toggle (when >0 do cooling/heating)
+  integer::krome_thermo_toggle
+  !$omp threadprivate(krome_thermo_toggle)
+
+  !debug bit flag, print and array with fallback values for extreme environments
+  integer:: red_flag
+  real*8::n_global(nspec)
+  integer, save :: nprint_negative=10
+  !$omp threadprivate(n_global,nprint_negative,red_flag)
+
+  !commons for implicit RHS
+  integer::arr_r1(nrea)
+  integer::arr_r2(nrea)
+  integer::arr_r3(nrea)
+  integer::arr_p1(nrea)
+  integer::arr_p2(nrea)
+  integer::arr_p3(nrea)
+
+  !commons for reduction
+  integer::arr_u(nrea)
+  real*8::arr_flux(nrea)
+
+  !commons for frequency bins
+  real*8::photoBinJ(nPhotoBins) !intensity per bin, eV/sr/cm2
+  real*8::photoBinJ_org(nPhotoBins) !intensity per bin stored, eV/sr/cm2
+  real*8::photoBinEleft(nPhotoBins) !left limit of the freq bin, eV
+  real*8::photoBinEright(nPhotoBins) !right limit of the freq bin, eV
+  real*8::photoBinEmid(nPhotoBins) !middle point of the freq bin, eV
+  real*8::photoBinEdelta(nPhotoBins) !size of the freq bin, eV
+  real*8::photoBinEidelta(nPhotoBins) !inverse of the size of the freq bin, 1/eV
+  real*8::photoBinJTab(nPhotoRea,nPhotoBins) !xsecs table, cm2
+  real*8::photoBinRates(nPhotoRea) !photo rates, 1/s
+  real*8::photoBinHeats(nPhotoRea) !photo heating, erg/s
+  real*8::photoBinEth(nPhotoRea) !energy treshold, eV
+  real*8::photoPartners(nPhotoRea) !index of the photoreactants
+  real*8::opacityDust(nPhotoBins) !interpolated opacity from tables
+  !$omp threadprivate(photoBinJ,photoBinJ_org,photoBinEleft,photoBinEright,photoBinEmid, &
+      !$omp    photoBinEdelta,photoBinEidelta,photoBinJTab,photoBinRates,photoBinHeats,photoBinEth, &
+      !$omp    photoPartners)
+
+  ! Draine dust absorption data loaded from file, via load_kabs
+  ! in krome_photo module
+  real*8::find_Av_draine_kabs(nPhotoBins)
+
+  !commons for H2 photodissociation (Solomon)
+  ! note: paramters here are set depending on the data
+  ! but if you have a different file you should modify them
+  integer,parameter::H2pdData_nvibX=15
+  integer,parameter::H2pdData_nvibB=37
+  real*8::H2pdData_dE(H2pdData_nvibX,H2pdData_nvibB)
+  real*8::H2pdData_pre(H2pdData_nvibX,H2pdData_nvibB)
+  real*8::H2pdData_EX(H2pdData_nvibX)
+  integer::H2pdData_binMap(H2pdData_nvibX,H2pdData_nvibB)
+
+  !commons for dust optical properties
+
+  !square of turbulence velocity for broadening
+  real*8::broadeningVturb2
+
+  !mpi rank of process. If 0, ignored
+  integer::krome_mpi_rank=0, krome_omp_thread
+  !$omp threadprivate(krome_omp_thread)
+
+  !user-defined commons variables from the reaction file
+  real*8::user_crate,user_Av,user_G0,user_gamma_CO,user_gamma_H2
+  !$omp threadprivate(user_crate,user_Av,user_G0,user_gamma_CO,user_gamma_H2)
+
+  !commons for anytab
+
+  !physical commons
+  real*8::phys_Tcmb
+  real*8::phys_zredshift
+  real*8::phys_orthoParaRatio
+  real*8::phys_metallicity
+  real*8::phys_Tfloor
+  !$omp threadprivate(phys_Tcmb)
+  !$omp threadprivate(phys_zredshift)
+  !$omp threadprivate(phys_orthoParaRatio)
+  !$omp threadprivate(phys_metallicity)
+  !$omp threadprivate(phys_Tfloor)
+
+  !machine precision
+  real*8::krome_epsilon
+
+  !xrayJ21 for tabulated heating and rate
+  real*8::J21xray
+
+  !total metallicity relative to solar Z/Z_solar
+  real*8::total_Z
+  real*8::dust2gas_ratio
+
+  !commons for dust tabs (cool,H2,Tdust)
+  integer,parameter::dust_tab_imax=50, dust_tab_jmax=50
+  real*8::dust_tab_ngas(dust_tab_imax)
+  real*8::dust_tab_Tgas(dust_tab_jmax)
+  real*8::dust_mult_Tgas,dust_mult_ngas
+  real*8::dust_table_AvVariable_log
+
+  real*8::dust_tab_cool(dust_tab_imax, dust_tab_jmax)
+  real*8::dust_tab_heat(dust_tab_imax, dust_tab_jmax)
+  real*8::dust_tab_Tdust(dust_tab_imax, dust_tab_jmax)
+  real*8::dust_tab_H2(dust_tab_imax, dust_tab_jmax)
+
+  !commons for exp(-a) table
+  integer,parameter::exp_table_na=int(1d5)
+  real*8,parameter::exp_table_aMax=1d4,exp_table_aMin=0d0
+  real*8,parameter::exp_table_multa=(exp_table_na-1) &
+      / (exp_table_aMax-exp_table_aMin)
+  real*8,parameter::exp_table_da=1d0/exp_table_multa
+  real*8::exp_table(exp_table_na)
+
+  !stores the last evaluation of the rates in the fex
+  real*8::last_coe(nrea)
+  !$omp threadprivate(last_coe)
+
+  !xsecs from file variables
+  !xsec for C -> C+ + E
+  real*8,allocatable::xsec211_val(:)
+  real*8::xsec211_Emin
+  real*8::xsec211_idE
+  integer::xsec211_n
+
+  !xsec for H2 -> H2+ + E
+  real*8,allocatable::xsec212_val(:)
+  real*8::xsec212_Emin
+  real*8::xsec212_idE
+  integer::xsec212_n
+
+  !xsec for H- -> H + E
+  real*8,allocatable::xsec213_val(:)
+  real*8::xsec213_Emin
+  real*8::xsec213_idE
+  integer::xsec213_n
+
+  !xsec for CH -> C + H
+  real*8,allocatable::xsec214_val(:)
+  real*8::xsec214_Emin
+  real*8::xsec214_idE
+  integer::xsec214_n
+
+  !xsec for CH -> CH+ + E
+  real*8,allocatable::xsec215_val(:)
+  real*8::xsec215_Emin
+  real*8::xsec215_idE
+  integer::xsec215_n
+
+  !xsec for C2 -> C + C
+  real*8,allocatable::xsec216_val(:)
+  real*8::xsec216_Emin
+  real*8::xsec216_idE
+  integer::xsec216_n
+
+  !xsec for OH -> O + H
+  real*8,allocatable::xsec217_val(:)
+  real*8::xsec217_Emin
+  real*8::xsec217_idE
+  integer::xsec217_n
+
+  !xsec for OH -> OH+ + E
+  real*8,allocatable::xsec218_val(:)
+  real*8::xsec218_Emin
+  real*8::xsec218_idE
+  integer::xsec218_n
+
+  !xsec for H2O -> OH + H
+  real*8,allocatable::xsec219_val(:)
+  real*8::xsec219_Emin
+  real*8::xsec219_idE
+  integer::xsec219_n
+
+  !xsec for H2O -> H2O+ + E
+  real*8,allocatable::xsec220_val(:)
+  real*8::xsec220_Emin
+  real*8::xsec220_idE
+  integer::xsec220_n
+
+  !xsec for O2 -> O2+ + E
+  real*8,allocatable::xsec221_val(:)
+  real*8::xsec221_Emin
+  real*8::xsec221_idE
+  integer::xsec221_n
+
+  !xsec for O2 -> O + O
+  real*8,allocatable::xsec222_val(:)
+  real*8::xsec222_Emin
+  real*8::xsec222_idE
+  integer::xsec222_n
+
+  !xsec for H2 -> H+ + H + E
+  real*8,allocatable::xsec223_val(:)
+  real*8::xsec223_Emin
+  real*8::xsec223_idE
+  integer::xsec223_n
+
+  ! Gibbs free energy data from file variables
+
+  !partition function from file
+  integer,parameter::zpart_nCO=641
+  integer,parameter::zpart_nH2even=2000
+  integer,parameter::zpart_nH2odd=2000
+  real*8::zpart_CO(zpart_nCO),minpart_CO,partdT_CO
+  real*8::zpart_H2even(zpart_nH2even),minpart_H2even,partdT_H2even
+  real*8::zpart_H2odd(zpart_nH2odd),minpart_H2odd,partdT_H2odd
+
+  !Habing flux for the photoelectric heating by dust
+  ! and clumping factor for H2 formation
+  ! on dust by Jura/Gnedin
+  real*8::GHabing,Ghabing_thin,clump_factor
+  !$omp threadprivate(GHabing,GHabing_thin)
+
+  !partition functions common vars
+
+  !verbatim reactions
+  character*50::reactionNames(nrea)
+
+  !store evaluate once rate
+  real*8::rateEvaluateOnce(nrea)
+  !$omp threadprivate(rateEvaluateOnce)
+
+end module krome_commons
+
+!############### MODULE ##############
+module krome_constants
+  implicit none
+
+  !constants
+  real*8,parameter::boltzmann_eV = 8.617332478d-5 !eV / K
+  real*8,parameter::boltzmann_J = 1.380648d-23 !J / K
+  real*8,parameter::boltzmann_erg = 1.380648d-16 !erg / K
+  real*8,parameter::iboltzmann_eV = 1d0/boltzmann_eV !K / eV
+  real*8,parameter::iboltzmann_erg = 1d0/boltzmann_erg !K / erg
+  real*8,parameter::planck_eV = 4.135667516d-15 !eV s
+  real*8,parameter::planck_J = 6.62606957d-34 !J s
+  real*8,parameter::planck_erg = 6.62606957d-27 !erg s
+  real*8,parameter::iplanck_eV = 1d0/planck_eV !1 / eV / s
+  real*8,parameter::iplanck_J = 1d0/planck_J !1 / J / s
+  real*8,parameter::iplanck_erg = 1d0/planck_erg !1 / erg / s
+  real*8,parameter::gravity = 6.674d-8 !cm3 / g / s2
+  real*8,parameter::e_mass = 9.10938188d-28 !g
+  real*8,parameter::p_mass = 1.67262158d-24 !g
+  real*8,parameter::n_mass = 1.674920d-24 !g
+  real*8,parameter::ip_mass = 1d0/p_mass !1/g
+  real*8,parameter::clight = 2.99792458e10 !cm/s
+  real*8,parameter::pi = 3.14159265359d0 !#
+  real*8,parameter::eV_to_erg = 1.60217646d-12 !eV -> erg
+  real*8,parameter::ry_to_eV = 13.60569d0 !rydberg -> eV
+  real*8,parameter::ry_to_erg = 2.179872d-11 !rydberg -> erg
+  real*8,parameter::seconds_per_year = 365d0*24d0*3600d0 !yr -> s
+  real*8,parameter::km_to_cm = 1d5 !km -> cm
+  real*8,parameter::cm_to_Mpc = 1.d0/3.08d24 !cm -> Mpc
+  real*8,parameter::kvgas_erg = 8.d0*boltzmann_erg/pi/p_mass !
+  real*8,parameter::pre_kvgas_sqrt = sqrt(8.d0*boltzmann_erg/pi) !
+  real*8,parameter::pre_planck = 2.d0*planck_erg/clight**2 !erg/cm2*s3
+  real*8,parameter::exp_planck = planck_erg / boltzmann_erg !s*K
+  real*8,parameter::stefboltz_erg = 5.670373d-5 !erg/s/cm2/K4
+  real*8,parameter::N_avogadro = 6.0221d23 !#
+  real*8,parameter::Rgas_J = 8.3144621d0 !J/K/mol
+  real*8,parameter::Rgas_kJ = 8.3144621d-3 !kJ/K/mol
+  real*8,parameter::hubble = 0.704d0 !dimensionless
+  real*8,parameter::Omega0 = 1.0d0 !dimensionless
+  real*8,parameter::Omegab = 0.0456d0 !dimensionless
+  real*8,parameter::Hubble0 = 1.d2*hubble*km_to_cm*cm_to_Mpc !1/s
+
+end module krome_constants
+
+!############### MODULE ##############
+module krome_fit
+contains
+
+  !*****************************
+  subroutine init_anytab3D(filename,x,y,z,f,xmul,ymul,zmul)
+    use krome_commons
+    implicit none
+    character(len=*),intent(in)::filename
+    character(len=60)::row_string
+    real*8,intent(out)::x(:),y(:),z(:),f(:,:,:),xmul,ymul,zmul
+    real*8::rout(4)
+    integer::i,j,k,ios,unit
+
+    !check the size of the X input array
+    if(size(x).ne.size(f,1)) then
+      print *,"ERROR: in init_anytab3D x size differs from f(x,y,z)"
+      stop
+    end if
+
+    !check the size of the Y input array
+    if(size(y).ne.size(f,2)) then
+      print *,"ERROR: in init_anytab3D y size differs from f(x,y,z)"
+      stop
+    end if
+
+    !check the size of the Z input array
+    if(size(z).ne.size(f,3)) then
+      print *,"ERROR: in init_anytab3D z size differs from f(x,y,z)"
+      stop
+    end if
+
+    !open file and check if it exists
+    open(newunit=unit,file=trim(filename),status="old",iostat=ios)
+    if(ios.ne.0) then
+      print *,"ERROR: in init_anytab3D file ",trim(filename)," not found!"
+      stop
+    end if
+
+    !skip the comments and the first line and the sizes of the data
+    ! which are already known from the pre-processing
+    do
+      read(unit,'(a)') row_string
+      if(row_string(1:1)/="#") exit
+    end do
+
+    !check if first line is OK
+    if(scan(row_string,",")==0) then
+      print *,"ERROR: file "//filename//" should"
+      print *," contain the number of grid points"
+      print *," per dimension in the format"
+      print *,"  XX, YY, ZZ"
+      print *,row_string
+      stop
+    end if
+
+    !loop to read file (3rd dimension of f() is
+    ! first in the tables. i.e. tables are z,x,y,
+    ! while f() is x,y,z
+    do i=1,size(z)
+      do j=1,size(x)
+        do k=1,size(y)
+          read(unit,*,iostat=ios) rout(:)
+          y(k) = rout(3)
+          f(j,k,i) = rout(4)
+        end do
+        x(j) = rout(2)
+        read(unit,*,iostat=ios) !skip blanks
+      end do
+      z(i) = rout(1)
+      read(unit,*,iostat=ios) !skip blanks
+      if(ios.ne.0) exit
+    end do
+    close(unit)
+
+    xmul = 1d0/(x(2)-x(1))
+    ymul = 1d0/(y(2)-y(1))
+    zmul = 1d0/(z(2)-z(1))
+
+  end subroutine init_anytab3D
+
+  !********************************************
+  !load 2d tables from filename
+  subroutine init_anytab2D(filename,x,y,z,xmul,ymul)
+    use krome_commons
+    implicit none
+    character(len=*),intent(in)::filename
+    character(len=60)::row_string
+    real*8,intent(out)::x(:),y(:),z(:,:),xmul,ymul
+    real*8::rout(3)
+    integer::i,j,ios,unit
+
+    !check the size of the X input array
+    if(size(x).ne.size(z,1)) then
+      print *,"ERROR: in init_anytab2D x size differs from z"
+      stop
+    end if
+
+    !check the size of the Y input array
+    if(size(y).ne.size(z,2)) then
+      print *,"ERROR: in init_anytab2D y size differs from z"
+      stop
+    end if
+
+    if (krome_mpi_rank<=1) print *,"Reading tables from "//trim(filename)
+
+    !open file and check if it exists
+    open(newunit=unit,file=trim(filename),status="old",iostat=ios)
+    if(ios.ne.0) then
+      print *,"ERROR: in init_anytab2D file ",trim(filename)," not found!"
+      stop
+    end if
+
+    !skip the comments and the first line and the sizes of the data
+    ! which are already known from the pre-processing
+    do
+      read(unit,'(a)') row_string
+      if(row_string(1:1)/="#") exit
+    end do
+
+    !check if first line is OK
+    if(scan(row_string,",")==0) then
+      print *,"ERROR: file "//filename//" should"
+      print *," contain the number of rows and "
+      print *," columns in the format"
+      print *,"  RR, CC"
+      print *,row_string
+      stop
+    end if
+
+    !loop to read file
+    do i=1,size(x)
+      do j=1,size(y)
+        read(unit,*,iostat=ios) rout(:)
+        y(j) = rout(2)
+        z(i,j) = rout(3)
+      end do
+      x(i) = rout(1)
+      read(unit,*,iostat=ios) !skip blanks
+      if(ios.ne.0) exit
+    end do
+    close(unit)
+
+    xmul = 1d0/(x(2)-x(1))
+    ymul = 1d0/(y(2)-y(1))
+
+  end subroutine init_anytab2D
+
+  !********************************************
+  !load 1d tables from filename
+  subroutine init_anytab1D(filename,x,y,xmul)
+    use krome_commons
+    implicit none
+    character(len=*),intent(in)::filename
+    character(len=60)::row_string
+    real*8,intent(out)::x(:),y(:),xmul
+    real*8::rout(2)
+    integer::i,ios,unit
+
+    !check the size of the X input array
+    if(size(x) /= size(y)) then
+      print *,"ERROR: in init_anytab1D x size differs from y"
+      stop
+    end if
+
+    if (krome_mpi_rank <= 1) print *,"Reading tables from "//trim(filename)
+
+    !open file and check if it exists
+    open(newunit=unit,file=trim(filename),status="old",iostat=ios)
+    if(ios /= 0) then
+      print *,"ERROR: in init_anytab1D file ",trim(filename)," not found!"
+      stop
+    end if
+
+    !skip the comments and the first line and the sizes of the data
+    ! which are already known from the pre-processing
+    do
+      read(unit,'(a)') row_string
+      if(row_string(1:1)/="#") exit
+    end do
+
+    ! !check if first line is OK
+    ! if(scan(row_string,",")==0) then
+    !    print *,"ERROR: file "//filename//" should"
+    !    print *," contain the number of rows and "
+    !    print *," columns in the format"
+    !    print *,"  RR, CC"
+    !    print *,row_string
+    !    stop
+    ! end if
+
+    !loop to read file
+    do i=1,size(x)
+      read(unit,*,iostat=ios) rout(:)
+      y(i) = rout(2)
+      x(i) = rout(1)
+      read(unit,*,iostat=ios) !skip blanks
+      if(ios /= 0) exit
+
+    end do
+    close(unit)
+
+    xmul = 1d0/(x(2)-x(1))
+
+  end subroutine init_anytab1D
+
+  !******************************
+  !test 2d fit and save to file
+  subroutine test_anytab2D(fname,x,y,z,xmul,ymul)
+    implicit none
+    integer::i,j,unit1,unit2
+    real*8,intent(in)::x(:),y(:),z(:,:),xmul,ymul
+    real*8::xx,yy,zz
+    character(len=*),intent(in)::fname
+
+    open(newunit=unit1,file=fname//".fit",status="replace")
+    open(newunit=unit2,file=fname//".org",status="replace")
+    do i=1,size(x)
+      do j=1,size(y)
+        xx = x(i)
+        yy = y(j)
+        zz = fit_anytab2D(x(:),y(:),z(:,:),xmul,ymul,xx,yy)
+        write(unit1,*) xx,yy,zz
+        write(unit2,*) x(i),y(j),z(i,j)
+      end do
+      write(unit1,*)
+      write(unit2,*)
+    end do
+    close(unit1)
+    close(unit2)
+    print *,"original file wrote in ",fname//".org"
+    print *,"fit test file wrote in ",fname//".fit"
+
+  end subroutine test_anytab2D
+
+  !*****************************
+  function fit_anytab3D(x,y,z,f,xmul,ymul,zmul,xx,yy,zz)
+    implicit none
+    real*8,intent(in)::x(:),y(:),z(:),f(:,:,:),xmul,ymul,zmul
+    real*8,intent(in)::xx,yy,zz
+    real*8::fleft(size(x),size(y)), fright(size(x),size(y))
+    real*8::fit_anytab3D,fl,fr
+    integer::ipos,i1,i2
+
+    ipos = (zz-z(1)) * zmul + 1
+    i1 = min(max(ipos,1), size(z)-1)
+    i2 = i1 + 1
+    fleft(:,:) = f(:,:,i1)
+    fright(:,:) = f(:,:,i2)
+
+    fl = fit_anytab2D(x(:), y(:), fleft(:,:), xmul, ymul, xx, yy)
+    fr = fit_anytab2D(x(:), y(:), fright(:,:), xmul, ymul, xx, yy)
+
+    fit_anytab3D = (zz-z(i1))*zmul*(fr-fl)+fl
+
+  end function fit_anytab3D
+
+  !******************************
+  !return 2d fit at xx,yy
+  function fit_anytab2D(x,y,z,xmul,ymul,xx,yy)
+    implicit none
+    real*8::fit_anytab2D
+    real*8,intent(in)::x(:),y(:),z(:,:),xmul,ymul,xx,yy
+    real*8::zleft(size(x)),zright(size(x)),zl,zr
+    integer::ipos,i1,i2
+
+    ipos = (yy-y(1)) * ymul + 1
+    i1 = min(max(ipos,1),size(y)-1)
+    i2 = i1 + 1
+    zleft(:) = z(:,i1)
+    zright(:) = z(:,i2)
+
+    zl = fit_anytab1D(x(:),zleft(:),xmul,xx)
+    zr = fit_anytab1D(x(:),zright(:),xmul,xx)
+
+    fit_anytab2D = (yy-y(i1))*ymul*(zr-zl)+zl
+
+  end function fit_anytab2D
+
+  !*********************
+  !return 1d fit at xx
+  function fit_anytab1D(x,z,xmul,xx)
+    real*8,intent(in)::x(:),z(:),xmul,xx
+    real*8::fit_anytab1D,p
+    integer::ipos,i1,i2
+
+    ipos = (xx-x(1)) * xmul + 1
+    i1 = min(max(ipos,1),size(x)-1)
+    i2 = i1 + 1
+
+    p = (xx-x(i1)) * xmul
+
+    fit_anytab1D = p * (z(i2) - z(i1)) + z(i1)
+
+  end function fit_anytab1D
+
+  !*****************************
+  function fit_anytab3D_linlinlog(x,y,z,f,xmul,ymul,zmul,xx,yy,zz)
+    implicit none
+    real*8,intent(in)::x(:),y(:),z(:),f(:,:,:),xmul,ymul,zmul
+    real*8,intent(in)::xx,yy,zz
+    real*8::fleft(size(x),size(y)), fright(size(x),size(y))
+    real*8::fit_anytab3D_linlinlog,fl,fr
+    integer::ipos,i1,i2
+
+    ipos = (zz-z(1)) * zmul + 1
+    i1 = min(max(ipos,1), size(z)-1)
+    i2 = i1 + 1
+    fleft(:,:) = f(:,:,i1)
+    fright(:,:) = f(:,:,i2)
+
+    fl = fit_anytab2D_linlog(x(:), y(:), fleft(:,:), xmul, ymul, xx, yy)
+    fr = fit_anytab2D_linlog(x(:), y(:), fright(:,:), xmul, ymul, xx, yy)
+
+    fit_anytab3D_linlinlog = (zz-z(i1))*zmul*(fr-fl)+fl
+
+  end function fit_anytab3D_linlinlog
+
+  !***************************
+  function fit_anytab2D_linlog(x,y,z,xmul,ymul,xx,yy)
+    real*8::fit_anytab2D_linlog,x(:),y(:),z(:,:),xmul,ymul,xx,yy
+    real*8::zleft(size(x)),zright(size(x)),zl,zr
+    integer::ipos,i1,i2
+
+    ipos = (yy-y(1)) * ymul + 1
+    i1 = min(max(ipos,1),size(y)-1)
+    i2 = i1 + 1
+    zleft(:) = z(:,i1)
+    zright(:) = z(:,i2)
+
+    zl = fit_anytab1D_linlog(x(:),zleft(:),xmul,xx)
+    zr = fit_anytab1D_linlog(x(:),zright(:),xmul,xx)
+
+    fit_anytab2D_linlog = (yy-y(i1))*ymul*(zr-zl)+zl
+
+  end function fit_anytab2D_linlog
+
+  !*********************
+  function fit_anytab1D_linlog(x,z,xmul,xx)
+    real*8::fit_anytab1D_linlog,x(:),z(:),xmul,xx,p,z2,z1
+    integer::ipos,i1,i2
+
+    ipos = (xx-x(1)) * xmul + 1
+    i1 = min(max(ipos,1),size(x)-1)
+    i2 = i1 + 1
+
+    p = (xx-x(i1)) * xmul
+
+    z2 = z(i2)
+    z1 = z(i1)
+    if(z1<0d0 .and. z2<0d0) then
+      z1 = log10(-z1)
+      z2 = log10(-z2)
+      fit_anytab1D_linlog = -1d1**(p * (z2 - z1) + z1)
+      return
+    end if
+
+    if(z1>0d0 .and. z2>0d0) then
+      z1 = log10(z1)
+      z2 = log10(z2)
+      fit_anytab1D_linlog = 1d1**(p * (z2 - z1) + z1)
+      return
+    end if
+
+    fit_anytab1D_linlog = (p * (z2 - z1) + z1)
+
+  end function fit_anytab1D_linlog
+
+  !*****************************
+  !spline interpolation at t using array  x,y (size n) as data
+  function fspline(x,y,t)
+    implicit none
+    real*8::fspline,x(:),y(:),b(size(x)),c(size(x)),d(size(x)),t
+    integer::n
+
+    n = size(x)
+    call spline(x(:),y(:),b(:),c(:),d(:),n)
+    fspline = ispline(t,x(:),y(:),b(:),c(:),d(:),n)
+
+  end function fspline
+
+  !*******************************+
+  subroutine spline(x, y, b, c, d, n)
+    !======================================================================
+    !  Calculate the coefficients b(i), c(i), and d(i), i=1,2,...,n
+    !  for cubic spline interpolation
+    !  s(x) = y(i) + b(i)*(x-x(i)) + c(i)*(x-x(i))**2 + d(i)*(x-x(i))**3
+    !  for  x(i) <= x <= x(i+1)
+    !  Alexadner L Godunov (ODU): January 2010
+    !
+    !  http://ww2.odu.edu/~agodunov/computing/programs/book2/Ch01/spline.f90
+    !----------------------------------------------------------------------
+    !  input..
+    !  x = the arrays of data abscissas (in strictly increasing order)
+    !  y = the arrays of data ordinates
+    !  n = size of the arrays xi() and yi() (n>=2)
+    !  output..
+    !  b, c, d  = arrays of spline coefficients
+    !  comments ...
+    !  spline.f90 program is based on fortran version of program spline.f
+    !  the accompanying function fspline can be used for interpolation
+    !======================================================================
+    implicit none
+    integer::n
+    real*8::x(n), y(n), b(n), c(n), d(n)
+    integer::i, j, gap
+    real*8::h
+
+    gap = n-1
+
+    !check input
+    if(n<2) return
+    if(n<3) then
+      b(1) = (y(2)-y(1))/(x(2)-x(1)) !linear interpolation
+      c(1) = 0d0
+      d(1) = 0d0
+      b(2) = b(1)
+      c(2) = 0d0
+      d(2) = 0d0
+      return
+    end if
+
+    !step 1: preparation
+    d(1) = x(2) - x(1)
+    c(2) = (y(2) - y(1))/d(1)
+    do i = 2, gap
+      d(i) = x(i+1) - x(i)
+      b(i) = 2d0*(d(i-1) + d(i))
+      c(i+1) = (y(i+1) - y(i))/d(i)
+      c(i) = c(i+1) - c(i)
+    end do
+
+    ! step 2: end conditions
+    b(1) = -d(1)
+    b(n) = -d(n-1)
+    c(1) = 0d0
+    c(n) = 0d0
+    if(n.ne.3) then
+      c(1) = c(3)/(x(4)-x(2)) - c(2)/(x(3)-x(1))
+      c(n) = c(n-1)/(x(n)-x(n-2)) - c(n-2)/(x(n-1)-x(n-3))
+      c(1) = c(1)*d(1)**2/(x(4)-x(1))
+      c(n) = -c(n)*d(n-1)**2/(x(n)-x(n-3))
+    end if
+
+    ! step 3: forward elimination
+    do i = 2, n
+      h = d(i-1)/b(i-1)
+      b(i) = b(i) - h*d(i-1)
+      c(i) = c(i) - h*c(i-1)
+    end do
+
+    ! step 4: back substitution
+    c(n) = c(n)/b(n)
+    do j = 1, gap
+      i = n-j
+      c(i) = (c(i) - d(i)*c(i+1))/b(i)
+    end do
+
+    ! step 5: compute spline coefficients
+    b(n) = (y(n) - y(gap))/d(gap) + d(gap)*(c(gap) + 2d0*c(n))
+    do i = 1, gap
+      b(i) = (y(i+1) - y(i))/d(i) - d(i)*(c(i+1) + 2d0*c(i))
+      d(i) = (c(i+1) - c(i))/d(i)
+      c(i) = 3d0*c(i)
+    end do
+    c(n) = 3d0*c(n)
+    d(n) = d(n-1)
+  end subroutine spline
+
+  !*******************************
+  function ispline(u, x, y, b, c, d, n)
+    !======================================================================
+    ! function ispline evaluates the cubic spline interpolation at point z
+    ! ispline = y(i)+b(i)*(u-x(i))+c(i)*(u-x(i))**2+d(i)*(u-x(i))**3
+    ! where  x(i) <= u <= x(i+1)
+    !  Alexadner L Godunov (ODU): January 2010
+    !
+    !  http://ww2.odu.edu/~agodunov/computing/programs/book2/Ch01/spline.f90
+    !----------------------------------------------------------------------
+    ! input..
+    ! u       = the abscissa at which the spline is to be evaluated
+    ! x, y    = the arrays of given data points
+    ! b, c, d = arrays of spline coefficients computed by spline
+    ! n       = the number of data points
+    ! output:
+    ! ispline = interpolated value at point u
+    !=======================================================================
+    implicit none
+    real*8::ispline
+    integer::n
+    real*8::u, x(n), y(n), b(n), c(n), d(n)
+    integer::i, j, k
+    real*8::dx
+
+    ! if u is ouside the x() interval take a boundary value (left or right)
+    if(u<=x(1)) then
+      ispline = y(1)
+      return
+    end if
+
+    if(u>=x(n)) then
+      ispline = y(n)
+      return
+    end if
+
+    ! binary search for for i, such that x(i) <= u <= x(i+1)
+    i = 1
+    j = n+1
+    do while (j>i+1)
+      k = (i+j)/2
+      if(u<x(k)) then
+        j=k
+      else
+        i=k
+      end if
+    end do
+
+    ! evaluate spline interpolation
+    dx = u - x(i)
+    ispline = y(i) + dx*(b(i) + dx*(c(i) + dx*d(i)))
+
+  end function ispline
+
+end module krome_fit
+!This module contains useful routines to get physical
+! quantities, like mean molecular weight, mass density,
+! mass, jeans length, etc. etc.
+
+!############### MODULE ##############
+module krome_getphys
+contains
+
+  !*****************************
+  !get the mean molecular weight
+  function get_mu(n)
+    use krome_commons
+    use krome_constants
+    implicit none
+    real*8::n(:),get_mu,m(nspec)
+    m(:) = get_mass()
+
+    !ip_mass is 1/proton_mass_in_g
+    get_mu = max(sum(n(1:nmols)*m(1:nmols)),1d-40) &
+        / max(sum(n(1:nmols)),1d-40) * ip_mass
+
+  end function get_mu
+
+  !***************************
+  !get mean molecular weight
+  function get_mu_rho(n,rhogas)
+    use krome_commons
+    use krome_constants
+    implicit none
+    real*8::get_mu_rho,rhogas,n(:)
+
+    !ip_mass is 1/proton_mass_in_g
+    get_mu_rho = rhogas / max(sum(n(1:nmols)),1d-40) * ip_mass
+
+  end function get_mu_rho
+
+  !************************
+  !get species masses (g)
+  function get_mass()
+    use krome_commons
+    implicit none
+    real*8::get_mass(nspec)
+
+    get_mass(1) = 9.10938188d-28	!E
+    get_mass(2) = 1.67444345638d-24	!H-
+    get_mass(3) = 2.00771060473d-23	!C-
+    get_mass(4) = 2.67691710837d-23	!O-
+    get_mass(5) = 1.67353251819d-24	!H
+    get_mass(6) = 6.69206503638d-24	!HE
+    get_mass(7) = 3.34706503638d-24	!H2
+    get_mass(8) = 2.00761951091d-23	!C
+    get_mass(9) = 2.67682601455d-23	!O
+    get_mass(10) = 2.84417926637d-23	!OH
+    get_mass(11) = 4.68444552546d-23	!CO
+    get_mass(12) = 2.17497276273d-23	!CH
+    get_mass(13) = 2.34232601455d-23	!CH2
+    get_mass(14) = 4.01523902183d-23	!C2
+    get_mass(15) = 4.85179877728d-23	!HCO
+    get_mass(16) = 3.01153251819d-23	!H2O
+    get_mass(17) = 5.3536520291d-23	!O2
+    get_mass(18) = 1.67262158d-24	!H+
+    get_mass(19) = 6.69115409819d-24	!HE+
+    get_mass(20) = 3.34615409819d-24	!H2+
+    get_mass(21) = 2.00752841709d-23	!C+
+    get_mass(22) = 2.67673492073d-23	!O+
+    get_mass(23) = 4.85170768346d-23	!HOC+
+    get_mass(24) = 4.85170768346d-23	!HCO+
+    get_mass(25) = 5.01968661638d-24	!H3+
+    get_mass(26) = 2.17488166891d-23	!CH+
+    get_mass(27) = 2.34223492073d-23	!CH2+
+    get_mass(28) = 4.68435443164d-23	!CO+
+    get_mass(29) = 2.50958817255d-23	!CH3+
+    get_mass(30) = 2.84408817255d-23	!OH+
+    get_mass(31) = 3.01144142437d-23	!H2O+
+    get_mass(32) = 3.17879467619d-23	!H3O+
+    get_mass(33) = 5.35356093528d-23	!O2+
+    get_mass(34) = 6.69024316d-24	!HE++
+    get_mass(35) = 0.d0	!CR
+    get_mass(36) = 0.d0	!g
+    get_mass(37) = 0.d0	!Tgas
+    get_mass(38) = 0.d0	!dummy
+
+  end function get_mass
+
+  !************************
+  !get sqrt of the inverse of the masses (1/sqrt(g))
+  function get_imass_sqrt()
+    use krome_commons
+    implicit none
+    real*8::get_imass_sqrt(nspec)
+
+    get_imass_sqrt(1) = 3.31326021505d+13	!E
+    get_imass_sqrt(2) = 7.72795806394d+11	!H-
+    get_imass_sqrt(3) = 2.23177004181d+11	!C-
+    get_imass_sqrt(4) = 1.93278051341d+11	!O-
+    get_imass_sqrt(5) = 7.73006102111d+11	!H
+    get_imass_sqrt(6) = 3.86562679981d+11	!HE
+    get_imass_sqrt(7) = 5.46597856701d+11	!H2
+    get_imass_sqrt(8) = 2.23182067346d+11	!C
+    get_imass_sqrt(9) = 1.93281339991d+11	!O
+    get_imass_sqrt(10) = 1.87508740611d+11	!OH
+    get_imass_sqrt(11) = 1.46106959624d+11	!CO
+    get_imass_sqrt(12) = 2.14423849574d+11	!CH
+    get_imass_sqrt(13) = 2.06621889668d+11	!CH2
+    get_imass_sqrt(14) = 1.57813553259d+11	!C2
+    get_imass_sqrt(15) = 1.43565011358d+11	!HCO
+    get_imass_sqrt(16) = 1.82224271009d+11	!H2O
+    get_imass_sqrt(17) = 1.36670546184d+11	!O2
+    get_imass_sqrt(18) = 7.732165696d+11	!H+
+    get_imass_sqrt(19) = 3.86588992536d+11	!HE+
+    get_imass_sqrt(20) = 5.46672253003d+11	!H2+
+    get_imass_sqrt(21) = 2.23187130855d+11	!C+
+    get_imass_sqrt(22) = 1.93284628808d+11	!O+
+    get_imass_sqrt(23) = 1.43566359113d+11	!HOC+
+    get_imass_sqrt(24) = 1.43566359113d+11	!HCO+
+    get_imass_sqrt(25) = 4.463357746d+11	!H3+
+    get_imass_sqrt(26) = 2.14428340044d+11	!CH+
+    get_imass_sqrt(27) = 2.06625907582d+11	!CH2+
+    get_imass_sqrt(28) = 1.46108380244d+11	!CO+
+    get_imass_sqrt(29) = 1.99617572781d+11	!CH3+
+    get_imass_sqrt(30) = 1.87511743463d+11	!OH+
+    get_imass_sqrt(31) = 1.82227027061d+11	!H2O+
+    get_imass_sqrt(32) = 1.77365342346d+11	!H3O+
+    get_imass_sqrt(33) = 1.36671708942d+11	!O2+
+    get_imass_sqrt(34) = 3.86615310465d+11	!HE++
+    get_imass_sqrt(35) = 0.d0	!CR
+    get_imass_sqrt(36) = 0.d0	!g
+    get_imass_sqrt(37) = 0.d0	!Tgas
+    get_imass_sqrt(38) = 0.d0	!dummy
+
+  end function get_imass_sqrt
+
+  !************************
+  !get inverse of the species masses (1/g)
+  function get_imass()
+    use krome_commons
+    implicit none
+    real*8::get_imass(nspec)
+
+    get_imass(1) = 1.09776932527d+27	!E
+    get_imass(2) = 5.9721335838d+23	!H-
+    get_imass(3) = 4.98079751954d+22	!C-
+    get_imass(4) = 3.73564051301d+22	!O-
+    get_imass(5) = 5.97538433901d+23	!H
+    get_imass(6) = 1.49430705554d+23	!HE
+    get_imass(7) = 2.9876921695d+23	!H2
+    get_imass(8) = 4.98102351847d+22	!C
+    get_imass(9) = 3.73576763885d+22	!O
+    get_imass(10) = 3.51595278056d+22	!OH
+    get_imass(11) = 2.13472436506d+22	!CO
+    get_imass(12) = 4.59775872662d+22	!CH
+    get_imass(13) = 4.26926052901d+22	!CH2
+    get_imass(14) = 2.49051175924d+22	!C2
+    get_imass(15) = 2.06109124864d+22	!HCO
+    get_imass(16) = 3.32056849448d+22	!H2O
+    get_imass(17) = 1.86788381943d+22	!O2
+    get_imass(18) = 5.97863863505d+23	!H+
+    get_imass(19) = 1.4945104915d+23	!HE+
+    get_imass(20) = 2.98850552203d+23	!H2+
+    get_imass(21) = 4.98124953791d+22	!C+
+    get_imass(22) = 3.73589477335d+22	!O+
+    get_imass(23) = 2.0611299469d+22	!HOC+
+    get_imass(24) = 2.0611299469d+22	!HCO+
+    get_imass(25) = 1.99215623688d+23	!H3+
+    get_imass(26) = 4.59795130141d+22	!CH+
+    get_imass(27) = 4.2694265684d+22	!CH2+
+    get_imass(28) = 2.13476587776d+22	!CO+
+    get_imass(29) = 3.98471753628d+22	!CH3+
+    get_imass(30) = 3.51606539365d+22	!OH+
+    get_imass(31) = 3.32066893916d+22	!H2O+
+    get_imass(32) = 3.14584646656d+22	!H3O+
+    get_imass(33) = 1.86791560251d+22	!O2+
+    get_imass(34) = 1.49471398286d+23	!HE++
+    get_imass(35) = 0.d0	!CR
+    get_imass(36) = 0.d0	!g
+    get_imass(37) = 0.d0	!Tgas
+    get_imass(38) = 0.d0	!dummy
+
+  end function get_imass
+
+  !************************
+  !species binding energies (surface=BARE), K
+  function get_EbindBare()
+    use krome_commons
+    implicit none
+    real*8::get_EbindBare(nspec)
+
+    get_EbindBare(:) = 1d99
+
+    get_EbindBare(idx_H) = 500.0d0
+    get_EbindBare(idx_H2) = 300.0d0
+    get_EbindBare(idx_O) = 1700.0d0
+    get_EbindBare(idx_OH) = 1360.0d0
+    get_EbindBare(idx_CO) = 1100.0d0
+    get_EbindBare(idx_HCO) = 1100.0d0
+    get_EbindBare(idx_H2O) = 4800.0d0
+    get_EbindBare(idx_O2) = 1250.0d0
+
+  end function get_EbindBare
+
+  !************************
+  !species binding energies (surface=ICE), K
+  function get_EbindIce()
+    use krome_commons
+    implicit none
+    real*8::get_EbindIce(nspec)
+
+    get_EbindIce(:) = 1d99
+
+    get_EbindIce(idx_H) = 650.0d0
+    get_EbindIce(idx_H2) = 300.0d0
+    get_EbindIce(idx_O) = 1700.0d0
+    get_EbindIce(idx_OH) = 3500.0d0
+    get_EbindIce(idx_CO) = 1300.0d0
+    get_EbindIce(idx_HCO) = 3100.0d0
+    get_EbindIce(idx_H2O) = 4800.0d0
+    get_EbindIce(idx_O2) = 900.0d0
+
+  end function get_EbindIce
+
+  !************************
+  function get_kevap70()
+    use krome_commons
+    implicit none
+    real*8::get_kevap70(nspec)
+
+    get_kevap70(idx_E) = 0d0
+    get_kevap70(idx_Hk) = 0d0
+    get_kevap70(idx_Ck) = 0d0
+    get_kevap70(idx_Ok) = 0d0
+    get_kevap70(idx_H) = 790490323.12
+    get_kevap70(idx_HE) = 0d0
+    get_kevap70(idx_H2) = 13763786733.1
+    get_kevap70(idx_C) = 0d0
+    get_kevap70(idx_O) = 28.3692788833
+    get_kevap70(idx_OH) = 3649.88043081
+    get_kevap70(idx_CO) = 149751.929641
+    get_kevap70(idx_CH) = 0d0
+    get_kevap70(idx_CH2) = 0d0
+    get_kevap70(idx_C2) = 0d0
+    get_kevap70(idx_HCO) = 149751.929641
+    get_kevap70(idx_H2O) = 1.65884938156e-18
+    get_kevap70(idx_O2) = 17568.7715065
+    get_kevap70(idx_Hj) = 0d0
+    get_kevap70(idx_HEj) = 0d0
+    get_kevap70(idx_H2j) = 0d0
+    get_kevap70(idx_Cj) = 0d0
+    get_kevap70(idx_Oj) = 0d0
+    get_kevap70(idx_HOCj) = 0d0
+    get_kevap70(idx_HCOj) = 0d0
+    get_kevap70(idx_H3j) = 0d0
+    get_kevap70(idx_CHj) = 0d0
+    get_kevap70(idx_CH2j) = 0d0
+    get_kevap70(idx_COj) = 0d0
+    get_kevap70(idx_CH3j) = 0d0
+    get_kevap70(idx_OHj) = 0d0
+    get_kevap70(idx_H2Oj) = 0d0
+    get_kevap70(idx_H3Oj) = 0d0
+    get_kevap70(idx_O2j) = 0d0
+    get_kevap70(idx_HEjj) = 0d0
+    get_kevap70(idx_CR) = 0d0
+    get_kevap70(idx_g) = 0d0
+    get_kevap70(idx_Tgas) = 0d0
+    get_kevap70(idx_dummy) = 0d0
+
+  end function get_kevap70
+
+  !************************
+  !get verbatim reaction names
+  function get_rnames()
+    use krome_commons
+    implicit none
+    character*50::get_rnames(nrea)
+
+    !reaction names are loaded from file
+    get_rnames(:) = reactionNames(:)
+
+  end function get_rnames
+
+  !************************
+  !get species names
+  function get_names()
+    use krome_commons
+    implicit none
+    character*16::get_names(nspec)
+
+    get_names(1) = "E"
+    get_names(2) = "H-"
+    get_names(3) = "C-"
+    get_names(4) = "O-"
+    get_names(5) = "H"
+    get_names(6) = "HE"
+    get_names(7) = "H2"
+    get_names(8) = "C"
+    get_names(9) = "O"
+    get_names(10) = "OH"
+    get_names(11) = "CO"
+    get_names(12) = "CH"
+    get_names(13) = "CH2"
+    get_names(14) = "C2"
+    get_names(15) = "HCO"
+    get_names(16) = "H2O"
+    get_names(17) = "O2"
+    get_names(18) = "H+"
+    get_names(19) = "HE+"
+    get_names(20) = "H2+"
+    get_names(21) = "C+"
+    get_names(22) = "O+"
+    get_names(23) = "HOC+"
+    get_names(24) = "HCO+"
+    get_names(25) = "H3+"
+    get_names(26) = "CH+"
+    get_names(27) = "CH2+"
+    get_names(28) = "CO+"
+    get_names(29) = "CH3+"
+    get_names(30) = "OH+"
+    get_names(31) = "H2O+"
+    get_names(32) = "H3O+"
+    get_names(33) = "O2+"
+    get_names(34) = "HE++"
+    get_names(35) = "CR"
+    get_names(36) = "g"
+    get_names(37) = "Tgas"
+    get_names(38) = "dummy"
+
+  end function get_names
+
+  !************************
+  !get cooling names list (empty element if cooling not present)
+  function get_cooling_names()
+    use krome_commons
+    implicit none
+    character*16::get_cooling_names(ncools)
+
+    get_cooling_names(:) = ""
+
+    get_cooling_names(idx_cool_h2) = "H2"
+    get_cooling_names(idx_cool_h2gp) = "H2GP"
+    get_cooling_names(idx_cool_atomic) = "ATOMIC"
+    get_cooling_names(idx_cool_cen) = "CEN"
+    get_cooling_names(idx_cool_hd) = "HD"
+    get_cooling_names(idx_cool_metal) = "METAL"
+    get_cooling_names(idx_cool_z) = "Z"
+    get_cooling_names(idx_cool_dh) = "DH"
+    get_cooling_names(idx_cool_enthalpic) = "ENTHALPIC"
+    get_cooling_names(idx_cool_dust) = "DUST"
+    get_cooling_names(idx_cool_compton) = "COMPTON"
+    get_cooling_names(idx_cool_cie) = "CIE"
+    get_cooling_names(idx_cool_cont) = "CONT"
+    get_cooling_names(idx_cool_continuum) = "CONTINUUM"
+    get_cooling_names(idx_cool_expansion) = "EXPANSION"
+    get_cooling_names(idx_cool_exp) = "EXP"
+    get_cooling_names(idx_cool_ff) = "FF"
+    get_cooling_names(idx_cool_bss) = "BSS"
+    get_cooling_names(idx_cool_custom) = "CUSTOM"
+    get_cooling_names(idx_cool_co) = "CO"
+    get_cooling_names(idx_cool_zcie) = "ZCIE"
+    get_cooling_names(idx_cool_zcienouv) = "ZCIENOUV"
+    get_cooling_names(idx_cool_zextend) = "ZEXTEND"
+    get_cooling_names(idx_cool_gh) = "GH"
+
+  end function get_cooling_names
+
+  !************************
+  !get heating names list (empty element if heating not present)
+  function get_heating_names()
+    use krome_commons
+    implicit none
+    character*16::get_heating_names(nheats)
+
+    get_heating_names(:) = ""
+
+    get_heating_names(idx_heat_chem) = "CHEM"
+    get_heating_names(idx_heat_compress) = "COMPRESS"
+    get_heating_names(idx_heat_compr) = "COMPR"
+    get_heating_names(idx_heat_photo) = "PHOTO"
+    get_heating_names(idx_heat_dh) = "DH"
+    get_heating_names(idx_heat_enthalpic) = "ENTHALPIC"
+    get_heating_names(idx_heat_av) = "AV"
+    get_heating_names(idx_heat_photoav) = "PHOTOAV"
+    get_heating_names(idx_heat_cr) = "CR"
+    get_heating_names(idx_heat_dust) = "DUST"
+    get_heating_names(idx_heat_xray) = "XRAY"
+    get_heating_names(idx_heat_viscous) = "VISCOUS"
+    get_heating_names(idx_heat_visc) = "VISC"
+    get_heating_names(idx_heat_custom) = "CUSTOM"
+    get_heating_names(idx_heat_zcie) = "ZCIE"
+
+  end function get_heating_names
+
+  !******************************
+  !get the total number of H nuclei
+  function get_Hnuclei(n)
+    use krome_commons
+    real*8::n(:),get_Hnuclei,nH
+
+    nH = n(idx_Hk) + &
+        n(idx_H) + &
+        n(idx_H2)*2d0 + &
+        n(idx_OH) + &
+        n(idx_CH) + &
+        n(idx_CH2)*2d0 + &
+        n(idx_HCO) + &
+        n(idx_H2O)*2d0 + &
+        n(idx_Hj) + &
+        n(idx_H2j)*2d0 + &
+        n(idx_HOCj) + &
+        n(idx_HCOj) + &
+        n(idx_H3j)*3d0 + &
+        n(idx_CHj) + &
+        n(idx_CH2j)*2d0 + &
+        n(idx_CH3j)*3d0 + &
+        n(idx_OHj) + &
+        n(idx_H2Oj)*2d0 + &
+        n(idx_H3Oj)*3d0
+    get_Hnuclei = nH
+
+  end function get_Hnuclei
+
+  !***************************
+  function get_zatoms()
+    use krome_commons
+    implicit none
+    integer::get_zatoms(nspec)
+
+    get_zatoms(1) = 0	!E
+    get_zatoms(2) = 1	!H-
+    get_zatoms(3) = 6	!C-
+    get_zatoms(4) = 8	!O-
+    get_zatoms(5) = 1	!H
+    get_zatoms(6) = 2	!HE
+    get_zatoms(7) = 2	!H2
+    get_zatoms(8) = 6	!C
+    get_zatoms(9) = 8	!O
+    get_zatoms(10) = 9	!OH
+    get_zatoms(11) = 14	!CO
+    get_zatoms(12) = 7	!CH
+    get_zatoms(13) = 8	!CH2
+    get_zatoms(14) = 12	!C2
+    get_zatoms(15) = 15	!HCO
+    get_zatoms(16) = 10	!H2O
+    get_zatoms(17) = 16	!O2
+    get_zatoms(18) = 1	!H+
+    get_zatoms(19) = 2	!HE+
+    get_zatoms(20) = 2	!H2+
+    get_zatoms(21) = 6	!C+
+    get_zatoms(22) = 8	!O+
+    get_zatoms(23) = 15	!HOC+
+    get_zatoms(24) = 15	!HCO+
+    get_zatoms(25) = 3	!H3+
+    get_zatoms(26) = 7	!CH+
+    get_zatoms(27) = 8	!CH2+
+    get_zatoms(28) = 14	!CO+
+    get_zatoms(29) = 9	!CH3+
+    get_zatoms(30) = 9	!OH+
+    get_zatoms(31) = 10	!H2O+
+    get_zatoms(32) = 11	!H3O+
+    get_zatoms(33) = 16	!O2+
+    get_zatoms(34) = 2	!HE++
+    get_zatoms(35) = 0	!CR
+    get_zatoms(36) = 0	!g
+    get_zatoms(37) = 0	!Tgas
+    get_zatoms(38) = 0	!dummy
+
+  end function get_zatoms
+
+  !******************************
+  function get_qeff()
+    use krome_commons
+    implicit none
+    real*8::get_qeff(nrea)
+
+    get_qeff(:) = 0e0
+
+  end function get_qeff
+
+  !**************************
+  function get_free_fall_time(n)
+    use krome_constants
+    use krome_commons
+    implicit none
+    real*8::n(:),m(nspec)
+    real*8::rhogas,get_free_fall_time
+
+    m(:) = get_mass()
+    rhogas = sum(n(1:nmols)*m(1:nmols))
+    get_free_fall_time = sqrt(3d0*pi/32d0/gravity/rhogas)
+
+  end function get_free_fall_time
+
+  !**************************
+  function get_free_fall_time_rho(rhogas)
+    use krome_constants
+    implicit none
+    real*8::rhogas,get_free_fall_time_rho
+
+    get_free_fall_time_rho = sqrt(3d0*pi/32d0/gravity/rhogas)
+
+  end function get_free_fall_time_rho
+
+  !********************************
+  function get_jeans_length(n,Tgas)
+    !get jeans length in cm
+    use krome_constants
+    use krome_commons
+    implicit none
+    real*8::n(:),Tgas,mu,rhogas
+    real*8::m(nspec),get_jeans_length
+    m(:) = get_mass()
+    rhogas = max(sum(n(1:nmols)*m(1:nmols)),1d-40)
+    mu = get_mu_rho(n(:),rhogas)
+    get_jeans_length = sqrt(pi*boltzmann_erg*Tgas/rhogas&
+        /p_mass/gravity/mu)
+
+  end function get_jeans_length
+
+  !********************************
+  function get_jeans_length_rho(n,Tgas,rhogas)
+    !get jeans length in cm
+    use krome_constants
+    use krome_commons
+    implicit none
+    real*8::n(:),Tgas,mu,rhogas
+    real*8::get_jeans_length_rho
+
+    mu = get_mu_rho(n(:),rhogas)
+    get_jeans_length_rho = sqrt(pi*boltzmann_erg*Tgas/rhogas&
+        /p_mass/gravity/mu)
+
+  end function get_jeans_length_rho
+
+  !***************************
+  !number density to column density conversion
+  function num2col(ncalc,n)
+    use krome_commons
+    implicit none
+    real*8::num2col,ncalc,n(:),Tgas
+    Tgas = max(n(idx_Tgas),phys_Tcmb)
+
+    num2col = 1.87d21*(max(ncalc,1d-40)*1d-3)**(2./3.)
+
+  end function num2col
+
+  !***********************
+  !column density to number density conversion
+  function col2num(ncalc,n)
+    use krome_commons
+    implicit none
+    real*8::col2num,ncalc,n(:),Tgas
+    Tgas = max(n(idx_Tgas),phys_Tcmb)
+
+    col2num = 1d3 * (max(ncalc,1d-40)/1.87d21)**1.5
+
+  end function col2num
+
+  !************************
+  !get electrons by balancing charges
+  function get_electrons(n)
+    use krome_commons
+    implicit none
+    real*8::get_electrons,n(nspec)
+
+    get_electrons =  - n(idx_Hk) &
+        - n(idx_Ck) &
+        - n(idx_Ok) &
+        + n(idx_Hj) &
+        + n(idx_HEj) &
+        + n(idx_H2j) &
+        + n(idx_Cj) &
+        + n(idx_Oj) &
+        + n(idx_HOCj) &
+        + n(idx_HCOj) &
+        + n(idx_H3j) &
+        + n(idx_CHj) &
+        + n(idx_CH2j) &
+        + n(idx_COj) &
+        + n(idx_CH3j) &
+        + n(idx_OHj) &
+        + n(idx_H2Oj) &
+        + n(idx_H3Oj) &
+        + n(idx_O2j) &
+        + 2d0*n(idx_HEjj)
+    get_electrons = max(get_electrons,0d0)
+
+  end function get_electrons
+
+  !************************
+  !get species charges
+  function get_charges()
+    use krome_commons
+    implicit none
+    integer::get_charges(nspec)
+
+    get_charges(1) = -1.d0 	!E
+    get_charges(2) = -1.d0 	!H-
+    get_charges(3) = -1.d0 	!C-
+    get_charges(4) = -1.d0 	!O-
+    get_charges(5) = 0.d0 	!H
+    get_charges(6) = 0.d0 	!HE
+    get_charges(7) = 0.d0 	!H2
+    get_charges(8) = 0.d0 	!C
+    get_charges(9) = 0.d0 	!O
+    get_charges(10) = 0.d0 	!OH
+    get_charges(11) = 0.d0 	!CO
+    get_charges(12) = 0.d0 	!CH
+    get_charges(13) = 0.d0 	!CH2
+    get_charges(14) = 0.d0 	!C2
+    get_charges(15) = 0.d0 	!HCO
+    get_charges(16) = 0.d0 	!H2O
+    get_charges(17) = 0.d0 	!O2
+    get_charges(18) = 1.d0 	!H+
+    get_charges(19) = 1.d0 	!HE+
+    get_charges(20) = 1.d0 	!H2+
+    get_charges(21) = 1.d0 	!C+
+    get_charges(22) = 1.d0 	!O+
+    get_charges(23) = 1.d0 	!HOC+
+    get_charges(24) = 1.d0 	!HCO+
+    get_charges(25) = 1.d0 	!H3+
+    get_charges(26) = 1.d0 	!CH+
+    get_charges(27) = 1.d0 	!CH2+
+    get_charges(28) = 1.d0 	!CO+
+    get_charges(29) = 1.d0 	!CH3+
+    get_charges(30) = 1.d0 	!OH+
+    get_charges(31) = 1.d0 	!H2O+
+    get_charges(32) = 1.d0 	!H3O+
+    get_charges(33) = 1.d0 	!O2+
+    get_charges(34) = 2.d0 	!HE++
+    get_charges(35) = 0.d0 	!CR
+    get_charges(36) = 0.d0 	!g
+    get_charges(37) = 0.d0 	!Tgas
+    get_charges(38) = 0.d0 	!dummy
+
+  end function get_charges
+
+  !*****************************
+  ! get metallicity using C as reference
+  function get_metallicityC(n)
+    use krome_commons
+    implicit none
+    real*8::n(:),get_metallicityC,zC,nH
+
+    nH = get_Hnuclei(n(:))
+
+    zC = n(idx_Ck) &
+        + n(idx_C) &
+        + n(idx_CO) &
+        + n(idx_CH) &
+        + n(idx_CH2) &
+        + 2d0*n(idx_C2) &
+        + n(idx_HCO) &
+        + n(idx_Cj) &
+        + n(idx_HOCj) &
+        + n(idx_HCOj) &
+        + n(idx_CHj) &
+        + n(idx_CH2j) &
+        + n(idx_COj) &
+        + n(idx_CH3j)
+
+    zC = max(zC, 0d0)
+
+    get_metallicityC = log10(zC/nH+1d-40) - (-3.57)
+
+    phys_metallicity = get_metallicityC
+
+  end function get_metallicityC
+
+  !*****************************
+  ! get metallicity using O as reference
+  function get_metallicityO(n)
+    use krome_commons
+    implicit none
+    real*8::n(:),get_metallicityO,zO,nH
+
+    nH = get_Hnuclei(n(:))
+
+    zO = n(idx_Ok) &
+        + n(idx_O) &
+        + n(idx_OH) &
+        + n(idx_CO) &
+        + n(idx_HCO) &
+        + n(idx_H2O) &
+        + 2d0*n(idx_O2) &
+        + n(idx_Oj) &
+        + n(idx_HOCj) &
+        + n(idx_HCOj) &
+        + n(idx_COj) &
+        + n(idx_OHj) &
+        + n(idx_H2Oj) &
+        + n(idx_H3Oj) &
+        + 2d0*n(idx_O2j)
+
+    zO = max(zO, 0d0)
+
+    get_metallicityO = log10(zO/nH+1d-40) - (-3.31)
+
+    phys_metallicity = get_metallicityO
+
+  end function get_metallicityO
+
+end module krome_getphys
+!This module contains the functions and subroutines
+! needed to evaluate the adiabatic index.
+
+!############### MODULE ##############
+module krome_gadiab
+contains
+
+  !#KROME_header
+
+  !**************************
+  !compute 1/(gamma-1) at Tgasin using the partition function
+  ! provided in the array_part with a temperature step dT_part
+  ! and a minimum Tgas value min_part
+  function gamma_pop(array_part,dT_part,min_part,Tgasin)
+    implicit none
+    real*8::array_part(:),dT_part
+    real*8::min_part,Tgas,gamma_pop,Tgas2,Tgasin
+    real*8::logz,logz1,logz2,emed1,emed2,Cv,inTgas,T2,T1,Cv1,Cv2
+    integer::idx
+
+    !temperature above minimum data point
+    inTgas = max(Tgasin,min_part)
+
+    !data index
+    idx = (inTgas-min_part)/dT_part+1
+    !corresponding Tgas
+    Tgas = (idx-1)*dT_part+min_part
+    !store Tgas
+    T1 = Tgas
+
+    !ln of partition functions (3 points forward)
+    logz = log(array_part(idx))
+    logz1 = log(array_part(idx+1))
+    logz2 = log(array_part(idx+2))
+
+    !derivative for mean energy (2 points forward)
+    emed1 = Tgas**2*(logz1-logz)/dT_part
+    emed2 = (Tgas+dT_part)**2*(logz2-logz1)/dT_part
+
+    !derivative for 1/(gamma-1)
+    Cv1 = (emed2-emed1)/dT_part
+
+    !next point temperature
+    Tgas = (idx)*dT_part+min_part
+    !store Tgas
+    T2 = Tgas
+    !ln of partition functions
+    logz = logz1
+    logz1 = logz2
+    logz2 = log(array_part(idx+3))
+
+    !derivative for mean energy
+    emed1 = Tgas**2*(logz1-logz)/dT_part
+    emed2 = (Tgas+dT_part)**2*(logz2-logz1)/dT_part
+
+    !derivative for 1/(gamma-1)
+    Cv2 = (emed2-emed1)/dT_part
+
+    !interpolation for 1/(gamma-1)
+    Cv = (Cv2-Cv1)*(inTgas-T1)/(T2-T1)+Cv1
+
+    !returns result
+    gamma_pop = Cv
+
+  end function gamma_pop
+
+  !*****************************
+  !compute 1/(gamma-1) at Tgasin using the partition function
+  ! provided in the array_part with a temperature step dT_part
+  ! and a minimum Tgas value min_part, for H2 with a ortho/para
+  ! ratio of opratio. Needs even and odd partition functions.
+  function gamma_pop_H2(array_part_even,array_part_odd,dT_part,&
+        min_part,Tgasin,opratio)
+    implicit none
+    real*8::array_part_even(:),array_part_odd(:),dT_part,zcut(4)
+    real*8::min_part,Tgas,opratio,gamma_pop_H2,Tgas2,a,b,Tgasin
+    real*8::logz,logz1,logz2,emed1,emed2,Cv,inTgas,T2,T1,Cv1,Cv2
+    integer::idx
+
+    !Tgas above the data limit
+    inTgas = max(Tgasin,min_part)
+
+    !exponents for ortho/para ratio
+    a = opratio/(opratio+1d0) !exponent zo
+    b = 1d0-a !exponent zp
+
+    !index in the data for the given Tgas
+    idx = (inTgas-min_part)/dT_part+1
+    !get the corresponding Tgas
+    Tgas = (idx-1)*dT_part+min_part
+    !store Tgas
+    T1 = Tgas
+
+    !needed for ortho partition function (see Boley+2007)
+    zcut(1) = exp(2d0*85.4/Tgas)
+    zcut(2) = exp(2d0*85.4/(Tgas+dT_part))
+    zcut(3) = exp(2d0*85.4/(Tgas+2d0*dT_part))
+    zcut(4) = exp(2d0*85.4/(Tgas+3d0*dT_part))
+
+    !ln of the composite partition function
+    logz = log(array_part_even(idx)**b*(3d0*array_part_odd(idx)*zcut(1))**a)
+    logz1 = log(array_part_even(idx+1)**b*(3d0*array_part_odd(idx+1)*zcut(2))**a)
+    logz2 = log(array_part_even(idx+2)**b*(3d0*array_part_odd(idx+2)*zcut(3))**a)
+    !derivative for mean energy
+    emed1 = Tgas**2*(logz1-logz)/dT_part
+    emed2 = (Tgas+dT_part)**2*(logz2-logz1)/dT_part
+
+    !get 1/(gamma-1) for the left point
+    Cv1 = (emed2-emed1)/dT_part
+
+    !Tgas of the right point
+    Tgas = (idx)*dT_part+min_part
+    !store Tgas
+    T2 = Tgas
+    !ln of the composite function
+    logz = logz1
+    logz1 = logz2
+    logz2 = log(array_part_even(idx+3)**b*(3d0*array_part_odd(idx+3)*zcut(4))**a)
+    !derivative for the mean energy
+    emed1 = Tgas**2*(logz1-logz)/dT_part
+    emed2 = (Tgas+dT_part)**2*(logz2-logz1)/dT_part
+
+    !get 1/(gamma-1) for the right point
+    Cv2 = (emed2-emed1)/dT_part
+
+    !interpolation of 1/(gamma-1)
+    Cv = (Cv2-Cv1)*(inTgas-T1)/(T2-T1)+Cv1
+
+    !returns the result
+    gamma_pop_H2 = Cv
+  end function gamma_pop_H2
+
+  !**************************
+  !function to get the partition function
+  ! of H2 at Tgas with a orto-para ratio
+  ! equal to opratio
+  function zfop(Tgas,opratio)
+    implicit none
+    real*8::Tgas,zfop,brot,ibTgas
+    real*8::a,b,zo,zp,opratio
+    integer::j,jmax,j1
+    brot = 85.4d0 !H2 rotational constant in K
+    zo = 0d0 !sum for ortho partition function
+    zp = 0d0 !sum for para partition function
+    jmax = 10 !number of terms in sum
+
+    ibTgas = brot/Tgas !pre-calc
+
+    !loop over levels
+    do j=0,jmax,2 !step 2
+      j1 = j + 1
+      zp = zp + (2d0*j+1d0) * exp(-j*(j+1d0)*ibTgas)
+      zo = zo + 3d0 * (2d0*j1+1d0) * exp(-j1*(j1+1d0)*ibTgas)
+    end do
+
+    a = opratio/(opratio+1d0) !exponent zo
+    b = 1d0-a !exponent zp
+
+    zfop = (zp**b * zo**a*exp(-2d0*ibTgas)) !final partition f
+
+  end function zfop
+
+  !*********************
+  !get the partition function at Tgas
+  ! of a diatom with rotational constant
+  ! brot in K
+  function zf(Tgas,brot)
+    real*8::Tgas,zf,brot,z,ibTgas
+    integer::j,jmax
+    jmax = 10 !number of levels
+
+    ibTgas = brot/Tgas !store
+    z = 0d0
+    !loop on levels
+    do j=0,jmax
+      z = z + (2d0*j+1d0)*exp(-j*(j+1d0)*ibTgas)
+    end do
+
+    zf = z
+
+  end function zf
+
+  !***********************
+  !get the degrees of freedom at Tgas for
+  ! the rotational component of H2 with
+  ! an ortho-para ratio of opratio
+  function gamma_rotop(Tgas_in,opratio)
+    implicit none
+    real*8::gamma_rotop,Tgas,dT,Tgas_in
+    real*8::idT,dlog1,prot1,dlog2,prot2
+    real*8::logp1,opratio
+
+    Tgas = max(Tgas_in,1d1)
+
+    dT = Tgas*1d-5 !dT for derivative
+    idT =  1d0/dT !stored for numeric derivative
+    logp1 = log(zfop(Tgas+dT,opratio)) !store since used twice
+
+    !derivative dlog(T)/dT = f(T)
+    dlog1 = (logp1-log(zfop(Tgas,opratio)))*idT
+    prot1 = dlog1*Tgas**2
+
+    !derivative dlog(T+dT)/dT = f(T+dT)
+    dlog2 = (log(zfop(Tgas+dT+dT,opratio))-logp1)*idT
+    prot2 = dlog2*(Tgas+dT)**2
+
+    !derivative df(T)/dT
+    gamma_rotop = (prot2-prot1)*idT
+
+  end function gamma_rotop
+
+  !***********************
+  !get the degrees of freedom at Tgas for
+  ! the rotational component of a diatom
+  ! with rotational constant brot in K
+  function gamma_rot(Tgas_in,brot)
+    implicit none
+    real*8::gamma_rot,Tgas,dT,Tgas_in
+    real*8::idT,dlog1,prot1,dlog2,prot2
+    real*8::logp1,brot
+
+    Tgas = max(Tgas_in,1d1)
+
+    dT = Tgas*1d-5 !dT for derivative
+    idT =  1d0/dT !stored for numeric derivative
+    logp1 = log(zf(Tgas+dT,brot)) !store since used twice
+
+    !derivative dlog(T)/dT = f(T)
+    dlog1 = (logp1-log(zf(Tgas,brot)))*idT
+    prot1 = dlog1*Tgas**2
+
+    !derivative dlog(T+dT)/dT = f(T+dT)
+    dlog2 = (log(zf(Tgas+dT+dT,brot))-logp1)*idT
+    prot2 = dlog2*(Tgas+dT)**2
+
+    !derivative df(T)/dT
+    gamma_rot = (prot2-prot1)*idT
+
+  end function gamma_rot
+
+  !*********************
+  !get gamma
+  function gamma_index(n)
+    use krome_commons
+    implicit none
+    real*8::n(:),gamma_index,krome_gamma
+
+    krome_gamma = 1.66666666667d0
+
+    gamma_index = krome_gamma
+  end function gamma_index
+
+end module krome_gadiab
+!This module contains functions and subroutines
+! for the surface chemistry, including adsorption, desorption, chemisorption
+! and icy grains.
+
+!############### MODULE ##############
+module krome_grfuncs
+contains
+
+  ! *************************************************************
+  !  This file has been generated with:
+  !  KROME 14.08.dev on 2018-08-27 09:46:28
+  !  Changeset be164d7
+  !  see http://kromepackage.org
+  !
+  !  Written and developed by Tommaso Grassi and Stefano Bovino
+  !
+  !  Contributors:
+  !  J.Boulangier, T.Frostholm, D.Galli, F.A.Gianturco, T.Haugboelle,
+  !  A.Lupi, J.Prieto, J.Ramsey, D.R.G.Schleicher, D.Seifried, E.Simoncini,
+  !  E.Tognelli
+  !  KROME is provided "as it is", without any warranty.
+  ! *************************************************************
+
+  !**********************
+  !get Tdust from tables, K
+  function get_table_Tdust(n) result(Tdust)
+    use krome_commons
+    use krome_fit
+    implicit none
+    real*8,intent(in)::n(nspec)
+    real*8::ntot,Tdust,Tgas
+
+    Tgas = n(idx_Tgas)
+
+    !default, K
+    Tdust = 1d0
+
+    !total densitym, cm-3
+    ntot = sum(n(1:nmols))
+
+    !zero density returns default
+    if(ntot==0d0) return
+
+    !get dust temperature from table, K
+    Tdust = 1d1**fit_anytab2D(dust_tab_ngas(:), &
+        dust_tab_Tgas(:), dust_tab_Tdust(:,:), dust_mult_ngas, &
+        dust_mult_Tgas, &
+        log10(ntot), log10(Tgas))
+
+  end function get_table_Tdust
+
+  !**********************
+  !adsorpion rate Hollenbach+McKee 1979, Cazaux+2010, Hocuk+2014
+  function dust_adsorption_rate(nndust,ims,stick,adust2,sqrTgas)
+    use krome_constants
+    implicit none
+    real*8::dust_adsorption_rate,nndust,ims,stick,adust2,sqrTgas
+
+    dust_adsorption_rate = nndust * pi * adust2 &
+        * pre_kvgas_sqrt * ims * sqrTgas &
+        * stick
+
+  end function dust_adsorption_rate
+
+  !*****************************
+  !desorption rate Cazaux+2010, Hocuk+2014
+  function dust_desorption_rate(fice,expEice,expEbare)
+    implicit none
+    real*8::dust_desorption_rate
+    real*8::fice,expEice,expEbare,nu0,fbare
+
+    nu0 = 1d12 !1/s
+    fbare = 1d0 - fice
+    dust_desorption_rate = nu0 * (fbare * expEbare &
+        + fice * expEice)
+
+  end function dust_desorption_rate
+
+  !**************************
+  function dust_2body_rate(p,invphi,fice,expEice1,expEice2,&
+        expEbare1,expEbare2,pesc_ice,pesc_bare)
+    use krome_constants
+    implicit none
+    real*8::fice,expEice1,expEice2,expEbare1,expEbare2,invphi
+    real*8::nu0,p,dust_2body_rate,fbare,pesc_ice,pesc_bare
+
+    !no need to calculate this if the dust is not present
+    dust_2body_rate = 0d0
+
+    fbare = 1d0-fice
+    nu0 = 1d12 ! 1/s
+    dust_2body_rate = fbare * (expEbare1 + expEbare2) * pesc_bare &
+        + fice * (expEice1 + expEice2) * pesc_ice
+    dust_2body_rate = dust_2body_rate * p * nu0 * invphi
+
+  end function dust_2body_rate
+
+  !******************
+  function krate_2bodySi(n,idx1,idx2,Ea,Tdust) result(krate)
+    use krome_commons
+    implicit none
+    real*8,intent(in)::n(nspec),Ea,Tdust
+    integer,intent(in)::idx1,idx2
+    real*8::krate,amin,amax,pexp,d2g,rho0
+
+    !some default values OK for silicates
+    amin = 5d-7 !cm
+    amax = 2.5d-5 !cm
+    pexp = -3.5
+    rho0 = 3d0 !g/cm3
+    d2g = 1d-2
+
+    krate = krate_2body(n(:),idx1,idx2,amin,amax,pexp,d2g,rho0,Ea,Tdust)
+
+  end function krate_2bodySi
+
+  !********************
+  function krate_2body(n,idx1,idx2,amin,amax,pexp,d2g,rho0, &
+        Ea,Tdust) result(krate)
+    use krome_commons
+    use krome_constants
+    use krome_getphys
+    implicit none
+    integer,intent(in)::idx1,idx2
+    real*8,intent(in)::n(nspec),amin,amax,pexp,d2g,rho0,Ea,Tdust
+    real*8::rhog,p3,p4,ndns,krate,mred,fice,fbare,Preac
+    real*8::iTd23,Ebare(nspec),Eice(nspec),mass(nspec)
+    real*8,parameter::app2=(3d-8)**2 !cm^2 (Hocuk+2015)
+    real*8,parameter::nu0=1d12 !1/s
+    real*8,parameter::hbar=planck_erg/2d0/pi !erg*s
+    real*8,parameter::ar=1d-8 !cm
+
+    mass(:) = get_mass()
+
+    !gas density, g/cm3
+    rhog = sum(mass(1:nmols)*n(1:nmols))
+
+    !exponentes
+    p3 = pexp + 3d0
+    p4 = pexp + 4d0
+
+    !number of sites cm-3/mly
+    ndns = rhog/(4d0/3d0*rho0*app2)*(amax**p3-amin**p3) &
+        / (amax**p4-amin**p4) * p4 / p3
+
+    !ice/bare fraction
+    fbare = 1d0
+
+    !reduced mass
+    mred = mass(idx1)*mass(idx2)/(mass(idx1)+mass(idx2))
+
+    !tunneling probability
+    Preac = exp(-2d0*ar/hbar*sqrt(2d0*mred*Ea*boltzmann_erg))
+
+    !exponent
+    iTd23 = 2d0/3d0/Tdust
+
+    !get Ebind, K
+    Ebare(:) = get_Ebind_bare()
+
+    !compute rate
+    krate = fbare*(exp(-Ebare(idx1)*iTd23)+exp(-Ebare(idx2)*iTd23))
+
+    !rate in cm3/s
+    krate = nu0*Preac/ndns*krate
+
+  end function krate_2body
+
+  !*************************
+  function dust_get_inv_phi(asize2,nndust)
+    use krome_commons
+    use krome_constants
+    implicit none
+    real*8::iapp2,dust_get_inv_phi(ndust),asize2(ndust)
+    real*8::nndust(ndust),dephi
+    integer::i
+
+    iapp2 = (3d-8)**2 !1/cm2
+    do i=1,ndust
+      dust_get_inv_phi(i) = 0d0
+      dephi = (4d0 * nndust(i) * pi * asize2(i))
+      if(dephi.le.0d0) cycle
+      dust_get_inv_phi(i) = iapp2 / dephi
+    end do
+
+  end function dust_get_inv_phi
+
+  !****************************
+  !returns an array with the sticking coefficient for each bin
+  ! following Hollenbach+McKee 1979
+  function dust_stick_array(Tgas,Tdust)
+    use krome_commons
+    implicit none
+    real*8::dust_stick_array(ndust),Tgas,Tdust(ndust)
+    real*8::Tg100,Td100
+    integer::i
+
+    Tg100 = Tgas * 1d-2
+    do i=1,ndust
+      Td100 = Tdust(i) * 1d-2
+      dust_stick_array(i) = 1d0/(1d0+.4d0*sqrt(Tg100+Td100) &
+          + .2d0*Tg100 + 0.08d0*Tg100**2)
+    end do
+
+  end function dust_stick_array
+
+  !*************************
+  function dust_stick(Tgas,Tdust)
+    implicit none
+    real*8,intent(in)::Tgas,Tdust
+    real*8::dust_stick
+    real*8::Tg100,Td100
+
+    Tg100 = Tgas * 1d-2
+    Td100 = Tdust * 1d-2
+    dust_stick = 1d0/(1d0 + 0.4d0*sqrt(Tg100+Td100) &
+        + 0.2d0*Tg100 + 0.08d0*Tg100**2)
+
+  end function dust_stick
+
+  !****************************
+  !sticking rate (1/s), assuming power-law dust distribution
+  ! example rate is
+  !  @format:idx,R,P,rate
+  !  1,CO,CO_ice,krate_stick(n(:),idx_CO,1d-7,1d-5,-3.5,3d0,1d-2)
+  ! n(:): internal status array (number densities, temeperature, etc...)
+  ! idx : index of the sticking species, e.g. idx_CO
+  ! Tdust: dust temperature (assume same for all bins), K
+  ! amin: min grain size, cm
+  ! amax: max grain size, cm
+  ! pexp: power-law exponent, usually -3.5
+  ! rho0: bulk material density, g/cm3, e.g. 3 g/cm3 for silicates
+  ! d2g: dust to gass mass ratio, usually 0.01
+  function krate_stick(n,idx,Tdust,amin,amax,pexp,rho0,d2g) result(k)
+    use krome_constants
+    use krome_commons
+    use krome_getphys
+    implicit none
+    real*8,intent(in)::n(nspec),Tdust,amin,amax,pexp,rho0,d2g
+    real*8::k,imass(nspec),p4,p3,mass(nspec),rhod
+    integer,intent(in)::idx
+
+    !get inverse mass squared
+    imass(:) = get_imass_sqrt()
+    !get masses
+    mass(:) = get_mass()
+    !derived exponents
+    p3 = pexp + 3.
+    p4 = pexp + 4.
+
+    !total dust density, g/cm3
+    rhod = sum(n(1:nmols)*mass(1:nmols))*d2g
+
+    !compute rate (1/s) coefficient assuming normalization
+    k = pre_kvgas_sqrt*sqrt(n(idx_Tgas)) * imass(idx) &
+        * rhod / (4./3.*rho0) * p4 / p3 &
+        * (amax**p3-amin**p3) / (amax**p4-amin**p4) &
+        * dust_stick(n(idx_Tgas),Tdust)
+
+  end function krate_stick
+
+  !********************************
+  !compact version of krate_stick
+  function krate_stickSi(n,idx,Tdust) result(k)
+    use krome_commons
+    implicit none
+    integer,intent(in)::idx
+    real*8,intent(in)::n(nspec),Tdust
+    real*8::k,amin,amax,d2g,rho0,pexp
+
+    !some default values OK for silicates
+    amin = 5d-7 !cm
+    amax = 2.5d-5 !cm
+    pexp = -3.5
+    rho0 = 3d0 !g/cm3
+    d2g = 1d-2
+
+    k = krate_stick(n(:),idx,Tdust,amin,amax,pexp,rho0,d2g)
+
+  end function krate_stickSi
+
+  !***************************
+  !evaporation rate, 1/s
+  function krate_evaporation(n,idx,Tdust) result(k)
+    use krome_commons
+    use krome_getphys
+    implicit none
+    integer,intent(in)::idx
+    real*8,intent(in)::n(nspec),Tdust
+    real*8::k,Ebind(nspec),nu0
+
+    nu0 = 1d12 !1/s
+    Ebind(:) = get_EbindBare()
+
+    k = nu0 * exp(-Ebind(idx)/Tdust)
+
+  end function krate_evaporation
+
+  !***************************
+  !non-thermal evaporation rate (1/s) following Hollenbach 2009,
+  ! http://adsabs.harvard.edu/cgi-bin/bib_query?arXiv:0809.1642
+  !Gnot is the habing flux (1.78 is Draine)
+  !Av is the visual extinction
+  !crflux the ionization flux of cosmic rays, 1/s
+  !yield is the efficiency of the photons to desorb the given molecule
+  function krate_nonthermal_evaporation(idx, Gnot, Av, crflux, yield) result(k)
+    use krome_commons
+    use krome_getphys
+    implicit none
+    integer,intent(in)::idx
+    real*8,parameter::crnot=1.3d-17
+    real*8,parameter::Fnot=1d8 !desorbing photons flux, 1/s
+    real*8,parameter::ap2=(3d-8)**2 !sites separation squared, cm2
+    real*8,intent(in)::Gnot, Av, crflux, yield
+    real*8::k,f70,kevap70(nspec)
+
+    f70 = 3.16d-19*crflux/crnot
+    kevap70(:) = get_kevap70()
+
+    k = Gnot*Fnot*ap2*yield*exp(-1.8*Av)
+    k = k + f70*kevap70(idx)
+
+  end function krate_nonthermal_evaporation
+
+  !***************************
+  function dust_ice_fraction_array(invphi,nH2O)
+    use krome_constants
+    use krome_commons
+    implicit none
+    integer::i
+    real*8::dust_ice_fraction_array(ndust)
+    real*8::invphi(ndust),nH2O(ndust)
+
+    do i=1,ndust
+      dust_ice_fraction_array(i) = min(nH2O(i) * invphi(i), 1d0)
+    end do
+
+  end function dust_ice_fraction_array
+
+  !*****************************
+  function get_Ebareice_exp_array(invTdust)
+    use krome_commons
+    implicit none
+    real*8::get_Ebareice_exp_array(2*nspec),invTdust(ndust)
+
+    get_Ebareice_exp_array(:) = 0d0
+
+  end function get_Ebareice_exp_array
+
+  !*****************************
+  function get_Ebareice23_exp_array(invTdust)
+    use krome_commons
+    implicit none
+    real*8::get_Ebareice23_exp_array(2*nspec),invTdust(ndust)
+
+    get_Ebareice23_exp_array(:) = 0d0
+
+  end function get_Ebareice23_exp_array
+
+  !************************
+  !returns the binding energy for ice coated grain (K)
+  function get_Ebind_ice()
+    use krome_commons
+    implicit none
+    real*8::get_Ebind_ice(nspec)
+
+    get_Ebind_ice(:) = 0d0
+
+  end function get_Ebind_ice
+
+  !************************
+  !returns the binding energy for bare grain (K)
+  function get_Ebind_bare()
+    use krome_commons
+    implicit none
+    real*8::get_Ebind_bare(nspec)
+
+    get_Ebind_bare(:) = 0d0
+
+  end function get_Ebind_bare
+
+  !************************
+  !returns the index of the parent dust bin (0 if none)
+  function get_parent_dust_bin()
+    use krome_commons
+    implicit none
+    integer::get_parent_dust_bin(nspec)
+
+    get_parent_dust_bin(:) = 0
+
+  end function get_parent_dust_bin
+
+  !*****************************
+  function get_exp_table(ain,invT)
+    use krome_commons
+    implicit none
+    integer::ia
+    real*8::get_exp_table,a,invT,ain
+    real*8::x1a,f1,f2
+
+    a = ain*invT
+    a = min(a, exp_table_aMax - exp_table_da)
+
+    ia = (a-exp_table_aMin) * exp_table_multa + 1
+    ia = max(ia,1)
+
+    x1a = (ia-1)*exp_table_da
+
+    f1 = exp_table(ia)
+    f2 = exp_table(ia+1)
+
+    get_exp_table = (a-x1a) * exp_table_multa * (f2-f1) + f1
+
+  end function get_exp_table
+
+end module krome_grfuncs
+!This module mainly contains shielding routine and
+! function to initialize radiation background (e.g. Planck).
+
+!############### MODULE ##############
+module krome_phfuncs
+contains
+
+  !****************************
+  !dust shielding factor
+  function shield_dust(n,Tgas,gam)
+    use krome_commons
+    use krome_getphys
+    implicit none
+    real*8::shield_dust,n(:),Tgas,gam,eff_d2g
+    real*8::sigma_d,NHtot
+
+    eff_d2g = dust2gas_ratio
+    sigma_d = 2d-21*eff_d2g*gam !Richings et al. 2014
+    !sigma_d = 2d-21 !Glover+2007
+    !sigma_d = 4d-22 !Richings+ 2014
+    !sigma_d = 4d-21 !Gnedin 2009
+
+    NHtot = 0d0
+    NHtot  = NHtot + num2col(n(idx_H),n(:))
+    NHtot  = NHtot + num2col(n(idx_Hj),n(:))
+    NHtot  = NHtot + 2d0 * num2col(n(idx_H2),n(:))
+
+    shield_dust = exp(-sigma_d*NHtot)
+
+  end function shield_dust
+
+  !*******************
+  !apply a shielding to Habing flux
+  subroutine calcHabingThick(n,Tgas)
+    use krome_commons
+    implicit none
+    real*8::getHabingThick,n(:),Tgas
+
+    GHabing = GHabing_thin * shield_dust(n(:),Tgas,0.665d0)
+
+  end subroutine calcHabingThick
+
+  !*********************
+  !return the ratio between the current flux an Draine's
+  function get_ratioFluxDraine()
+    implicit none
+    real*8::get_ratioFluxDraine
+
+    !7.95d-8 eV/cm2/sr is the integrated Draine flux
+    get_ratioFluxDraine = get_integratedFlux()/7.95d-8
+
+  end function get_ratioFluxDraine
+
+  !**********************
+  !return the curred integrated flux (eV/cm2/sr)
+  ! as I(E)/E*dE
+  function get_integratedFlux()
+    use krome_commons
+    implicit none
+    integer::j
+    real*8::get_integratedFlux,dE
+
+    get_integratedFlux = 0d0
+    do j=1,nPhotoBins
+      dE = photoBinEdelta(j)
+      get_integratedFlux = get_integratedFlux &
+          + photoBinJ(j)*dE/photoBinEmid(j)
+    end do
+
+  end function get_integratedFlux
+
+  !**********************
+  !planck function in eV/s/cm2/Hz/sr
+  ! x is the energy in eV, Tbb the black body
+  ! temperature in K
+  function planckBB(x,Tbb)
+    use krome_constants
+    implicit none
+    real*8::Tbb,x,xexp,planckBB
+
+    !exponent
+    xexp = x/boltzmann_eV/Tbb
+
+    !default value
+    planckBB = 0d0
+
+    !limit exp overflow
+    if(xexp<3d2.and.x>1d-10) then
+      planckBB = 2d0*x**3/planck_eV**2/clight**2 &
+          / (exp(xexp)-1d0)
+    end if
+
+  end function planckBB
+
+  !********************
+  !planck function dTdust differential
+  ! in eV/s/cm2/Hz/sr/K, where
+  ! x is the energy in eV, Tbb the black body
+  ! temperature in K
+  function planckBB_dT(x,Tbb)
+    use krome_constants
+    real*8::a,b,x,Tbb,xexp,planckBB_dT
+
+    b = 1d0/boltzmann_eV
+    xexp = b*x/Tbb
+
+    planckBB_dT = 0d0
+
+    if(xexp<3d2) then
+      a = 2d0/planck_eV**2/clight**2
+      planckBB_dT = a*b*x**4/Tbb/Tbb * exp(xexp)/(exp(xexp)-1d0)**2
+    end if
+
+  end function planckBB_dT
+
+  !***********************
+  !shielding function selected with -shield option
+  function krome_fshield(n,Tgas)
+    implicit none
+    real*8::krome_fshield,n(:),Tgas
+
+    krome_fshield = 1d0 !default shielding value
+
+  end function krome_fshield
+
+  !**************************
+  !shielding function for H2O+ and H3O+
+  ! following Glover+2010 MNRAS sect 2.2 eqn.4
+  function fHnOj(Av)
+    implicit none
+    real*8::fHnOj,Av
+    if(Av.le.15d0) then
+      fHnOj = exp(-2.55*Av+0.0165*Av**2)
+    else
+      fHnOj = exp(-2.8*Av)
+    end if
+  end function fHnOj
+
+  !******************************
+  !self-shielding for H2
+  ! following Glover+2010 MNRAS sect2.2 eqn.6
+  ! N: column density (cm-2)
+  ! b: doppler broadening (cm/s)
+  function fselfH2(N, b)
+    implicit none
+    real*8::fselfH2,N,b,x,b5
+
+    x = N*2d-15 !normalized column density (#)
+    b5 = b*1d-5 !normalized doppler broadening (#)
+
+    fselfH2 = 0.965d0/(1+x/b5)**2 + &
+        0.035d0/sqrt(1d0+x) * &
+        exp(max(-8.5d-4*sqrt(1+x),-250.))
+
+  end function fselfH2
+
+end module krome_phfuncs
+
+!############### MODULE ##############
+module krome_subs
+contains
+
+  ! *************************************************************
+  !  This file has been generated with:
+  !  KROME 14.08.dev on 2018-08-27 09:46:28
+  !  Changeset be164d7
+  !  see http://kromepackage.org
+  !
+  !  Written and developed by Tommaso Grassi and Stefano Bovino
+  !
+  !  Contributors:
+  !  J.Boulangier, T.Frostholm, D.Galli, F.A.Gianturco, T.Haugboelle,
+  !  A.Lupi, J.Prieto, J.Ramsey, D.R.G.Schleicher, D.Seifried, E.Simoncini,
+  !  E.Tognelli
+  !  KROME is provided "as it is", without any warranty.
+  ! *************************************************************
+
+  !************************
+  !compute reaction rates cm^3(n-1)/s
+  function coe(n)
+    use krome_commons
+    use krome_constants
+    use krome_user_commons
+    use krome_getphys
+    use krome_grfuncs
+    use krome_phfuncs
+    use krome_fit
+    implicit none
+    real*8::coe(nrea),k(nrea),Tgas,n(nspec),kmax
+    real*8::invTgas
+    real*8::small,nmax
+    integer::i
+    real*8::ncr11  !preproc from coevar
+    real*8::kHdissH2 !preproc from coevar
+    real*8::invTe !preproc from coevar
+    real*8:: Te  !preproc from coevar
+    real*8::kHdiss !preproc from coevar
+    real*8::Hnuclei  !preproc from coevar
+    real*8:: lnTe  !preproc from coevar
+    real*8:: T32  !preproc from coevar
+    real*8::ncrdiss !preproc from coevar
+    real*8::sumsav !preproc from coevar
+    real*8::logT !preproc from coevar
+    real*8::u3  !preproc from coevar
+    real*8::kh11  !preproc from coevar
+    real*8::u1  !preproc from coevar
+    real*8:: invT  !preproc from coevar
+    real*8::ncrdissH2 !preproc from coevar
+    real*8:: invT32  !preproc from coevar
+    real*8::asav2 !preproc from coevar
+    real*8::asav3 !preproc from coevar
+    real*8::asav0 !preproc from coevar
+    real*8::asav1 !preproc from coevar
+    real*8::asav6 !preproc from coevar
+    real*8::asav7 !preproc from coevar
+    real*8::asav4 !preproc from coevar
+    real*8:: T  !preproc from coevar
+    real*8:: HnOj  !preproc from coevar
+    real*8::a11 !preproc from coevar
+    real*8::a10 !preproc from coevar
+    real*8::a12 !preproc from coevar
+    real*8::kLdiss !preproc from coevar
+    real*8::ntot !preproc from coevar
+    real*8::a1 !preproc from coevar
+    real*8::a3 !preproc from coevar
+    real*8::a2 !preproc from coevar
+    real*8::a5 !preproc from coevar
+    real*8::a4 !preproc from coevar
+    real*8::a7 !preproc from coevar
+    real*8::a6 !preproc from coevar
+    real*8::a9 !preproc from coevar
+    real*8::a8 !preproc from coevar
+    real*8::kl11  !preproc from coevar
+    real*8::sumsbv !preproc from coevar
+    real*8::u2  !preproc from coevar
+    real*8::invsqrT !preproc from coevar
+    real*8::bsav1 !preproc from coevar
+    real*8::bsav0 !preproc from coevar
+    real*8::bsav3 !preproc from coevar
+    real*8::bsav2 !preproc from coevar
+    real*8::bsav5 !preproc from coevar
+    real*8::bsav4 !preproc from coevar
+    real*8::bsav7 !preproc from coevar
+    real*8::bsav6 !preproc from coevar
+    real*8::kLdissH2 !preproc from coevar
+    real*8::asav5 !preproc from coevar
+    !Tgas is in K
+    Tgas = max(n(idx_Tgas), phys_Tcmb)
+    Tgas = min(Tgas,1d9)
+
+    !maxn initialization can be removed and small can be
+    ! replaced with a proper value according to the environment
+    nmax = max(maxval(n(1:nmols)),1d0)
+    small = 1d-40/(nmax*nmax*nmax)
+
+    invTgas = 1.d0/Tgas !inverse of T (1/K)
+
+    Hnuclei = get_Hnuclei(n(:))
+    ntot = sum(n(1:nmols))
+    T32 = Tgas/3d2
+    Te = Tgas*8.617343d-5
+    invT = 1d0/Tgas
+    lnTe = log(Te)
+    T = Tgas
+    invT32 = 1d0/T32
+    invTe = 1d0/Te
+    logT = log10(Tgas)
+    invsqrT = 1d0/sqrt(Tgas)
+    kl11 = 1d1**(-27.029d0+3.801d0*logT-29487d0*invT)
+    kh11 = 1d1**(-2.729d0-1.75d0*logT-23474d0*invT)
+    ncr11 = 1d1**(5.0792d0*(1d0-1.23d-5*(Tgas-2d3)))
+    a11 = 1.d0/(1.d0+(Hnuclei/(ncr11+1d-40)))
+    a1 = 1.3500e-09
+    a2 = 9.8493e-02
+    a3 = 3.2852e-01
+    a4 = 5.5610e-01
+    a5 = 2.7710e-07
+    a6 = 2.1826e+00
+    a7 = 6.1910e-03
+    a8 = 1.0461e+00
+    a9 = 8.9712e-11
+    a10 = 3.0424e+00
+    a12 = 3.7741e+00
+    asav0 = -1.9153214d2
+    asav1 = 4.0129114d2
+    asav2 = -3.7446991d2
+    asav3 = 1.9078410d2
+    asav4 = -5.7263467d1
+    asav5 = 1.0133210d1
+    asav6 = -9.8012853d-1
+    asav7 = 4.0023414d-2
+    bsav0 = -8.8755774d3
+    bsav1 = 1.0081246d4
+    bsav2 = -4.8606622d3
+    bsav3 = 1.2889659d3
+    bsav4 = -2.0319575d2
+    bsav5 = 1.9057493d1
+    bsav6 = -9.8530668d-1
+    bsav7 = 2.1675387d-2
+    sumsav = asav0+asav1*log10(Tgas)+asav2*(log10(Tgas))**2+asav3*(log10(Tgas))**3+asav4*(log10(Tgas))**4+asav5*(log10(Tgas))**5+asav6*(log10(Tgas))**6+asav7*(log10(Tgas))**7
+    sumsbv = bsav0+bsav1*log10(Tgas)+bsav2*(log10(Tgas))**2+bsav3*(log10(Tgas))**3+bsav4*(log10(Tgas))**4+bsav5*(log10(Tgas))**5+bsav6*(log10(Tgas))**6+bsav7*(log10(Tgas))**7
+    kHdiss = 3.52d-9*exp(-4.39d4*invT) + 1d-40
+    kLdiss = 6.67d-12*sqrt(Tgas)*exp(-(1d0+63590.*invT)) + 1d-40
+    ncrdiss = 1d1**(3. - 0.416*log10(Tgas/1d4) - 0.327*log10(Tgas/1d4)**2)
+    kHdissH2 = 1.3d-9*exp(-5.33d4*invT) + 1d-40
+    kLdissH2 = 5.996d-30*Tgas**4.1881/(1.+6.761d-6*Tgas)**5.6881 * exp(-5.46574d4*invT) + 1d-40
+    ncrdissH2 = 1d1**(4.845 - 1.3*log10(Tgas/1d4) + 1.62*log10(Tgas/1d4)**2)
+    u1 = 11.26d0*invTe
+    u2 = 8.2d0*invTe
+    u3 = 13.6*invTe
+    HnOj = fHnOj(user_Av)
+
+    k(:) = small !inizialize coefficients
+
+    !H + E -> H+ + E + E
+    k(1) = small + (exp(-32.71396786d0+13.5365560d0&
+        *lnTe-5.73932875d0*(lnTe**2)+1.56315498d0&
+        *(lnTe**3)-0.28770560d0*(lnTe**4)+3.48255977d-2&
+        *(lnTe**5)-2.63197617d-3*(lnTe**6)+1.11954395d-4&
+        *(lnTe**7)-2.03914985d-6*(lnTe**8)))
+
+    !H+ + E -> H
+    if(Tgas.GE.2.73d0 .and. Tgas.LE.5.5d3) then
+      k(2) = small + (3.92d-13&
+          *invTe**0.6353d0)
+    end if
+
+    !H+ + E -> H
+    if(Tgas.GT.5.5d3 .and. Tgas.LT.1d8) then
+      k(3) = small + (exp(-28.61303380689232d0-0.7241125657826851d0&
+          *lnTe-0.02026044731984691d0*lnTe**2-0.002380861877349834d0&
+          *lnTe**3-0.0003212605213188796d0&
+          *lnTe**4-0.00001421502914054107d0&
+          *lnTe**5+4.989108920299513d-6*lnTe**6+5.755614137575758d-7&
+          *lnTe**7-1.856767039775261d-8*lnTe**8-3.071135243196595d-9&
+          *lnTe**9))
+    end if
+
+    !HE + E -> HE+ + E + E
+    k(4) = small + (exp(-44.09864886d0+23.91596563d0&
+        *lnTe-10.7532302d0*(lnTe**2)+3.05803875d0&
+        *(lnTe**3)-0.56851189d0*(lnTe**4)+6.79539123d-2&
+        *(lnTe**5)-5.00905610d-3*(lnTe**6)+2.06723616d-4&
+        *(lnTe**7)-3.64916141d-6*(lnTe**8)))
+
+    !HE+ + E -> HE
+    if(Tgas.GE.2.73d0 .and. Tgas.LE.9.28d3) then
+      k(5) = small + (3.92d-13&
+          *invTe**0.6353d0)
+    end if
+
+    !HE+ + E -> HE
+    if(Tgas.GT.9.28d3 .and. Tgas.LT.1d8) then
+      k(6) = small + (1.54d-9&
+          *(1.d0+0.3d0&
+          /exp(8.099328789667d0&
+          *invTe))&
+          /(exp(40.49664394833662d0*invTe)&
+          *Te**1.5d0)+3.92d-13&
+          /Te**0.6353d0)
+    end if
+
+    !HE+ + E -> HE++ + E + E
+    k(7) = small + (exp(-68.71040990212001d0+43.93347632635d0&
+        *lnTe-18.48066993568d0*lnTe**2+4.701626486759002d0&
+        *lnTe**3-0.7692466334492d0*lnTe**4+0.08113042097303d0&
+        *lnTe**5-0.005324020628287001d0*lnTe**6+0.0001975705312221d0&
+        *lnTe**7-3.165581065665d-6*lnTe**8))
+
+    !HE+ + H -> HE + H+
+    k(8) = small + (1.2d-15*(T32)*.25)
+
+    !HE + H+ -> HE+ + H
+    if(Tgas.LT.1d4) then
+      k(9) = small + (1.26d-9&
+          *Tgas**(-.75)*exp(-1.275d5*invT))
+    end if
+
+    !HE + H+ -> HE+ + H
+    if(Tgas.GE.1d4) then
+      k(10) = small + (4d-37&
+          *Tgas**4.74)
+    end if
+
+    !H2 + HE -> H + H + HE
+    k(11) = small + (kh11**(1.-a11)&
+        *kl11**a11)
+
+    !H2 + HE+ -> HE + H2+
+    k(12) = small + (7.2d-15)
+
+    !H2 + HE+ -> HE + H + H+
+    k(13) = small + (3.7d-14*exp(-35d0&
+        *invT))
+
+    !H2 + HE+ -> HE+ + H + H
+    k(14) = small + (3d-11*sqrt(T32)&
+        *exp(-5.2d4*invT))
+
+    !HE++ + E -> HE+
+    k(15) = small + (1.891d-10/(sqrt(Tgas&
+        /9.37)&
+        *(1.+sqrt(Tgas/9.37))**0.2476&
+        *(1.+sqrt(Tgas&
+        /2.774d6))**1.7524))
+
+    !H + E -> H-
+    k(16) = small + (1.4d-18*Tgas**0.928&
+        *exp(-Tgas&
+        /16200.))
+
+    !H- + H -> H2 + E
+    k(17) = small + (a1*(Tgas**a2+a3&
+        *Tgas**a4+a5*Tgas**a6)&
+        /(1.+a7*Tgas**a8+a9*Tgas**a10+a11&
+        *Tgas**a12))
+
+    !H + H+ -> H2+
+    if(Tgas.LT.3d1) then
+      k(18) = small + (2.10e-20&
+          *(Tgas&
+          /30.)**(-0.15))
+    end if
+
+    !H + H+ -> H2+
+    if(Tgas.GE.3d1) then
+      k(19) = small + (10**(-18.20-3.194&
+          *log10(Tgas)+1.786*(log10(Tgas))**2-0.2072&
+          *(log10(Tgas))**3))
+    end if
+
+    !H2+ + H -> H2 + H+
+    k(20) = small + (6d-10)
+
+    !H2 + H+ -> H2+ + H
+    if(Tgas.GE.1d5) then
+      k(21) = small + (1d1**sumsbv)
+    end if
+
+    !H2 + E -> H + H + E
+    k(22) = small + (4.38d-10*exp(-1.02d5&
+        *invT)*Tgas**(0.35))
+
+    !H2 + H -> H + H + H
+    k(23) = small + (1d1**(log10(kHdiss)-log10(kHdiss&
+        /kLdiss)/(1d0+ntot/ncrdiss)))
+
+    !H- + E -> H + E + E
+    k(24) = small + (exp(-18.01849334273d0+2.360852208681d0&
+        *lnTe-0.2827443061704d0*lnTe**2+0.01623316639567d0&
+        *lnTe**3-0.03365012031362999d0*lnTe**4+0.01178329782711d0&
+        *lnTe**5-0.001656194699504d0*lnTe**6+0.0001068275202678d0&
+        *lnTe**7-2.631285809207d-6*lnTe**8))
+
+    !H- + H -> H + H + E
+    if(Tgas.LE.1.16d3) then
+      k(25) = small + (2.56d-9&
+          *Te**1.78186)
+    end if
+
+    !H- + H -> H + H + E
+    if(Tgas.GT.1.16d3) then
+      k(26) = small + (exp(-20.37260896533324d0+1.139449335841631d0&
+          *lnTe-0.1421013521554148d0*lnTe**2+0.00846445538663d0&
+          *lnTe**3-0.0014327641212992d0*lnTe**4+0.0002012250284791d0&
+          *lnTe**5+0.0000866396324309d0*lnTe**6-0.00002585009680264d0&
+          *lnTe**7+2.4555011970392d-6*lnTe**8-8.06838246118d-8&
+          *lnTe**9))
+    end if
+
+    !H- + H+ -> H + H
+    k(27) = small + ((2.96d-6&
+        /sqrt(Tgas) - 1.73d-9 + 2.50d-10&
+        *sqrt(Tgas)))
+
+    !H- + H+ -> H2+ + E
+    k(28) = small + (1.d-8*Tgas**(-0.4))
+
+    !H2+ + E -> H + H
+    if(Tgas.LE.6.17d2) then
+      k(29) = small + (1.d-8)
+    end if
+
+    !H2+ + E -> H + H
+    if(Tgas.GT.6.17d2) then
+      k(30) = small + (1.32d-6&
+          *Tgas**(-0.76))
+    end if
+
+    !H2+ + H- -> H + H2
+    k(31) = small + (5d-7*sqrt(1d2*invT))
+
+    !H2 + H2 -> H2 + H + H
+    k(32) = small + (1d1**(log10(kHdissH2)-log10(kHdissH2&
+        /kLdissH2)/(1d0+ntot/ncrdissH2)))
+
+    !H + H + HE -> H2 + HE
+    k(33) = small + (6.9d-32&
+        *Tgas**(-.4))
+
+    !H + H + H -> H2 + H
+    k(34) = small + (6d-32&
+        *Tgas**(-.25) + 2d-31*Tgas**(-.5))
+
+    !H2 + H + H -> H2 + H2
+    k(35) = small + ((6d-32&
+        *Tgas**(-0.25) + 2d-31*Tgas**(-.5)) &
+        / 8d0)
+
+    !C+ + E -> C
+    if(Tgas.LE.7950d0) then
+      k(36) = small + (4.67d-12&
+          *(T32)**(-0.6))
+    end if
+
+    !C+ + E -> C
+    if(Tgas.GT.7950d0 .and. Tgas.LE.21140d0) then
+      k(37) = small + (1.23d-17&
+          *(T32)**2.49*exp(21845.6d0*invT))
+    end if
+
+    !C+ + E -> C
+    if(Tgas.GT.21140d0) then
+      k(38) = small + (9.62d-8&
+          *(T32)**(-1.37)*exp(-115786.2d0*invT))
+    end if
+
+    !O+ + E -> O
+    if(Tgas.LE.4d2) then
+      k(39) = small + (1.30d-10&
+          *(Tgas)**(-0.64))
+    end if
+
+    !O+ + E -> O
+    if(Tgas.GT.4d2) then
+      k(40) = small + (1.41d-10&
+          *(Tgas)**(-0.66) + 7.4d-4*(Tgas)**(-1.5)*exp(-1.75d5*invT)&
+          *(1d0 + 0.062d0*exp(-1.45d5*invT)))
+    end if
+
+    !C + E -> C+ + E + E
+    k(41) = small + (6.85d-8*u1**0.25&
+        *exp(-u1)&
+        /(0.193d0+u1))
+
+    !O + E -> O+ + E + E
+    k(42) = small + (3.59d-8*u3**0.34&
+        *exp(-u3)&
+        /(0.073d0+u3))
+
+    !O+ + H -> O + H+
+    k(43) = small + (4.99d-11&
+        *Tgas**0.405 + 7.54d-10*invT**(0.458))
+
+    !O + H+ -> O+ + H
+    k(44) = small + ((1.08d-11&
+        *Tgas**0.517 + 4d-10*Tgas**(0.00669))*exp(-2.27d2*invT))
+
+    !O + HE+ -> O+ + HE
+    k(45) = small + (4.991d-15*(Tgas&
+        *1d-4)**0.3794*exp(-Tgas*8.9206d-7) + 2.78d-15*(Tgas&
+        *1d-4)**(-0.2163)*exp(-Tgas*1.2258d-6))
+
+    !C + H+ -> C+ + H
+    k(46) = small + (3.9d-16*Tgas**(0.213))
+
+    !C+ + H -> C + H+
+    k(47) = small + (6.08d-14*(Tgas&
+        *1d-4)**(1.96)*exp(-1.7d5*invT))
+
+    !C + HE+ -> C+ + HE
+    if(Tgas.LE.2d2) then
+      k(48) = small + (8.58d-17&
+          *Tgas**(0.757))
+    end if
+
+    !C + HE+ -> C+ + HE
+    if(Tgas.GT.2d2 .and. Tgas.LE.2d3) then
+      k(49) = small + (3.25d-17&
+          *Tgas**(0.968))
+    end if
+
+    !C + HE+ -> C+ + HE
+    if(Tgas.GT.2d3 .and. Tgas.LT.1d8) then
+      k(50) = small + (2.77d-19&
+          *Tgas**(1.597))
+    end if
+
+    !OH + H -> O + H + H
+    k(51) = small + (6d-9*exp(-5.09d4&
+        *invT))
+
+    !HOC+ + H2 -> HCO+ + H2
+    k(52) = small + (3.8d-10)
+
+    !HOC+ + CO -> HCO+ + CO
+    if(Tgas.LT.1d1) then
+      k(53) = small + (1.604d-9)
+    end if
+
+    !HOC+ + CO -> HCO+ + CO
+    if(Tgas.GE.1d1) then
+      k(54) = small + (8.68d-10&
+          *(1.+2.42717d-2*sqrt(3e2*invT)+7.1537*invT))
+    end if
+
+    !C + H2 -> CH + H
+    k(55) = small + (6.64d-10*exp(-11700d0&
+        *invT))
+
+    !CH + H -> C + H2
+    k(56) = small + (1.31d-10*exp(-8d1*invT))
+
+    !CH + H2 -> CH2 + H
+    k(57) = small + (5.46d-10*exp(-1943d0&
+        *invT))
+
+    !CH + C -> C2 + H
+    k(58) = small + (2.40d-10)
+
+    !CH + O -> CO + H
+    k(59) = small + (1.02d-10*exp(-914d0&
+        *invT))
+
+    !CH + O -> HCO+ + E
+    k(60) = small + (1.9d-11*(T32)**(-2.2)&
+        *exp(-165.1d0*invT))
+
+    !CH + O -> OH + C
+    k(61) = small + (2.52d-11*exp(-2381d0&
+        *invT))
+
+    !CH2 + H -> CH + H2
+    k(62) = small + (2.2d-10)
+
+    !CH2 + O -> CO + H + H
+    k(63) = small + (2.04d-10*exp(-270d0&
+        *invT))
+
+    !CH2 + O -> CO + H2
+    k(64) = small + (1.36d-10*exp(-270d0&
+        *invT))
+
+    !CH2 + O -> HCO + H
+    k(65) = small + (5.01d-11)
+
+    !CH2 + O -> CH + OH
+    k(66) = small + (4.98d-10*exp(-6d3&
+        *invT))
+
+    !C2 + O -> CO + C
+    if(Tgas.LT.3d2) then
+      k(67) = small + (2d-12&
+          *(T32)**(-.12))
+    end if
+
+    !C2 + O -> CO + C
+    if(Tgas.GE.3d2) then
+      k(68) = small + (2d-12&
+          *(T32)**(.757))
+    end if
+
+    !O + H2 -> OH + H
+    k(69) = small + (1.46e-12*exp(-9650.&
+        *invT))
+
+    !OH + H -> O + H2
+    if(Tgas.LT.280.d0) then
+      k(70) = small + (6.99d-14&
+          *T32**2.8*exp(-1950d0*invT))
+    end if
+
+    !OH + H -> O + H2
+    if(Tgas.GE.280.d0) then
+      k(71) = small + (5.45d-17)
+    end if
+
+    !H2 + OH -> H2O + H
+    k(72) = small + (3.6d-16*T**(1.52)&
+        *exp(-1.74d3*invT))
+
+    !C + OH -> H + CO
+    if(Tgas.LT.1d1) then
+      k(73) = small + (7.051e-11)
+    end if
+
+    !C + OH -> H + CO
+    if(Tgas.GE.1d1) then
+      k(74) = small + (2.25d-11&
+          *(T32)**(-.339)*exp(-.108d0*invT))
+    end if
+
+    !O + OH -> H + O2
+    if(Tgas.GE.150.d0) then
+      k(75) = small + (2.4d-11&
+          *exp(110d0*invT))
+    end if
+
+    !O + OH -> H + O2
+    if(Tgas.LT.150.d0) then
+      k(76) = small + (4.997d-11)
+    end if
+
+    !OH + OH -> H2O + O
+    k(77) = small + (1.65d-12*(T32)**1.14&
+        *exp(-5d1*invT))
+
+    !H2O + H -> H2 + OH
+    k(78) = small + (1.59d-11*(T32)*1.2&
+        *exp(-9610.*invT))
+
+    !O2 + H -> OH + O
+    k(79) = small + (2.61d-10*1.2*exp(-8156.&
+        *invT))
+
+    !O2 + H2 -> OH + OH
+    k(80) = small + (3.16d-10*exp(-21890.d0&
+        *invT))
+
+    !O2 + C -> CO + O
+    if(Tgas.LT.1052d0) then
+      k(81) = small + (4.7d-11&
+          *T32**(-.34))
+    end if
+
+    !O2 + C -> CO + O
+    if(Tgas.GE.1052d0) then
+      k(82) = small + (2.48d-12&
+          *T32**1.54*exp(613d0*invT))
+    end if
+
+    !CO + H -> C + OH
+    k(83) = small + (1.1d-10*T32**0.5&
+        *exp(-77700d0*invT))
+
+    !H2+ + H2 -> H3+ + H
+    k(84) = small + (2.24d-9*T32**.042&
+        *exp(-Tgas&
+        /46600.))
+
+    !H3+ + H -> H2+ + H2
+    k(85) = small + (7.7d-9*exp(-17560d0&
+        *invT))
+
+    !C + H2+ -> CH+ + H
+    k(86) = small + (2.4d-9)
+
+    !C + H3+ -> CH+ + H2
+    k(87) = small + ((1.0218d-9 + 7.2733d-11&
+        *sqrt(Tgas) + 5.9203d-14*Tgas)&
+        /(Tgas**0.1667 + 4.4914d-2&
+        *sqrt(Tgas) - 5.9203d-14*Tgas + 2.6397d-6*Tgas**1.5))
+
+    !C + H3+ -> CH2+ + H
+    k(88) = small + ((8.5145d-10)&
+        /(Tgas**(.1667) + 9.5666d-4&
+        *sqrt(Tgas) - 4.404d-5*Tgas + 2.3496d-6 * Tgas**1.5))
+
+    !C+ + H2 -> CH+ + H
+    k(89) = small + (1d-10*exp(-4640d0&
+        *invT))
+
+    !CH+ + H -> C+ + H2
+    k(90) = small + (7.5d-10)
+
+    !CH+ + H2 -> CH2+ + H
+    k(91) = small + (1.2d-9)
+
+    !CH+ + O -> CO+ + H
+    k(92) = small + (3.5d-10)
+
+    !CH2+ + H -> CH+ + H2
+    k(93) = small + (1d-9*exp(-7080d0&
+        *invT))
+
+    !CH2+ + H2 -> CH3+ + H
+    k(94) = small + (1.6d-9)
+
+    !CH2+ + O -> HCO+ + H
+    k(95) = small + (7.5d-10)
+
+    !CH3+ + H -> CH2+ + H2
+    k(96) = small + (7.d-10*exp(-10560d0&
+        *invT))
+
+    !CH3+ + O -> HOC+ + H2
+    k(97) = small + (2.5d-10)
+
+    !CH3+ + O -> HCO+ + H2
+    k(98) = small + (2.5d-10)
+
+    !C2 + O+ -> CO+ + C
+    k(99) = small + (4.8d-10)
+
+    !O+ + H2 -> H + OH+
+    k(100) = small + (1.69d-9)
+
+    !O + H2+ -> H + OH+
+    k(101) = small + (1.5d-9)
+
+    !O + H3+ -> H2 + OH+
+    k(102) = small + (7.98d-10&
+        *T32**(-.156)*exp(-1.41d0*invT))
+
+    !O + H3+ -> H + H2O+
+    k(103) = small + (3.42d-10&
+        *T32**(-.156)*exp(-1.41d0*invT))
+
+    !OH + H3+ -> H2 + H2O+
+    if(Tgas.LT.1d1) then
+      k(104) = small + (2.277d-8)
+    end if
+
+    !OH + H3+ -> H2 + H2O+
+    if(Tgas.GE.1d1) then
+      k(105) = small + (1.52d-9&
+          *(0.62d0 + 2.62185d0*(3d2*invT)**.5))
+    end if
+
+    !OH + C+ -> H + CO+
+    if(Tgas.LT.1d1) then
+      k(106) = small + (1.371d-08)
+    end if
+
+    !OH + C+ -> H + CO+
+    if(Tgas.GE.1d1) then
+      k(107) = small + (9.15d-10&
+          *(0.62d0 + 2.62185d0*(3d2*invT)**.5))
+    end if
+
+    !OH+ + H2 -> H2O+ + H
+    k(108) = small + (1.01d-9)
+
+    !H2O+ + H2 -> H3O+ + H
+    k(109) = small + (6.4d-10)
+
+    !H2O + H3+ -> H2 + H3O+
+    if(Tgas.LT.1d1) then
+      k(110) = small + (2.55d-8)
+    end if
+
+    !H2O + H3+ -> H2 + H3O+
+    if(Tgas.GE.1d1) then
+      k(111) = small + (1.73d-9&
+          *(0.62d0 + 2.578947d0*(3d2*invT)**.5))
+    end if
+
+    !H2O + C+ -> HOC+ + H
+    k(112) = small + (1.8d-9)
+
+    !H2O + C+ -> HCO+ + H
+    if(Tgas.LT.1d1) then
+      k(113) = small + (5.027d-9)
+    end if
+
+    !H2O + C+ -> HCO+ + H
+    if(Tgas.GE.1d1) then
+      k(114) = small + (3.4093e-10&
+          *(0.62d0 + 2.578947d0*(3d2*invT)**.5))
+    end if
+
+    !H2O + C+ -> H2O+ + C
+    k(115) = small + (2.4d-10)
+
+    !H3O+ + C -> HCO+ + H2
+    k(116) = small + (1d-11)
+
+    !O2 + C+ -> CO+ + O
+    k(117) = small + (3.42d-10)
+
+    !O2 + C+ -> CO + O+
+    k(118) = small + (4.53d-10)
+
+    !O2 + CH2+ -> HCO+ + OH
+    k(119) = small + (9.1d-10)
+
+    !C + O2+ -> O + CO+
+    k(120) = small + (5.2d-11)
+
+    !C + O2+ -> O2 + C+
+    k(121) = small + (5.2d-11)
+
+    !CO + H3+ -> H2 + HCO+
+    if(Tgas.LT.1d1) then
+      k(122) = small + (2.468d-9)
+    end if
+
+    !CO + H3+ -> H2 + HCO+
+    if(Tgas.GE.1d1) then
+      k(123) = small + (1.88055d-9&
+          *(1d0 + 0.02427d0*(3d2*invT)**.5 + 1.79558d0*invT))
+    end if
+
+    !CO + H3+ -> H2 + HOC+
+    if(Tgas.LT.1d1) then
+      k(124) = small + (1.421d-10)
+    end if
+
+    !CO + H3+ -> H2 + HOC+
+    if(Tgas.GE.1d1) then
+      k(125) = small + (1.08256d-10&
+          *(1d0 + 0.02427d0*(3d2*invT)**.5 + 1.79558d0*invT))
+    end if
+
+    !HCO+ + C -> CO + CH+
+    k(126) = small + (1.1d-9)
+
+    !HCO+ + H2O -> CO + H3O+
+    if(Tgas.LT.1d1) then
+      k(127) = small + (7.279e-08)
+    end if
+
+    !HCO+ + H2O -> CO + H3O+
+    if(Tgas.GE.1d1) then
+      k(128) = small + (8.34d-10&
+          *(1d0 + 0.5232d0*(3d2*invT)**.5 + 834.165880*invT))
+    end if
+
+    !CH + H+ -> CH+ + H
+    if(Tgas.LT.1d1) then
+      k(129) = small + (3.297d-8)
+    end if
+
+    !CH + H+ -> CH+ + H
+    if(Tgas.GE.1d1) then
+      k(130) = small + (3.54e-09&
+          *(0.62d0 + 1.587411d0*(3d2*invT)**.5))
+    end if
+
+    !CH2 + H+ -> H2 + CH+
+    if(Tgas.LT.1.5d2) then
+      k(131) = small + (1.765d-9&
+          *(0.62d0 + 0.672147d0*(3d2*invT)**.5))
+    end if
+
+    !CH2 + H+ -> H2 + CH+
+    if(Tgas.GE.1.5d2) then
+      k(132) = small + (1.765d-9&
+          *(1d0 + 0.136347d0*(3d2*invT)**.5 + 56.66255d0*invT))
+    end if
+
+    !CH2 + H+ -> H + CH2+
+    if(Tgas.LT.1.5d2) then
+      k(133) = small + (1.765d-9&
+          *(0.62d0 + 0.672147d0*(3d2*invT)**.5))
+    end if
+
+    !CH2 + H+ -> H + CH2+
+    if(Tgas.GE.1.5d2) then
+      k(134) = small + (1.765d-9&
+          *(1d0 + 0.136347d0*(3d2*invT)**.5 + 56.66255d0*invT))
+    end if
+
+    !CH2 + HE+ -> HE + H2 + C+
+    if(Tgas.LT.1.5d2) then
+      k(135) = small + (9.65d-10&
+          *(0.62d0 + 0.672147d0*(3d2*invT)**.5))
+    end if
+
+    !CH2 + HE+ -> HE + H2 + C+
+    if(Tgas.GE.1.5d2) then
+      k(136) = small + (9.65d-10&
+          *(1d0 + 0.136347d0*(3d2*invT)**.5 + 56.6625498765d0&
+          *invT))
+    end if
+
+    !CH2 + HE+ -> HE + H + CH+
+    if(Tgas.LT.1.5d2) then
+      k(137) = small + (9.65d-10&
+          *(0.62d0 + 0.672147d0*(3d2*invT)**.5))
+    end if
+
+    !CH2 + HE+ -> HE + H + CH+
+    if(Tgas.GE.1.5d2) then
+      k(138) = small + (9.65d-10&
+          *(1d0 + 0.136347d0*(3d2*invT)**.5 + 56.6625498765d0&
+          *invT))
+    end if
+
+    !C2 + HE+ -> C+ + C + HE
+    k(139) = small + (1.6d-9)
+
+    !OH + H+ -> OH+ + H
+    if(Tgas.LT.1d1) then
+      k(140) = small + (3.745d-8)
+    end if
+
+    !OH + H+ -> OH+ + H
+    if(Tgas.GE.1d1) then
+      k(141) = small + (2.5d-9&
+          *(0.62d0 + 2.62185d0*(3d2*invT)**.5))
+    end if
+
+    !OH + HE+ -> O+ + HE + H
+    if(Tgas.LT.1d1) then
+      k(142) = small + (2.022d-8)
+    end if
+
+    !OH + HE+ -> O+ + HE + H
+    if(Tgas.GE.1d1) then
+      k(143) = small + (1.35d-9&
+          *(0.62d0 + 2.62185d0*(3d2*invT)**.5))
+    end if
+
+    !H2O + H+ -> H + H2O+
+    if(Tgas.LT.1d1) then
+      k(144) = small + (4.202d-8)
+    end if
+
+    !H2O + H+ -> H + H2O+
+    if(Tgas.GE.1d1) then
+      k(145) = small + (2.85d-9&
+          *(0.62d0 + 2.578947d0*(3d2*invT)**.5))
+    end if
+
+    !H2O + HE+ -> HE + OH + H+
+    if(Tgas.LT.1d1) then
+      k(146) = small + (7.562d-9)
+    end if
+
+    !H2O + HE+ -> HE + OH + H+
+    if(Tgas.GE.1d1) then
+      k(147) = small + (5.1282d-10&
+          *(0.62d0 + 2.578947d0*(3d2*invT)**.5))
+    end if
+
+    !H2O + HE+ -> HE + OH+ + H
+    if(Tgas.LT.1d1) then
+      k(148) = small + (7.562d-9)
+    end if
+
+    !H2O + HE+ -> HE + OH+ + H
+    if(Tgas.GE.1d1) then
+      k(149) = small + (5.1282d-10&
+          *(0.62d0 + 2.578947d0*(3d2*invT)**.5))
+    end if
+
+    !H2O + HE+ -> HE + H2O+
+    if(Tgas.LT.1d1) then
+      k(150) = small + (7.56d-9)
+    end if
+
+    !H2O + HE+ -> HE + H2O+
+    if(Tgas.GE.1d1) then
+      k(151) = small + (5.1282d-10&
+          *(0.62d0 + 2.578947d0*(3d2*invT)**.5))
+    end if
+
+    !O2 + H+ -> O2+ + H
+    k(152) = small + (2d-9)
+
+    !O2 + HE+ -> O2+ + HE
+    k(153) = small + (3.3d-11)
+
+    !O2 + HE+ -> O+ + HE + O
+    k(154) = small + (1.1d-9)
+
+    !CO + HE+ -> C+ + HE + O
+    k(155) = small + (1.4d-9&
+        *(T32)**(-.5))
+
+    !CO + HE+ -> C + HE + O+
+    k(156) = small + (1.4d-16&
+        *(T32)**(-.5))
+
+    !CO+ + H -> CO + H+
+    k(157) = small + (7.5d-10)
+
+    !C- + H+ -> C + H
+    k(158) = small + (2.3d-7*(T32)**(-.5))
+
+    !O- + H+ -> O + H
+    k(159) = small + (2.3d-7*(T32)**(-.5))
+
+    !HE+ + H- -> H + HE
+    k(160) = small + (2.3d-7*T32**(-.5))
+
+    !H3+ + E -> H2 + H
+    k(161) = small + (2.34d-8*T32**(-.52))
+
+    !H3+ + E -> H + H + H
+    k(162) = small + (4.36d-8&
+        *T32**(-.52))
+
+    !CH+ + E -> C + H
+    k(163) = small + (7d-8*T32**(-.5))
+
+    !CH2+ + E -> CH + H
+    k(164) = small + (1.6d-7*T32**(-.6))
+
+    !CH2+ + E -> C + H2
+    k(165) = small + (7.68d-8*T32**(-.6))
+
+    !CH2+ + E -> C + H + H
+    k(166) = small + (4.03d-7&
+        *T32**(-.6))
+
+    !CH3+ + E -> CH2 + H
+    k(167) = small + (7.75d-8*T32**(-.5))
+
+    !CH3+ + E -> CH + H2
+    k(168) = small + (1.95d-7*T32**(-.5))
+
+    !CH3+ + E -> CH + H + H
+    k(169) = small + (2d-7*T32**(-.5))
+
+    !OH+ + E -> O + H
+    k(170) = small + (6.3d-9*T32**(-.48))
+
+    !H2O+ + E -> O + H2
+    k(171) = small + (3.9d-8*T32**(-.5))
+
+    !H2O+ + E -> OH + H
+    k(172) = small + (8.6d-8*T32**(-.5))
+
+    !H2O+ + E -> O + H + H
+    k(173) = small + (3.05d-7&
+        *T32**(-.5))
+
+    !H3O+ + E -> OH + H + H
+    k(174) = small + (2.58d-7&
+        *T32**(-.5))
+
+    !H3O+ + E -> O + H + H2
+    k(175) = small + (5.6d-9&
+        *T32**(-.5))
+
+    !H3O+ + E -> H + H2O
+    k(176) = small + (1.08d-7*T32**(-.5))
+
+    !H3O+ + E -> OH + H2
+    k(177) = small + (6.02d-8*T32**(-.5))
+
+    !O2+ + E -> O + O
+    k(178) = small + (1.95d-7*T32**(-.7))
+
+    !CO+ + E -> C + O
+    k(179) = small + (2.75d-7*T32**(-.55))
+
+    !HCO+ + E -> CO + H
+    k(180) = small + (2.76d-7*T32**(-.64))
+
+    !HCO+ + E -> OH + C
+    k(181) = small + (2.4d-8*T32**(-.64))
+
+    !HOC+ + E -> CO + H
+    k(182) = small + (1.1d-7*invT32)
+
+    !H- + C -> CH + E
+    k(183) = small + (1d-9)
+
+    !H- + O -> OH + E
+    k(184) = small + (1d-10)
+
+    !H- + OH -> H2O + E
+    k(185) = small + (5d-10)
+
+    !C- + H -> CH + E
+    k(186) = small + (1d-13)
+
+    !C- + H2 -> CH2 + E
+    k(187) = small + (5d-10)
+
+    !C- + O -> CO + E
+    k(188) = small + (5d-10)
+
+    !O- + H -> OH + E
+    k(189) = small + (7d-10)
+
+    !O- + H2 -> H2O + E
+    k(190) = small + (7d-10)
+
+    !O- + C -> CO + E
+    k(191) = small + (5d-10)
+
+    !H2 + H+ -> H + H + H+
+    k(192) = small + (3d-11*T32**(.5)&
+        *exp(-52000d0*invT))
+
+    !H2 + H+ -> H3+
+    k(193) = small + (1d-16)
+
+    !C + E -> C-
+    k(194) = small + (2.25d-15)
+
+    !C + H -> CH
+    k(195) = small + (1d-17)
+
+    !C + H2 -> CH2
+    k(196) = small + (1d-17)
+
+    !C + C -> C2
+    k(197) = small + (4.36d-18*T32**.35&
+        *exp(-161.3d0*invT))
+
+    !C + O -> CO
+    k(198) = small + (3.09d-17*T32**.33&
+        *exp(-1629d0*invT))
+
+    !C+ + H -> CH+
+    k(199) = small + (4.46d-16*Tgas**(-.5)&
+        *exp(-4.93*Tgas**(-.6667)))
+
+    !C+ + H2 -> CH2+
+    k(200) = small + (2d-16*T32**(-1.3)&
+        *exp(-23d0*invTgas))
+
+    !C+ + O -> CO+
+    if(Tgas.LT.3d2) then
+      k(201) = small + (2.5d-18)
+    end if
+
+    !C+ + O -> CO+
+    if(Tgas.GE.3d2) then
+      k(202) = small + (3.14d-18&
+          *T32**(-.15)*exp(-68d0*invT))
+    end if
+
+    !O + E -> O-
+    k(203) = small + (1.5d-15)
+
+    !O + H -> OH
+    k(204) = small + (9.9d-19*T32**(-.38))
+
+    !O + O -> O2
+    k(205) = small + (4.9d-20*T32**(1.58))
+
+    !OH + H -> H2O
+    k(206) = small + (5.26d-18*T32**(-5.22)&
+        *exp(-9d1*invT))
+
+    !H -> H+ + E
+    k(207) = small + (photoBinRates(1))
+
+    !HE -> HE+ + E
+    k(208) = small + (photoBinRates(2))
+
+    !HE+ -> HE++ + E
+    k(209) = small + (photoBinRates(3))
+
+    !O -> O+ + E
+    k(210) = small + (photoBinRates(4))
+
+    !C -> C+ + E
+    k(211) = small + (photoBinRates(5))
+
+    !H2 -> H2+ + E
+    k(212) = small + (photoBinRates(6))
+
+    !H- -> H + E
+    k(213) = small + (photoBinRates(7))
+
+    !CH -> C + H
+    k(214) = small + (photoBinRates(8))
+
+    !CH -> CH+ + E
+    k(215) = small + (photoBinRates(9))
+
+    !C2 -> C + C
+    k(216) = small + (photoBinRates(10))
+
+    !OH -> O + H
+    k(217) = small + (photoBinRates(11))
+
+    !OH -> OH+ + E
+    k(218) = small + (photoBinRates(12))
+
+    !H2O -> OH + H
+    k(219) = small + (photoBinRates(13))
+
+    !H2O -> H2O+ + E
+    k(220) = small + (photoBinRates(14))
+
+    !O2 -> O2+ + E
+    k(221) = small + (photoBinRates(15))
+
+    !O2 -> O + O
+    k(222) = small + (photoBinRates(16))
+
+    !H2 -> H+ + H + E
+    k(223) = small + (photoBinRates(17))
+
+    !CO -> C + O
+    k(224) = small + (user_gamma_CO)
+
+    !H2 -> H + H
+    k(225) = small + (user_gamma_H2)
+
+    !H2+ -> H + H+
+    k(226) = small + (user_G0*1.1d-9*exp(-1.9&
+        *user_Av))
+
+    !H3+ -> H2 + H+
+    k(227) = small + (user_G0*4.9d-13*exp(-1.8&
+        *user_Av))
+
+    !H3+ -> H2+ + H
+    k(228) = small + (user_G0*4.9d-13*exp(-2.3&
+        *user_Av))
+
+    !C- -> C + E
+    k(229) = small + (user_G0*2.4d-7*exp(-.9&
+        *user_Av))
+
+    !CH+ -> C + H+
+    k(230) = small + (user_G0*2.6d-10*exp(-2.5&
+        *user_Av))
+
+    !CH2 -> CH + H
+    k(231) = small + (user_G0*7.1d-10*exp(-1.7&
+        *user_Av))
+
+    !CH2 -> CH2+ + E
+    k(232) = small + (user_G0*5.9d-10*exp(-2.3&
+        *user_Av))
+
+    !CH2+ -> CH+ + H
+    k(233) = small + (user_G0*4.6d-10*exp(-1.7&
+        *user_Av))
+
+    !CH3+ -> CH2+ + H
+    k(234) = small + (user_G0*1d-9*exp(-1.7&
+        *user_Av))
+
+    !CH3+ -> CH+ + H2
+    k(235) = small + (user_G0*1d-9*exp(-1.7&
+        *user_Av))
+
+    !O- -> O + E
+    k(236) = small + (user_G0*2.4d-7*exp(-.5&
+        *user_Av))
+
+    !OH+ -> O + H+
+    k(237) = small + (user_G0*1d-12*exp(-1.8&
+        *user_Av))
+
+    !H2O+ -> H2+ + O
+    k(238) = small + (user_G0*5.d-11*HnOj)
+
+    !H2O+ -> H+ + OH
+    k(239) = small + (user_G0*5.d-11*HnOj)
+
+    !H2O+ -> O+ + H2
+    k(240) = small + (user_G0*5.d-11*HnOj)
+
+    !H2O+ -> OH+ + H
+    k(241) = small + (user_G0*1.5d-10*HnOj)
+
+    !H3O+ -> H+ + H2O
+    k(242) = small + (user_G0*2.5d-11*HnOj)
+
+    !H3O+ -> H2+ + OH
+    k(243) = small + (user_G0*2.5d-11*HnOj)
+
+    !H3O+ -> H2O+ + H
+    k(244) = small + (user_G0*7.5d-12*HnOj)
+
+    !H3O+ -> OH+ + H2
+    k(245) = small + (user_G0*2.5d-11*HnOj)
+
+    !H -> H+ + E
+    k(246) = rateEvaluateOnce(246)
+
+    !HE -> HE+ + E
+    k(247) = rateEvaluateOnce(247)
+
+    !O -> O+ + E
+    k(248) = rateEvaluateOnce(248)
+
+    !CO -> C + O
+    k(249) = rateEvaluateOnce(249)
+
+    !CO -> CO+ + E
+    k(250) = rateEvaluateOnce(250)
+
+    !C2 -> C + C
+    k(251) = rateEvaluateOnce(251)
+
+    !H2 -> H + H
+    k(252) = rateEvaluateOnce(252)
+
+    !H2 -> H+ + H-
+    k(253) = rateEvaluateOnce(253)
+
+    !H2 -> H2+ + E
+    k(254) = rateEvaluateOnce(254)
+
+    !C -> C+ + E
+    k(255) = rateEvaluateOnce(255)
+
+    !CH -> C + H
+    k(256) = rateEvaluateOnce(256)
+
+    !O2 -> O + O
+    k(257) = rateEvaluateOnce(257)
+
+    !O2 -> O2+ + E
+    k(258) = rateEvaluateOnce(258)
+
+    !OH -> O + H
+    k(259) = rateEvaluateOnce(259)
+
+    !CH2 -> CH2+ + E
+    k(260) = rateEvaluateOnce(260)
+
+    !H2O -> OH + H
+    k(261) = rateEvaluateOnce(261)
+
+    !HCO -> CO + H
+    k(262) = rateEvaluateOnce(262)
+
+    !HCO -> HCO+ + E
+    k(263) = rateEvaluateOnce(263)
+
+    !H2 -> H + H+ + E
+    k(264) = rateEvaluateOnce(264)
+
+    !C + C -> C2
+    if(Tgas.LT.5d3) then
+      k(265) = small + (5.99d-33&
+          *(Tgas&
+          /5d3)**(-1.6)*ntot)
+    end if
+
+    !C + C -> C2
+    if(Tgas.GE.5d3) then
+      k(266) = small + (5.99d-33&
+          *(Tgas&
+          /5d3)**(-0.64)*exp(5255./Tgas)*ntot)
+    end if
+
+    !C + O -> CO
+    if(Tgas.LT.2d3) then
+      k(267) = small + (6.16d-29&
+          *(Tgas&
+          /3d2)**(-3.08)*ntot)
+    end if
+
+    !C + O -> CO
+    if(Tgas.GE.2d3) then
+      k(268) = small + (2.14d-29&
+          *(Tgas&
+          /3d2)**(-3.08)*exp(2114./Tgas)*ntot)
+    end if
+
+    !C+ + O -> CO+
+    if(Tgas.LT.2d3) then
+      k(269) = small + (6.16d-27&
+          *(Tgas&
+          /3d2)**(-3.08)*ntot)
+    end if
+
+    !C+ + O -> CO+
+    if(Tgas.GE.2d3) then
+      k(270) = small + (2.14d-27&
+          *(Tgas&
+          /3d2)**(-3.08)*exp(2114./Tgas)*ntot)
+    end if
+
+    !C + O+ -> CO+
+    if(Tgas.LT.2d3) then
+      k(271) = small + (6.16d-27&
+          *(Tgas&
+          /3d2)**(-3.08)*ntot)
+    end if
+
+    !C + O+ -> CO+
+    if(Tgas.GE.2d3) then
+      k(272) = small + (2.14d-27&
+          *(Tgas&
+          /3d2)**(-3.08)*exp(2114./Tgas)*ntot)
+    end if
+
+    !H + O -> OH
+    k(273) = small + (4.33d-32*(T32)**(-1)*ntot)
+
+    !OH + H -> H2O
+    k(274) = small + (2.56d-31*(T32)**(-2)*ntot)
+
+    !O + O -> O2
+    k(275) = small + (9.2d-34*(T32)**(-1)*ntot)
+
+    coe(:) = k(:) !set coefficients to return variable
+
+    !!uncomment below to check coefficient values
+    !kmax = 1d0
+    !if(maxval(k)>kmax.or.minval(k)<0d0) then
+    !   print *,"***************"
+    !   do i=1,size(k)
+    !      if(k(i)<0d0.or.k(i)>kmax) print *,i,k(i)
+    !   end do
+    !end if
+  end function coe
+
+  !*************************
+  subroutine loadReactionsVerbatim()
+    use krome_commons
+    implicit none
+    character*50::fname,line
+    integer::ios,i,nunit
+
+    fname = "reactions_verbatim.dat"
+
+    !verbatim reactions are loaded from file
+    ! to increase compilation speed
+    open(newunit=nunit,file=trim(fname),status="old",iostat=ios)
+    if(ios/=0) then
+      print *,"ERROR: "//trim(fname)//" file not present!"
+      stop
+    end if
+
+    !load reactions from file
+    do i=1,nrea
+      read(nunit,'(a)',iostat=ios) line
+      if(ios/=0) then
+        print *,"ERROR: problem reading "//trim(fname)
+        stop
+      end if
+      reactionNames(i) = trim(line)
+    end do
+    close(nunit)
+
+  end subroutine loadReactionsVerbatim
+
+  !*******************
+  !The following functions compute the recombination rate
+  ! on dust for H+, He+, C+, Si+, and O+. See Weingartner&Draine 2001
+  ! dust2gas_ratio, D/D_sol, default is assumed equal to Z/Z_sol
+  function H_recombination_on_dust(n,Tgas)
+    use krome_commons
+    implicit none
+    real*8::n(nspec),Tgas,psi
+    real*8::H_recombination_on_dust
+
+    H_recombination_on_dust = 0d0
+
+    if(n(idx_E)<1d-20.or.GHabing<=0.d0) return
+
+    psi = GHabing*sqrt(Tgas)/n(idx_E)
+
+    if(psi<=0) return
+
+    H_recombination_on_dust =  1.225d-13*dust2gas_ratio &
+        /(1.d0+8.074d-6*psi**(1.378)*(1.d0+5.087d2 &
+        *Tgas**(0.01586)*psi**(-0.4723-1.102d-5*log(Tgas))))
+
+  end function H_recombination_on_dust
+
+  !******************
+  function He_recombination_on_dust(n,Tgas)
+    use krome_commons
+    implicit none
+    real*8::n(nspec),Tgas,psi
+    real*8::He_recombination_on_dust
+
+    He_recombination_on_dust = 0d0
+    if(n(idx_E)<1d-20.or.GHabing<=0.d0) return
+
+    psi = GHabing*sqrt(Tgas)/n(idx_E)
+
+    if(psi<=0) return
+
+    He_recombination_on_dust = 5.572d-14*dust2gas_ratio&
+        /(1.d0+3.185d-7*psi**(1.512)*(1.d0+5.115d3&
+        *Tgas**(3.903d-7)*psi**(-0.4956-5.494d-7*log(Tgas))))
+
+  end function He_recombination_on_dust
+
+  !*******************
+  function C_recombination_on_dust(n,Tgas)
+    use krome_commons
+    implicit none
+    real*8::n(nspec),Tgas,psi
+    real*8::C_recombination_on_dust
+
+    C_recombination_on_dust = 0d0
+    if(n(idx_E)<1d-20.or.GHabing<=0.d0) return
+
+    psi = GHabing*sqrt(Tgas)/n(idx_E)
+
+    if(psi<=0) return
+
+    C_recombination_on_dust = 4.558d-13*dust2gas_ratio&
+        /(1.d0+6.089d-3*psi**(1.128)*(1.d0+4.331d2&
+        *Tgas**(0.04845)*psi**(-0.8120-1.333d-4*log(Tgas))))
+
+  end function C_recombination_on_dust
+
+  !******************
+  function Si_recombination_on_dust(n,Tgas)
+    use krome_commons
+    implicit none
+    real*8::n(nspec),Tgas,psi
+    real*8::Si_recombination_on_dust
+
+    Si_recombination_on_dust = 0d0
+    if(n(idx_E)<1d-20.or.GHabing<=0.d0) return
+
+    psi = GHabing*sqrt(Tgas)/n(idx_E)
+
+    if(psi<=0) return
+
+    Si_recombination_on_dust = 2.166d-14*dust2gas_ratio&
+        /(1.d0+5.678d-8*psi**(1.874)*(1.d0+4.375d4&
+        *Tgas**(1.635d-6)*psi**(-0.8964-7.538d-5*log(Tgas))))
+
+  end function Si_recombination_on_dust
+
+  !********************
+  function O_recombination_on_dust(n,Tgas)
+    use krome_commons
+    implicit none
+    real*8::n(nspec),Tgas,k_H
+    real*8::O_recombination_on_dust
+
+    k_H = H_recombination_on_dust(n(:),Tgas)
+    O_recombination_on_dust = 0.25d0*k_H
+
+  end function O_recombination_on_dust
+
+  !*********************
+  !This function returns the
+  ! photorate of H2 occurring in the
+  ! Lyman-Werner bands following the approximation
+  ! provided by Glover&Jappsen 2007. Rate in 1/s.
+  !Approximation valid at low-density, it assumes H2(nu = 0).
+  !It also stores the rate as a common, needed for the photoheating
+  function H2_solomonLW(myflux)
+    use krome_commons
+    use krome_constants
+    implicit none
+    real*8::H2_solomonLW,myflux
+
+    !myflux is the radiation background at E = 12.87 eV
+    !should be converted to erg
+    H2_solomonLW = 1.38d9*myflux*eV_to_erg
+
+  end function H2_solomonLW
+
+  !****************************
+  !tanh smoothing function that
+  ! increses when xarg increases.
+  ! xpos is the position of the transition point.
+  ! slope is the steepness of the curve.
+  function smooth_increase(xarg,xpos,slope)
+    implicit none
+    real*8::smooth_increase,xarg,xpos,slope
+
+    smooth_increase = .5d0 * (tanh(slope * (xarg - xpos)) &
+        + 1d0)
+
+  end function smooth_increase
+
+  !****************************
+  !tanh smoothing function that
+  ! decreses when xarg increases.
+  ! xpos is the position of the transition point.
+  ! slope is the steepness of the curve.
+  function smooth_decrease(xarg,xpos,slope)
+    implicit none
+    real*8::smooth_decrease,xarg,xpos,slope
+
+    smooth_decrease = .5d0 * (tanh(-slope * (xarg - xpos)) &
+        + 1d0)
+
+  end function smooth_decrease
+
+  !*********************
+  !sign: return 1d0 if x>=0d0,
+  ! else return -1d0
+  function get_sgn(x)
+    implicit none
+    real*8::x,get_sgn
+
+    get_sgn = 1d0
+    if(x==0d0) return
+    get_sgn = x/abs(x)
+
+  end function get_sgn
+
+  !*********************
+  function conserve(n,ni)
+    use krome_commons
+    implicit none
+    real*8::conserve(nspec),n(nspec),ni(nspec),no(nspec)
+    real*8::ntot,nitot,factor
+
+    no(:) = n(:)
+
+    conserve(:) = 0d0
+    conserve(:) = no(:)
+
+  end function conserve
+
+  !*************************
+  !this subroutine changes the x(:) mass fractions of the species
+  ! to force conservation according to the reference ref(:)
+  subroutine conserveLin_x(x,ref)
+    use krome_commons
+    use krome_getphys
+    implicit none
+    real*8::x(nmols),ref(natoms)
+    real*8::A(natoms,natoms),B(natoms),m(nspec)
+
+    m(:) = get_mass()
+    A(:,:) = 0d0
+    B(:) = ref(:)
+
+    !charge conservation
+    x(idx_E) = m(idx_E)*(- x(idx_Hk) / m(idx_Hk) &
+        - x(idx_Ck) / m(idx_Ck) &
+        - x(idx_Ok) / m(idx_Ok) &
+        + x(idx_Hj) / m(idx_Hj) &
+        + x(idx_HEj) / m(idx_HEj) &
+        + x(idx_H2j) / m(idx_H2j) &
+        + x(idx_Cj) / m(idx_Cj) &
+        + x(idx_Oj) / m(idx_Oj) &
+        + x(idx_HOCj) / m(idx_HOCj) &
+        + x(idx_HCOj) / m(idx_HCOj) &
+        + x(idx_H3j) / m(idx_H3j) &
+        + x(idx_CHj) / m(idx_CHj) &
+        + x(idx_CH2j) / m(idx_CH2j) &
+        + x(idx_COj) / m(idx_COj) &
+        + x(idx_CH3j) / m(idx_CH3j) &
+        + x(idx_OHj) / m(idx_OHj) &
+        + x(idx_H2Oj) / m(idx_H2Oj) &
+        + x(idx_H3Oj) / m(idx_H3Oj) &
+        + x(idx_O2j) / m(idx_O2j) &
+        + 2d0*x(idx_HEjj) / m(idx_HEjj))
+    !check if charge conservation goes wrong
+    if(x(idx_E)<0d0) then
+      print *,"ERROR in conserveLin, electrons < 0"
+      stop
+    end if
+
+  end subroutine conserveLin_x
+
+  !***************************
+  !compute the total reference mass atom type by atom type
+  function conserveLinGetRef_x(x)
+    use krome_commons
+    use krome_getphys
+    implicit none
+    real*8::conserveLinGetRef_x(natoms),x(nmols)
+    real*8::m(nspec)
+
+    m(:) = get_mass()
+    conserveLinGetRef_x(:) = 0d0
+
+  end function conserveLinGetRef_x
+
+  !***************************
+  !Ref: Sasaki & Takahara (1993)
+  !This function evaluate the recombination rate
+  ! for H+ + e --> H + gamma and the same
+  ! for D+ + e --> D + gamma
+  function elec_recomb_ST93(nabund,nelec,ntot,nucleiH,Trad)
+    use krome_commons
+    use krome_constants
+    implicit none
+    real*8::nabund,nelec,Trad
+    real*8::nucleiH,elec_recomb_ST93
+    real*8::al,ak,rc2,r2c
+    real*8::a0,b0,c0,d0,e0
+    real*8::a1,b1,c1,d1,e1,f1,g1,h1
+    real*8::ntot,ratio
+
+    al = 8.227d0
+    ak = 22.06d0 / (hubble  *(1d0 + phys_zredshift) &
+        * sqrt(1d0 + Omega0 * phys_zredshift))
+    !Rc2 evaluation
+    rc2 = 8.76d-11 * (1d0 + phys_zredshift)**(-0.58)
+    !R2c evaluation
+    r2c = (1.80d10 * Trad)**(1.5) &
+        * exp(-3.9472d4 / Trad) * rc2
+
+    !coefficients
+    a0 = nucleiH * rc2
+    b0 = ak * al * nucleiH
+    c0 = ak * rc2 * nucleiH * nucleiH
+    d0 = r2c * exp(-1.18416d5/Trad)
+    e0 = ak * r2c * nucleiH
+
+    !polynomial terms
+    a1 = -d0 * (1d0 + b0)
+    b1 = d0 * (1d0 + 2d0 * b0)
+    c1 = a0 + b0 * (a0 - d0)
+    d1 = -a0 * b0
+    e1 = a0 * c0
+    f1 = 1d0 + b0 + e0
+    g1 = -(b0 + e0)
+    h1 = c0
+
+    ratio = nabund / ntot
+
+    elec_recomb_ST93 = ntot*(a1 + b1*ratio + c1*ratio**2 + d1*ratio**3 &
+        + e1*ratio**4) / (f1 + g1*ratio + h1*ratio**2)
+
+    elec_recomb_ST93 = elec_recomb_ST93 / (nabund * nelec)
+
+  end function elec_recomb_ST93
+
+  !********************
+  subroutine load_parts()
+    use krome_commons
+    implicit none
+
+  end subroutine load_parts
+
+  !*************************
+  subroutine load_part(fname,array_part,min_part,dT_part)
+    character(len=*)::fname
+    integer::ios,icount,i,cv
+    real*8,allocatable::array_part(:),emed(:)
+    real*8::min_part,dT_part,Told,array_tmp(int(1e5)),rout(2)
+
+    open(33,file=trim(fname),status="old",iostat=ios)
+    if(ios.ne.0) then
+      print *,"ERROR: partition function not found"
+      print *," in file "//fname
+      stop
+    end if
+
+    print *,"loading partition function from "//fname
+    icount = 0
+    min_part = 1d99
+    Told = 0d0
+    do
+      read(33,*,iostat=ios) rout(:)
+      if(ios<0) exit
+      if(ios.ne.0) cycle
+      icount = icount + 1
+      min_part = min(min_part,rout(1))
+      array_tmp(icount) = rout(2)
+      dT_part = rout(1) - Told
+      Told = rout(1)
+    end do
+    close(33)
+
+    allocate(array_part(icount),emed(icount))
+    array_part(:) = array_tmp(1:icount)
+
+  end subroutine load_part
+
+  !**********************
+  function troe_falloff(k0,kinf,Fc,m)
+    implicit none
+    real*8::troe_falloff,k0,kinf,Fc,m,rm,xexp
+    rm = k0*m/kinf
+    xexp = 1d0/(1d0+log10(rm)**2)
+    troe_falloff = k0*m/(1d0+rm)*Fc**xexp
+  end function troe_falloff
+
+  !*************************
+  function k3body(k0,kinf,Fc,nM)
+    implicit none
+    real*8::k3body,k0,kinf,Fc,nM
+    real*8::c,n,d,Pr,xexp,F
+
+    c = -0.4d0-0.67d0*log10(Fc)
+    n = 0.75d0-1.27d0*log10(Fc)
+    d = 0.14d0
+    Pr = k0*nM/kinf
+    xexp = (log10(Pr)+c)/(n-d*(log10(Pr)+c))
+    F = 1d1**(log10(Fc)/(1d0+xexp**2))
+    k3body = kinf*(Pr/(1d0+Pr)) * F
+
+  end function k3body
+
+  !***********************
+  !see http://kida.obs.u-bordeaux1.fr/help
+  function KIDA3body(ka0,kb0,kc0,kaInf,kbInf,kcInf,kaFc,kbFc,&
+        kcFc,kdFc,npart,Tgas,pmin,pmax)
+    implicit none
+    real*8::ka0,kb0,kc0,kaInf,kbInf,kcInf,kaFc,kbFc,kcFc,kdFc
+    real*8::KIDA3body,kinf,p,f,npart,Tgas,fc,fexp,invT
+    real*8::k0,cc,dd,nn,pmin,pmax
+
+    KIDA3body = 0d0
+
+    invT = 1d0/Tgas
+    k0 = ka0*(Tgas/3d2)**kb0*exp(-kc0*invT)
+    kinf = kainf*(Tgas/3d2)**kbinf*exp(-kcinf*invT)
+
+    p = k0*npart/kinf
+    if(p<pmin) return
+    if(p>pmax) return
+
+    fc = (1d0-kaFc)*exp(-Tgas/kbFc) + kaFc*exp(-Tgas/kbFc) &
+        + exp(-kdFc*invT)
+
+    cc = -0.4d0 - 0.67d0 *log10(fc)
+    dd = 0.14d0
+    nn = 0.75d0 - 1.27d0*log10(fc)
+    fexp = 1d0 + ((log10(p)+cc)/(nn-dd*(log10(p)+cc)))**2
+
+    f = fc**(1d0/fexp)
+
+    KIDA3body = kinf*(p/(1d0+p))*f
+
+  end function KIDA3body
+
+  !******************************
+  !collisional ionization rate from Verner+96
+  ! unit: cm3/s
+  function colion_v96(Tgas,dE,P,A,X,K)
+    implicit none
+    real*8::colion_v96,Tgas,dE,A,X,K,U,Te,P
+
+    Te = Tgas * 8.621738d-5 !K to eV
+    U = dE / Te
+    colion_v96 = A * (1d0 + P*sqrt(U)) * U**K * exp(-U) / (X+U)
+
+  end function colion_v96
+
+  !****************************
+  !radiative recombination rates from
+  ! Verner routine, standard fit, cm3/s
+  function recV96(Tgas,a,b)
+    implicit none
+    real*8::recV96,Tgas,a,b
+
+    recV96 = a*(1d4/Tgas)**b
+
+  end function recV96
+
+  !****************************
+  !radiative recombination rates from
+  ! Verner routine, new fit, cm3/s
+  function recNewV96(Tgas,r1,r2,r3,r4)
+    implicit none
+    real*8::recNewV96,Tgas,r1,r2,r3,r4,tt
+
+    tt = sqrt(Tgas/r3)
+    recNewV96 = r1/(tt*(tt + 1d0)**(1.-r2) &
+        * (1d0 + sqrt(Tgas/r4))**(1.+r2))
+
+  end function recNewV96
+
+  !****************************
+  !radiative recombination rates from
+  ! Verner routine, iron only, cm3/s
+  function recFeV96(Tgas,r1,r2,r3)
+    implicit none
+    real*8::recFeV96,Tgas,r1,r2,r3,tt
+
+    tt = sqrt(Tgas*1d-4)
+    recFeV96 = r1/tt**(r2 + r3 + log10(tt))
+
+  end function recFeV96
+
+  !******************************
+  !radiative recombination rates from Verner+96
+  ! unit: cm3/s
+  function radrec_v96(Tgas,a,b,T0,T1)
+    implicit none
+    real*8::Tgas,a,b,T0,T1,radrec_v96,iT0
+
+    iT0 = 1d0/T0
+    radrec_v96 = a/(sqrt(Tgas*iT0) + (1d0*sqrt(Tgas*iT0))**(1.-b) &
+        * (1d0+sqrt(Tgas/T1))**(1+b))
+
+  end function radrec_v96
+
+  !*******************************
+  !radiative recombination rates low-temp fit, Verner+96
+  ! unit: cm3/s
+  function radrec_low_v96(Tgas,a,b,c,d,f)
+    implicit none
+    real*8::Tgas,a,b,c,d,f,radrec_low_v96,t,invt
+
+    t = Tgas*1d-4
+    invt = 1d0/t
+
+    radrec_low_v96 = 1d-12 * (a*invt + b + c*t + d*t**2) &
+        * t**(-1.5) * exp(-f*invt)
+
+    radrec_low_v96 = max(0d0,radrec_low_v96)
+
+  end function radrec_low_v96
+
+  !***************************
+  !Collisional dissociation rate (cm-3/s) by Martin et al. 1996
+  ! H2+H->H+H+H
+  !NOTE: the use of this rate is suggested
+  ! for high-density regime and in the presence of UV backgrounds.
+  ! if necessary it must be included in the reaction file as
+  ! H2,H,,H,H,H,,NONE,NONE,dissH2_Martin96(n,Tgas)
+  function dissH2_Martin96(n,Tgas)
+    use krome_commons
+    use krome_getphys
+    integer::i
+    real*8::n(nspec),Tgas,dissH2_Martin96
+    real*8::CDrates,logTv(4),k_CIDm(21,2),k_CID,invT,logT,n_c1,n_c2,n_H
+    real*8::logk_h1,logk_h2,logk_l1,logk_l2,logn_c1,logn_c2,p,logk_CID
+    real*8::logT2,logT3
+
+    !k_CID = collision-induced dissociation + dissociative tunneling
+
+    !Collisional dissociation of H2
+    k_CIDm(:,1) = (/-178.4239d0, -68.42243d0, 43.20243d0, -4.633167d0, &
+        69.70086d0, 40870.38d0, -23705.70d0, 128.8953d0, -53.91334d0, &
+        5.315517d0, -19.73427d0, 16780.95d0, -25786.11d0, 14.82123d0, &
+        -4.890915d0, 0.4749030d0, -133.8283d0, -1.164408d0, 0.8227443d0,&
+        0.5864073d0, -2.056313d0/)
+
+    !Dissociative tunneling of H2
+    k_CIDm(:,2) = (/-142.7664d0, 42.70741d0, -2.027365d0, -0.2582097d0, &
+        21.36094d0, 27535.31d0, -21467.79d0, 60.34928d0, -27.43096d0, &
+        2.676150d0, -11.28215d0, 14254.55d0, -23125.20d0, 9.305564d0, &
+        -2.464009d0, 0.1985955d0, 743.0600d0, -1.174242d0, 0.7502286d0, &
+        0.2358848d0, 2.937507d0/)
+
+    n_H  = get_Hnuclei(n(:))
+    logT = log10(Tgas)
+    invT = 1.0d0/Tgas
+    logT2 = logT*logT
+    logT3 = logT2*logT
+    logTv = (/1.d0, logT, logT2, logT3/)
+    k_CID = 0.d0
+    do i=1,2
+      logk_h1 = k_CIDm(1,i)*logTv(1) + k_CIDm(2,i)*logTv(2) + &
+          k_CIDm(3,i)*logTv(3) + k_CIDm(4,i)*logTv(4) + &
+          k_CIDm(5,i)*log10(1.d0+k_CIDm(6,i)*invT)
+      logk_h2 = k_CIDm(7,i)*invT
+      logk_l1 = k_CIDm(8,i)*logTv(1) + k_CIDm(9,i)*logTv(2) + &
+          k_CIDm(10,i)*logTv(3) + k_CIDm(11,i)*log10(1.d0+k_CIDm(12,i)*invT)
+      logk_l2 = k_CIDm(13,i)*invT
+      logn_c1 = k_CIDm(14,i)*logTv(1) + k_CIDm(15,i)*logTv(2) &
+          + k_CIDm(16,i)*logTv(3) + k_CIDm(17,i)*invT
+      logn_c2 = k_CIDm(18,i) + logn_c1
+      p = k_CIDm(19,i) + k_CIDm(20,i)*exp(-Tgas/1.850d3) &
+          + k_CIDm(21,i)*exp(-Tgas/4.40d2)
+      n_c1 = 1d1**(logn_c1)
+      n_c2 = 1d1**(logn_c2)
+      logk_CID = logk_h1 - (logk_h1 - logk_l1) / (1.d0 + (n_H/n_c1)**p) &
+          + logk_h2 - (logk_h2 - logk_l2) / (1.d0 + (n_H/n_c2)**p)
+      k_CID = k_CID + 1.d1**logk_CID
+    enddo
+
+    dissH2_Martin96 = k_CID
+
+  end function dissH2_Martin96
+
+  !***********************************
+  subroutine init_exp_table()
+    use krome_commons
+    implicit none
+    integer::i
+    real*8::a
+
+    do i=1,exp_table_na
+      a = (i-1)*(exp_table_aMax-exp_table_aMin)/(exp_table_na-1) + exp_table_aMin
+      exp_table(i) = exp(-a)
+    end do
+
+  end subroutine init_exp_table
+
+  !***************************
+  !get the index of the specie name
+  function get_index(name)
+    use krome_commons
+    use krome_getphys
+    integer::get_index,i
+    character*16::names(nspec)
+    character*(*)::name
+    names(:) = get_names()
+    get_index = -1 !default index
+    !loop on species to found the specie named name
+    do i=1,nspec
+      !when found store and break loop
+      if(trim(names(i))== trim(name)) then
+        get_index = i !store index
+        exit
+      end if
+    end do
+
+    !error if species not found
+    if(get_index<0) then
+      print *,"ERROR: can't find the index of ",name
+      stop
+    end if
+
+  end function get_index
+
+  !*****************************
+  !computes revers kinetics from reaction and
+  ! product indexes
+  ! k_rev = k_for * revKc
+  ! Note that reaction constant revKc is calculated with
+  ! reactants and products from reverse reaction
+  function revKc(Tgas,ridx,pidx)
+    use krome_constants
+    use krome_commons
+    implicit none
+    real*8::revKc,Tgas,dgibss,stoichiometricChange
+    integer::ridx(:),pidx(:),i
+
+    ! when considering forward reaction:
+    ! Kc = (P°)**(p+p-r-r) * exp(-dGibss_forward°)
+    ! where ° means at standard conditions of
+    ! P° = 1 bar = (kb*T/1e6) dyn/cm^2 (cgs)
+    ! when considering reverse:
+    ! 1/Kc = revKc = (kb*T/1e6)**(p+p-r-r) * exp(-dGibss_reverse°)
+    ! kb*T/1e6 is to go from 1 atm pressure to number density cm^-3
+    ! When not at standard pressure this does not change:
+    ! revKc = P**(p+p-r-r) *exp(-dGibss_reverse° - (p+p-r-r)*ln(P/P°))
+    !       = (P°)**(p+p-r-r) * exp(-dGibss_reverse°)
+
+    dgibss = 0.d0 ! Gibbs free energy/(R*T)
+    stoichiometricChange = 0d0
+
+    do i=1,size(pidx)
+      dgibss = dgibss + revHS(Tgas,pidx(i))
+      stoichiometricChange = stoichiometricChange + 1
+    end do
+
+    do i=1,size(ridx)
+      dgibss = dgibss - revHS(Tgas,ridx(i))
+      stoichiometricChange = stoichiometricChange - 1
+    end do
+
+    revKc = (boltzmann_erg * Tgas * 1e-6)**(-stoichiometricChange)&
+        * exp(-dgibss)
+
+  end function revKc
+
+  !*****************************
+  !compute H-S for species with index idx
+  ! when temperature is Tgas
+  function revHS(Tgas,idx)
+    use krome_commons
+    use krome_constants
+    use krome_fit
+    real*8::revHS,Tgas,Tgas2,Tgas3,Tgas4,invT,lnT,H,S
+    real*8::Tnist,Tnist2,Tnist3,Tnist4,invTnist,invTnist2,lnTnist
+    real*8::p1_nasa(38,7), p2_nasa(38,7), Tlim_nasa(38,3), p(7)
+    real*8::p1_nist(38,7), p2_nist(38,7), Tlim_nist(38,3)
+    integer::idx
+
+    p(:) = 0.d0
+    p1_nasa(:,:) = 0.d0
+    p2_nasa(:,:) = 0.d0
+    Tlim_nasa(:,:) = 0.d0
+    p1_nist(:,:) = 0.d0
+    p2_nist(:,:) = 0.d0
+    Tlim_nist(:,:) = 0.d0
+    Tgas2 = Tgas * Tgas
+    Tgas3 = Tgas2 * Tgas
+    Tgas4 = Tgas3 * Tgas
+    invT = 1d0/Tgas
+    lnT = log(Tgas)
+    ! NIST polynomials are quite differernt
+    ! it doesn't like easy stuff...
+    Tnist = Tgas * 1.d-3
+    Tnist2 = Tnist * Tnist
+    Tnist3 = Tnist2 * Tnist
+    Tnist4 = Tnist3 * Tnist2
+    invTnist = 1d0/Tnist
+    invTnist2 = invTnist * invTnist
+    lnTnist = log(Tnist)
+
+    p1_nasa(idx_Hk,:)  = (/2.5d0,&
+        0.0d0,&
+        0.0d0,&
+        0.0d0,&
+        0.0d0,&
+        15976.167d0,&
+        -1.1390139d0/)
+    p1_nasa(idx_Ck,:)  = (/2.50025151d0,&
+        -1.19774349d-06,&
+        2.28919443d-09,&
+        -1.98276803d-12,&
+        6.44398056d-16,&
+        70064.893d0,&
+        4.87847086d0/)
+    p1_nasa(idx_Ok,:)  = (/2.90805921d0,&
+        -0.00169804907d0,&
+        2.98069955d-06,&
+        -2.43835127d-09,&
+        7.61229311d-13,&
+        11435.7717d0,&
+        2.80339097d0/)
+    p1_nasa(idx_H,:)  = (/2.5d0,&
+        0.0d0,&
+        0.0d0,&
+        0.0d0,&
+        0.0d0,&
+        25473.66d0,&
+        -0.44668285d0/)
+    p1_nasa(idx_HE,:)  = (/2.5d0,&
+        0.0d0,&
+        0.0d0,&
+        0.0d0,&
+        0.0d0,&
+        -745.375d0,&
+        0.928723974d0/)
+    p1_nasa(idx_H2,:)  = (/2.34433112d0,&
+        0.00798052075d0,&
+        -1.9478151d-05,&
+        2.01572094d-08,&
+        -7.37611761d-12,&
+        -917.935173d0,&
+        0.683010238d0/)
+    p1_nasa(idx_C,:)  = (/2.5542395d0,&
+        -0.00032153772d0,&
+        7.3379223d-07,&
+        -7.3223487d-10,&
+        2.6652144d-13,&
+        85442.681d0,&
+        4.5313085d0/)
+    p1_nasa(idx_O,:)  = (/3.1682671d0,&
+        -0.00327931884d0,&
+        6.64306396d-06,&
+        -6.12806624d-09,&
+        2.11265971d-12,&
+        29122.2592d0,&
+        2.05193346d0/)
+    p1_nasa(idx_OH,:)  = (/3.99198424d0,&
+        -0.00240106655d0,&
+        4.61664033d-06,&
+        -3.87916306d-09,&
+        1.36319502d-12,&
+        3368.89836d0,&
+        -0.103998477d0/)
+    p1_nasa(idx_CO,:)  = (/3.5795335d0,&
+        -0.00061035369d0,&
+        1.0168143d-06,&
+        9.0700586d-10,&
+        -9.0442449d-13,&
+        -14344.086d0,&
+        3.5084093d0/)
+    p1_nasa(idx_CH,:)  = (/3.4897583d0,&
+        0.0003243216d0,&
+        -1.6899751d-06,&
+        3.162842d-09,&
+        -1.4061803d-12,&
+        70660.755d0,&
+        2.0842841d0/)
+    p1_nasa(idx_CH2,:)  = (/3.84261832d0,&
+        -7.36676871d-06,&
+        6.16970693d-06,&
+        -6.96689962d-09,&
+        2.64620979d-12,&
+        45863.1528d0,&
+        1.2758447d0/)
+    p1_nasa(idx_HCO,:)  = (/4.36380907d0,&
+        -0.00535204137d0,&
+        2.31954508d-05,&
+        -2.6610904d-08,&
+        1.02711962d-11,&
+        25010.8717d0,&
+        2.98106307d0/)
+    p1_nasa(idx_H2O,:)  = (/4.1986352d0,&
+        -0.0020364017d0,&
+        6.5203416d-06,&
+        -5.4879269d-09,&
+        1.771968d-12,&
+        -30293.726d0,&
+        -0.84900901d0/)
+    p1_nasa(idx_O2,:)  = (/3.78245636d0,&
+        -0.00299673416d0,&
+        9.84730201d-06,&
+        -9.68129509d-09,&
+        3.24372837d-12,&
+        -1063.94356d0,&
+        3.65767573d0/)
+    p1_nasa(idx_Hj,:)  = (/2.5d0,&
+        0.0d0,&
+        0.0d0,&
+        0.0d0,&
+        0.0d0,&
+        184021.488d0,&
+        -1.14064664d0/)
+    p1_nasa(idx_HEj,:)  = (/2.5d0,&
+        0.0d0,&
+        0.0d0,&
+        0.0d0,&
+        0.0d0,&
+        285323.374d0,&
+        1.62166556d0/)
+    p1_nasa(idx_H2j,:)  = (/3.77256072d0,&
+        -0.0019574659d0,&
+        4.54812047d-06,&
+        -2.82152141d-09,&
+        5.33969209d-13,&
+        178694.654d0,&
+        -3.96609192d0/)
+    p1_nasa(idx_Cj,:)  = (/2.61332254d0,&
+        -0.000540148065d0,&
+        1.03037233d-06,&
+        -8.90092552d-10,&
+        2.88500586d-13,&
+        216862.274d0,&
+        3.8345479d0/)
+    p1_nasa(idx_Oj,:)  = (/2.5d0,&
+        0.0d0,&
+        0.0d0,&
+        0.0d0,&
+        0.0d0,&
+        187935.284d0,&
+        4.39337676d0/)
+    p1_nasa(idx_H3j,:)  = (/4.1795698d0,&
+        -0.000868875627d0,&
+        -1.09017371d-07,&
+        4.13349766d-09,&
+        -2.37877027d-12,&
+        132635.537d0,&
+        -5.838001d0/)
+    p1_nasa(idx_COj,:)  = (/3.77061642d0,&
+        -0.00201773246d0,&
+        4.61081738d-06,&
+        -2.99175463d-09,&
+        6.06065045d-13,&
+        149006.795d0,&
+        3.38129783d0/)
+    p1_nasa(idx_OHj,:)  = (/3.50502572d0,&
+        0.000241313747d0,&
+        -1.42200948d-06,&
+        2.64780232d-09,&
+        -1.17038711d-12,&
+        155210.676d0,&
+        1.97907627d0/)
+    p1_nasa(idx_H2Oj,:)  = (/4.02465912d0,&
+        -0.00108851414d0,&
+        5.13576558d-06,&
+        -4.40027838d-09,&
+        1.40726746d-12,&
+        116895.616d0,&
+        0.699968812d0/)
+    p1_nasa(idx_H3Oj,:)  = (/3.79295251d0,&
+        -0.000910852723d0,&
+        1.16363521d-05,&
+        -1.21364865d-08,&
+        4.26159624d-12,&
+        71402.7518d0,&
+        1.47156927d0/)
+    p1_nasa(idx_O2j,:)  = (/4.61017167d0,&
+        -0.00635951952d0,&
+        1.42425624d-05,&
+        -1.20997923d-08,&
+        3.70956878d-12,&
+        139742.229d0,&
+        -0.201326941d0/)
+    p2_nasa(idx_Hk,:)  = (/2.5d0,&
+        0.0d0,&
+        0.0d0,&
+        0.0d0,&
+        0.0d0,&
+        15976.167d0,&
+        -1.1390139d0/)
+    p2_nasa(idx_Ck,:)  = (/2.50001597d0,&
+        -1.71721376d-08,&
+        6.9283294d-12,&
+        -1.20607892d-15,&
+        7.60308635d-20,&
+        70064.9324d0,&
+        4.87955907d0/)
+    p2_nasa(idx_Ok,:)  = (/2.54474869d0,&
+        -4.66695513d-05,&
+        1.84912357d-08,&
+        -3.18159223d-12,&
+        1.98962956d-16,&
+        11504.2089d0,&
+        4.52131015d0/)
+    p2_nasa(idx_H,:)  = (/2.5d0,&
+        0.0d0,&
+        0.0d0,&
+        0.0d0,&
+        0.0d0,&
+        25473.66d0,&
+        -0.44668285d0/)
+    p2_nasa(idx_HE,:)  = (/2.5d0,&
+        0.0d0,&
+        0.0d0,&
+        0.0d0,&
+        0.0d0,&
+        -745.375d0,&
+        0.928723974d0/)
+    p2_nasa(idx_H2,:)  = (/2.93286575d0,&
+        0.000826608026d0,&
+        -1.46402364d-07,&
+        1.54100414d-11,&
+        -6.888048d-16,&
+        -813.065581d0,&
+        -1.02432865d0/)
+    p2_nasa(idx_C,:)  = (/2.605583d0,&
+        -0.00019593434d0,&
+        1.0673722d-07,&
+        -1.642394d-11,&
+        8.187058d-16,&
+        85411.742d0,&
+        4.1923868d0/)
+    p2_nasa(idx_O,:)  = (/2.54363697d0,&
+        -2.73162486d-05,&
+        -4.1902952d-09,&
+        4.95481845d-12,&
+        -4.79553694d-16,&
+        29226.012d0,&
+        4.92229457d0/)
+    p2_nasa(idx_OH,:)  = (/2.83853033d0,&
+        0.00110741289d0,&
+        -2.94000209d-07,&
+        4.20698729d-11,&
+        -2.4228989d-15,&
+        3697.80808d0,&
+        5.84494652d0/)
+    p2_nasa(idx_CO,:)  = (/3.0484859d0,&
+        0.0013517281d0,&
+        -4.8579405d-07,&
+        7.8853644d-11,&
+        -4.6980746d-15,&
+        -14266.117d0,&
+        6.0170977d0/)
+    p2_nasa(idx_CH,:)  = (/2.5209369d0,&
+        0.0017653639d0,&
+        -4.614766d-07,&
+        5.9289675d-11,&
+        -3.3474501d-15,&
+        70994.878d0,&
+        7.4051829d0/)
+    p2_nasa(idx_CH2,:)  = (/3.11049513d0,&
+        0.00373779517d0,&
+        -1.37371977d-06,&
+        2.23054839d-10,&
+        -1.33567178d-14,&
+        45971.5953d0,&
+        4.62796405d0/)
+    p2_nasa(idx_HCO,:)  = (/4.23892214d0,&
+        0.0019657617d0,&
+        -3.82075171d-07,&
+        4.80137647d-11,&
+        -3.11176347d-15,&
+        24726.1645d0,&
+        1.99698242d0/)
+    p2_nasa(idx_H2O,:)  = (/2.6770389d0,&
+        0.0029731816d0,&
+        -7.7376889d-07,&
+        9.4433514d-11,&
+        -4.2689991d-15,&
+        -29885.894d0,&
+        6.88255d0/)
+    p2_nasa(idx_O2,:)  = (/3.66096065d0,&
+        0.000656365811d0,&
+        -1.41149627d-07,&
+        2.05797935d-11,&
+        -1.29913436d-15,&
+        -1215.97718d0,&
+        3.41536279d0/)
+    p2_nasa(idx_Hj,:)  = (/2.5d0,&
+        0.0d0,&
+        0.0d0,&
+        0.0d0,&
+        0.0d0,&
+        184021.488d0,&
+        -1.14064664d0/)
+    p2_nasa(idx_HEj,:)  = (/2.5d0,&
+        0.0d0,&
+        0.0d0,&
+        0.0d0,&
+        0.0d0,&
+        285323.374d0,&
+        1.62166556d0/)
+    p2_nasa(idx_H2j,:)  = (/3.44204765d0,&
+        0.000599083239d0,&
+        6.69133685d-08,&
+        -3.43574373d-11,&
+        1.97626599d-15,&
+        178650.236d0,&
+        -2.79499055d0/)
+    p2_nasa(idx_Cj,:)  = (/2.50827618d0,&
+        -1.04354146d-05,&
+        5.16160809d-09,&
+        -1.14187475d-12,&
+        9.43539946d-17,&
+        216879.645d0,&
+        4.3188599d0/)
+    p2_nasa(idx_Oj,:)  = (/2.48542028d0,&
+        2.56978695d-05,&
+        -1.28833378d-08,&
+        1.65525487d-12,&
+        1.09933344d-16,&
+        187940.874d0,&
+        4.47425446d0/)
+    p2_nasa(idx_H3j,:)  = (/2.01435718d0,&
+        0.00415925769d0,&
+        -1.42664877d-06,&
+        2.22372739d-10,&
+        -1.29346518d-14,&
+        133230.507d0,&
+        5.46168967d0/)
+    p2_nasa(idx_COj,:)  = (/2.93062935d0,&
+        0.00156033262d0,&
+        -6.16246355d-07,&
+        1.09957336d-10,&
+        -6.66119284d-15,&
+        149147.222d0,&
+        7.3384673d0/)
+    p2_nasa(idx_OHj,:)  = (/2.68358996d0,&
+        0.00157006435d0,&
+        -5.39972815d-07,&
+        9.37643877d-11,&
+        -5.70068067d-15,&
+        155479.296d0,&
+        6.44375894d0/)
+    p2_nasa(idx_H2Oj,:)  = (/3.31570445d0,&
+        0.00210648746d0,&
+        -3.76341515d-07,&
+        3.47525972d-11,&
+        -1.70335643d-15,&
+        117017.475d0,&
+        4.03220514d0/)
+    p2_nasa(idx_H3Oj,:)  = (/2.49647765d0,&
+        0.0057284484d0,&
+        -1.83953239d-06,&
+        2.73577348d-10,&
+        -1.54093917d-14,&
+        71624.4227d0,&
+        7.45850493d0/)
+    p2_nasa(idx_O2j,:)  = (/3.31675922d0,&
+        0.00111522244d0,&
+        -3.83492556d-07,&
+        5.72784687d-11,&
+        -2.77648381d-15,&
+        139876.823d0,&
+        5.44726469d0/)
+    Tlim_nasa(idx_Hk,:)  = (/298.15d0,&
+        1000.0d0,&
+        6000.0d0/)
+    Tlim_nasa(idx_Ck,:)  = (/298.15d0,&
+        1000.0d0,&
+        6000.0d0/)
+    Tlim_nasa(idx_Ok,:)  = (/298.15d0,&
+        1000.0d0,&
+        6000.0d0/)
+    Tlim_nasa(idx_H,:)  = (/200.0d0,&
+        1000.0d0,&
+        6000.0d0/)
+    Tlim_nasa(idx_HE,:)  = (/200.0d0,&
+        1000.0d0,&
+        6000.0d0/)
+    Tlim_nasa(idx_H2,:)  = (/200.0d0,&
+        1000.0d0,&
+        6000.0d0/)
+    Tlim_nasa(idx_C,:)  = (/200.0d0,&
+        1000.0d0,&
+        6000.0d0/)
+    Tlim_nasa(idx_O,:)  = (/200.0d0,&
+        1000.0d0,&
+        6000.0d0/)
+    Tlim_nasa(idx_OH,:)  = (/200.0d0,&
+        1000.0d0,&
+        6000.0d0/)
+    Tlim_nasa(idx_CO,:)  = (/200.0d0,&
+        1000.0d0,&
+        6000.0d0/)
+    Tlim_nasa(idx_CH,:)  = (/200.0d0,&
+        1000.0d0,&
+        6000.0d0/)
+    Tlim_nasa(idx_CH2,:)  = (/200.0d0,&
+        1000.0d0,&
+        6000.0d0/)
+    Tlim_nasa(idx_HCO,:)  = (/200.0d0,&
+        1000.0d0,&
+        6000.0d0/)
+    Tlim_nasa(idx_H2O,:)  = (/200.0d0,&
+        1000.0d0,&
+        6000.0d0/)
+    Tlim_nasa(idx_O2,:)  = (/200.0d0,&
+        1000.0d0,&
+        6000.0d0/)
+    Tlim_nasa(idx_Hj,:)  = (/298.15d0,&
+        1000.0d0,&
+        6000.0d0/)
+    Tlim_nasa(idx_HEj,:)  = (/298.15d0,&
+        1000.0d0,&
+        6000.0d0/)
+    Tlim_nasa(idx_H2j,:)  = (/298.15d0,&
+        1000.0d0,&
+        6000.0d0/)
+    Tlim_nasa(idx_Cj,:)  = (/298.15d0,&
+        1000.0d0,&
+        6000.0d0/)
+    Tlim_nasa(idx_Oj,:)  = (/298.15d0,&
+        1000.0d0,&
+        6000.0d0/)
+    Tlim_nasa(idx_H3j,:)  = (/298.15d0,&
+        1000.0d0,&
+        6000.0d0/)
+    Tlim_nasa(idx_COj,:)  = (/298.15d0,&
+        1000.0d0,&
+        6000.0d0/)
+    Tlim_nasa(idx_OHj,:)  = (/298.15d0,&
+        1000.0d0,&
+        6000.0d0/)
+    Tlim_nasa(idx_H2Oj,:)  = (/298.15d0,&
+        1000.0d0,&
+        6000.0d0/)
+    Tlim_nasa(idx_H3Oj,:)  = (/298.15d0,&
+        1000.0d0,&
+        6000.0d0/)
+    Tlim_nasa(idx_O2j,:)  = (/298.15d0,&
+        1000.0d0,&
+        6000.0d0/)
+
+    ! pick NASA data if present for species
+    if (Tlim_nasa(idx,2) /= 0.d0) then
+      !select set of NASA polynomials using temperature
+      if(Tlim_nasa(idx,1).le.Tgas .and. Tgas.le.Tlim_nasa(idx,2)) then
+        p(:) = p1_nasa(idx,:)
+
+      else if(Tlim_nasa(idx,2)<Tgas .and. Tgas.le.Tlim_nasa(idx,3)) then
+        p(:) = p2_nasa(idx,:)
+
+        ! currently no option when Tgas not in Tlim range p(:) = 0
+      end if
+
+      !compute NASA polynomials for enthalpy and enthropy (unitless)
+      H = p(1) + p(2)*0.5d0*Tgas + p(3)*Tgas2/3.d0 + p(4)*Tgas3*0.25d0 + &
+          p(5)*Tgas4*0.2d0 + p(6)*invT
+      S = p(1)*lnT + p(2)*Tgas + p(3)*Tgas2*0.5d0 + p(4)*Tgas3/3.d0 + &
+          p(5)*Tgas4*0.25d0 + p(7)
+
+      revHS = H - S
+
+      ! else pick NIST data (if present)
+    else if (Tlim_nist(idx,2) /= 0.d0) then
+      if (Tlim_nist(idx,1) < Tgas .and. Tgas < Tlim_nist(idx,2)) then
+        p(:) = p1_nist(idx,:)
+
+      else if (Tlim_nist(idx,2) < Tgas .and. Tgas < Tlim_nist(idx,3)) then
+        p(:) = p2_nist(idx,:)
+
+        ! currently no option when Tgas not in Tlim range p(:) = 0
+      end if
+
+      !compute NIST polynomials for enthalpy and enthropy
+      ! H in (kJ/mol)
+      H = p(1)*Tnist + p(2)*0.5d0*Tnist2 + p(3)*Tnist3/3.d0 + p(4)*Tnist4*0.25d0&
+          - p(5)*invTnist + p(6)
+      !  Unitsless
+      H = H / (Rgas_kJ * Tgas)
+
+      ! S in (J/mol*K)
+      S = p(1)*lnTnist + p(2)*Tnist + p(3)*Tnist2*0.5d0 + p(4)*Tnist3/3.d0&
+          - p(5)*invTnist2*0.5d0 + p(7)
+      !  Unitless. Note: do not use Tnist
+      S = S / Rgas_J
+
+      revHS = H - S
+
+      ! return zero is no data exists
+    else
+      print *, "No thermochemical data of species index", idx
+      revHS = 0.d0
+
+    end if
+
+  end function revHS
+
+  !******************************
+  subroutine print_best_flux(n,Tgas,nbestin)
+    !print the first nbestin fluxes
+    use krome_commons
+    use krome_getphys
+    implicit none
+    real*8::n(nspec),Tgas,flux(nrea)
+    integer::nbest,idx(nrea),i,nbestin
+    character*50::name(nrea)
+
+    nbest = min(nbestin,nrea) !cannot exceed the number of reactions
+
+    flux(:) = get_flux(n(:),Tgas) !get fluxes
+    name(:) = get_rnames() !get reaction names
+
+    !call the sorting algorithm (bubblesort)
+    idx(:) = idx_sort(flux(:))
+
+    !print to screen
+    print *,"***************"
+    do i=1,nbest
+      print '(I8,a1,a50,E17.8)',idx(i)," ",name(idx(i)),flux(idx(i))
+    end do
+
+  end subroutine print_best_flux
+
+  !******************************
+  subroutine print_best_flux_frac(n,Tgas,frac)
+    !print the first nbestin fluxes
+    use krome_commons
+    use krome_getphys
+    implicit none
+    real*8::n(nspec),Tgas,flux(nrea),frac
+    integer::idx(nrea),i
+    character*50::name(nrea)
+
+    if(frac>1d0) then
+      print *,"ERROR: fraction in krome_print_best_flux should be <=1!"
+      stop
+    end if
+
+    flux(:) = get_flux(n(:),Tgas) !get fluxes
+    name(:) = get_rnames() !get reaction names
+
+    !call the sorting algorithm (bubblesort)
+    idx(:) = idx_sort(flux(:))
+
+    !print to screen
+    print *,"***************"
+    do i=1,nrea
+      if(flux(idx(i))<flux(idx(1))*frac) exit
+      print '(I8,a1,a50,E17.8)',idx(i)," ",name(idx(i)),flux(idx(i))
+    end do
+
+  end subroutine print_best_flux_frac
+
+  !******************************
+  subroutine print_best_flux_spec(n,Tgas,nbestin,idx_found)
+    !print the first nbestin fluxes for the reactions
+    ! that contains the species with index idx_found
+    use krome_commons
+    use krome_getphys
+    implicit none
+    real*8::n(nspec),Tgas,flux(nrea),maxflux
+    integer::nbest,idx(nrea),i,nbestin,idx_found
+    character*50::name(nrea)
+    logical::found
+
+    nbest = min(nbestin,nrea) !cannot exceed the number of reactions
+    maxflux = 0d0
+    flux(:) = get_flux(n(:),Tgas) !get fluxes
+    name(:) = get_rnames() !get reaction names
+    do i=1,nrea
+      found = .false.
+      if(arr_r1(i) == idx_found) found = .true.
+      if(arr_r2(i) == idx_found) found = .true.
+      if(arr_r3(i) == idx_found) found = .true.
+      if(arr_p1(i) == idx_found) found = .true.
+      if(arr_p2(i) == idx_found) found = .true.
+      if(arr_p3(i) == idx_found) found = .true.
+      maxflux = max(maxflux,flux(i))
+      if(.not.found) flux(i) = 0d0
+    end do
+
+    !call the sorting algorithm (bubblesort)
+    idx(:) = idx_sort(flux(:))
+
+    !print to screen
+    print *,"***************"
+    do i=1,nbest
+      print '(I8,a1,a50,2E17.8)',idx(i)," ",name(idx(i)),flux(idx(i)),&
+          flux(idx(i))/maxflux
+    end do
+
+  end subroutine print_best_flux_spec
+
+  !*****************************
+  function idx_sort(fin)
+    !sorting algorithm: requires an array of real values fin
+    ! and returns the sorted index list. descending.
+    ! bubblesort: not very efficient, replace with what you prefer
+    implicit none
+    real*8::fin(:),f(size(fin)),ftmp
+    integer::idx_sort(size(fin)),n,itmp,i
+    logical::found
+
+    f(:) = fin(:) !copy to local
+
+    n = size(f)
+    !init indexes
+    do i=1,n
+      idx_sort(i) = i
+    end do
+
+    !loop to sort
+    do
+      found = .false. !swapped something flag
+      do i=2,n
+        !> for descending, < for ascending
+        if(f(i)>f(i-1)) then
+          found = .true.
+          !swap real value
+          ftmp = f(i)
+          f(i) = f(i-1)
+          f(i-1) = ftmp
+          !swap index
+          itmp = idx_sort(i)
+          idx_sort(i) = idx_sort(i-1)
+          idx_sort(i-1) = itmp
+        end if
+      end do
+      !if nothing swapped exit
+      if(.not.found) exit
+    end do
+
+  end function idx_sort
+
+  !******************************
+  function get_flux(n,Tgas)
+    !get the flux k*n*n*... of the rates
+    use krome_commons
+    implicit none
+    integer::i
+    integer::r1,r2,r3
+    real*8::get_flux(nrea),n(nspec),k(nrea),rrmax,Tgas
+
+    k(:) = coe(n(:))
+    rrmax = 0.d0
+    n(idx_dummy) = 1.d0
+    n(idx_g) = 1.d0
+    n(idx_CR) = 1.d0
+    do i=1,nrea
+      r1 = arr_r1(i)
+      r2 = arr_r2(i)
+      r3 = arr_r3(i)
+      arr_flux(i) = k(i)*n(r1)*n(r2)*n(r3)
+    end do
+    get_flux(:) = arr_flux(:)
+
+  end function get_flux
+
+  !*****************************
+  subroutine load_arrays()
+    !load the array containing reactants
+    ! and product index
+    use krome_commons
+
+    arr_r1(1:275) = (/5,18,18,6,19,19,19,19,6,6,7,7,7,7,34,5,2,5&
+        ,5,20,7,7,7,2,2,2,2,2,20,20,20,7,5,5,7,21,21,21,22,22,8,9,22&
+        ,9,9,8,21,8,8,8,10,23,23,23,8,12,12,12,12,12,12,13,13,13,13&
+        ,13,14,14,9,10,10,7,8,8,9,9,10,16,17,17,17,17,11,20,25,8,8,8&
+        ,21,26,26,26,27,27,27,29,29,29,14,22,9,9,9,10,10,10,10,30,31&
+        ,16,16,16,16,16,16,32,17,17,17,8,8,11,11,11,11,24,24,24,12,12&
+        ,13,13,13,13,13,13,13,13,14,10,10,10,10,16,16,16,16,16,16,16&
+        ,16,17,17,17,11,11,28,3,4,19,25,25,26,27,27,27,29,29,29,30,31&
+        ,31,31,32,32,32,32,33,28,24,24,23,2,2,2,3,3,3,4,4,4,7,7,8,8,8&
+        ,8,8,21,21,21,21,9,9,9,10,5,6,19,9,8,7,2,12,12,14,10,10,16,16&
+        ,17,17,7,11,7,20,25,25,3,26,13,13,27,29,29,4,30,31,31,31,31&
+        ,32,32,32,32,5,6,9,11,11,14,7,7,7,8,12,17,17,10,13,16,15,15,7&
+        ,8,8,8,8,21,21,8,8,5,10,9/)
+    arr_r2(1:275) = (/1,1,1,1,1,1&
+        ,1,5,18,18,6,19,19,19,1,1,5,18,18,5,18,1,5,1,5,5,18,18,1,1,2&
+        ,7,5,5,5,1,1,1,1,1,1,1,5,18,19,18,5,19,19,19,5,7,11,11,7,5,7&
+        ,8,9,9,9,5,9,9,9,9,9,9,7,5,5,10,10,10,10,10,10,5,5,7,8,8,5,7&
+        ,5,20,25,25,7,5,7,9,5,7,9,5,9,9,22,7,20,25,25,25,25,21,21,7,7&
+        ,25,25,21,21,21,21,8,21,21,27,33,33,25,25,25,25,8,16,16,18,18&
+        ,18,18,18,18,19,19,19,19,19,18,18,19,19,18,18,19,19,19,19,19&
+        ,19,18,19,19,19,19,5,18,18,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1&
+        ,1,1,1,1,1,1,8,9,10,5,7,9,5,7,8,18,18,1,5,7,8,9,5,7,9,9,1,5,9&
+        ,5,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38&
+        ,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38&
+        ,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,8,8&
+        ,9,9,9,9,22,22,9,5,9/)
+    arr_r3(1:275) = (/38,38,38,38,38,38&
+        ,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38&
+        ,38,38,38,38,38,38,6,5,5,38,38,38,38,38,38,38,38,38,38,38,38&
+        ,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38&
+        ,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38&
+        ,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38&
+        ,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38&
+        ,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38&
+        ,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38&
+        ,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38&
+        ,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38&
+        ,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38&
+        ,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38&
+        ,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38&
+        ,38,38,38,38,38,38,38,38/)
+    arr_p1(1:275) = (/18,5,5,19,6,6&
+        ,34,6,19,19,5,6,6,19,19,2,7,20,20,7,20,5,5,5,5,5,5,20,5,5,5,7&
+        ,7,7,7,8,8,8,9,9,21,22,9,22,22,21,8,21,21,21,9,24,24,24,12,8&
+        ,13,14,11,24,10,12,11,11,15,12,11,11,10,9,9,16,5,5,5,5,16,7&
+        ,10,10,11,11,8,25,20,26,26,27,26,21,27,28,26,29,24,27,23,24&
+        ,28,5,5,7,5,7,7,5,5,31,32,7,7,23,24,24,31,24,28,11,24,9,17,7&
+        ,7,7,7,11,11,11,26,26,7,7,5,5,6,6,6,6,21,30,30,22,22,5,5,6,6&
+        ,6,6,6,6,33,33,22,21,8,11,8,9,5,7,5,8,12,8,8,13,12,12,9,9,10&
+        ,9,10,9,5,10,9,8,11,10,11,12,10,16,12,13,11,10,16,11,5,25,3&
+        ,12,13,14,11,26,27,28,28,4,10,17,16,18,19,34,22,21,20,5,8,26&
+        ,8,9,30,10,31,33,9,18,8,5,5,7,20,8,8,12,27,26,27,26,9,9,20,18&
+        ,22,30,18,20,31,30,18,19,22,8,28,8,5,18,20,21,8,9,33,9,27,10&
+        ,11,24,5,14,14,11,11,28,28,28,28,10,16&
+        ,17/)
+    arr_p2(1:275) = (/1,38,38,1,38,38,1,18,5,5,5,20,5,5&
+        ,38,38,1,38,38,18,5,5,5,1,5,5,5,1,5,5,7,5,6,5,7,38,38,38,38&
+        ,38,1,1,18,5,6,5,18,6,6,6,5,7,11,11,5,7,5,5,5,1,8,7,5,7,5,10&
+        ,8,8,5,7,7,5,11,11,17,17,9,10,9,10,9,9,10,5,7,5,7,5,5,7,5,5,7&
+        ,5,5,7,7,7,8,30,30,30,31,31,31,28,28,5,5,32,32,5,5,5,8,7,9,22&
+        ,10,28,21,24,24,23,23,26,32,32,5,5,26,26,27,27,7,7,5,5,8,5,5&
+        ,6,6,31,31,10,10,30,30,31,31,5,6,6,6,6,18,5,5,6,5,5,5,5,7,5,5&
+        ,7,5,5,7,5,5,5,5,16,7,9,9,5,8,5,1,1,1,1,1,1,1,1,1,5,38,38,38&
+        ,38,38,38,38,38,38,38,38,38,38,38,1,1,1,1,1,1,1,5,1,8,5,1,5,1&
+        ,1,9,5,9,5,18,18,5,1,18,5,1,5,5,7,1,18,9,10,7,5,16,10,5,7,1,1&
+        ,1,9,1,8,5,2,1,1,5,9,1,5,1,5,5,1,18,38,38,38,38,38,38,38,38&
+        ,38,38,38/)
+    arr_p3(1:275) = (/1,38,38,1,38,38,1,38,38,38,6&
+        ,38,18,5,38,38,38,38,38,38,38,1,5,1,1,1,38,38,38,38,38,5,38&
+        ,38,38,38,38,38,38,38,1,1,38,38,38,38,38,38,38,38,5,38,38,38&
+        ,38,38,38,38,38,38,38,38,5,38,38,38,38,38,38,38,38,38,38,38&
+        ,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38&
+        ,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38&
+        ,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38&
+        ,21,21,26,26,6,38,38,5,5,38,38,18,18,5,5,38,38,38,38,9,9,22&
+        ,38,38,38,38,38,5,38,38,38,5,38,38,5,38,38,38,5,5,7,38,38,38&
+        ,38,38,38,38,38,38,38,38,38,38,38,38,38,18,38,38,38,38,38,38&
+        ,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38&
+        ,38,38,38,38,1,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38&
+        ,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38&
+        ,38,38,38,38,38,1,38,38,38,38,38,38,38,38,38,38,38/)
+
+  end subroutine load_arrays
+
+  ! ************************************
+  ! solves linear least squares
+  subroutine llsq(n, x, y, a, b)
+
+    !****************************************************
+    !
+    !! LLSQ solves a linear least squares problem matching a line to data.
+    !
+    !  Discussion:
+    !
+    !    A formula for a line of the form Y = A * X + B is sought, which
+    !    will minimize the root-mean-square error to N data points
+    !    ( X(I), Y(I) );
+    !
+    !  Licensing:
+    !
+    !    This code is distributed under the GNU LGPL license.
+    !
+    !  Modified:
+    !
+    !    07 March 2012
+    !
+    !  Author:
+    !
+    !    John Burkardt
+    !
+    !  Parameters:
+    !
+    !    In: N, the number of data values.
+    !
+    !    In: X(N), Y(N), the coordinates of the data points.
+    !
+    !    Out: A, B, the slope and Y-intercept of the
+    !    least-squares approximant to the data.
+    !
+    implicit none
+    integer,intent(in)::n
+    real*8,intent(out)::a, b
+    real*8,intent(in)::x(n), y(n)
+    real*8::bot, top, xbar, ybar
+
+    ! special case
+    if(n == 1) then
+      a = 0d0
+      b = y(1)
+      return
+    end if
+
+    ! average X and Y
+    xbar = sum(x) / n
+    ybar = sum(y) / n
+
+    ! compute beta
+    top = dot_product(x(:) - xbar, y(:) - ybar)
+    bot = dot_product(x(:) - xbar, x(:) - xbar)
+
+    ! if top is zero a is zero
+    if(top==0d0) then
+      a = 0d0
+    else
+      a = top / bot
+    end if
+
+    b = ybar - a * xbar
+
+  end subroutine llsq
+
+end module krome_subs
+
+!############### MODULE ##############
+module krome_stars
+
+end module krome_stars
+
+!############### MODULE ##############
+module krome_dust
+contains
+
+  !***********************
+  subroutine init_dust_tabs()
+    use krome_commons
+    use krome_fit
+    implicit none
+
+    call init_anytab2D("dust_table_cool.dat",dust_tab_ngas(:), &
+        dust_tab_Tgas(:), dust_tab_cool(:,:), dust_mult_ngas, &
+        dust_mult_Tgas)
+    call init_anytab2D("dust_table_Tdust.dat",dust_tab_ngas(:), &
+        dust_tab_Tgas(:), dust_tab_Tdust(:,:), dust_mult_ngas, &
+        dust_mult_Tgas)
+    call init_anytab2D("dust_table_H2.dat",dust_tab_ngas(:), &
+        dust_tab_Tgas(:), dust_tab_H2(:,:), dust_mult_ngas, &
+        dust_mult_Tgas)
+
+  end subroutine init_dust_tabs
+
+end module krome_dust
+
+!############### MODULE ##############
+module krome_photo
+contains
+
+  !*******************************
+  !load a frequency-dependent opacity table stored in fname file,
+  ! column 1 is energy or wavelenght in un units of unitEnergy
+  ! (default eV), column 2 is opacity in cm2/g.
+  ! opacity is interpolated over the current photo-binning.
+  subroutine load_opacity_table(fname, unitEnergy)
+    use krome_commons
+    use krome_constants
+    implicit none
+    integer,parameter::ntmp=int(1e5)
+    character(len=*)::fname
+    character(len=*),optional::unitEnergy
+    character*10::eunit
+    integer::ios,icount,iR,iL,i,j,fileUnit
+    real*8::wl,opac,fL,fR,kk,dE
+    real*8::wls(ntmp),opacs(ntmp)
+    real*8,allocatable::energy(:),kappa(:)
+
+    !read energy unit optional argument
+    eunit = "eV" !default is eV
+    if(present(unitEnergy)) then
+      eunit = trim(unitEnergy)
+    end if
+
+    !read form file
+    open(newunit=fileUnit,file=trim(fname),status="old",iostat=ios)
+    !error if problems reading file
+    if(ios/=0) then
+      print *,"ERROR: problem while loading "//trim(fname)
+      stop
+    end if
+    icount = 0
+    !loop on file lines
+    do
+      !read wavelength and opacity
+      read(fileUnit,*,iostat=ios) wl,opac
+      if(ios/=0) exit
+      icount = icount + 1
+      wls(icount) = wl
+      opacs(icount) = opac
+    end do
+    close(fileUnit)
+
+    !allocate arrays
+    allocate(energy(icount), kappa(icount))
+    !copy temp arrays into allocated arrays, converting units
+    if(trim(eunit)=="eV") then
+      !eV->eV (default)
+      kappa(:) = opacs(1:icount)
+      energy(:) = wls(1:icount)
+    elseif(trim(eunit)=="micron") then
+      !micron->eV
+      kappa(:) = opacs(1:icount)
+      energy(:) = planck_eV*clight/(wls(1:icount)*1d-4)
+    else
+      print *,"ERROR: in load opacity table energy unit unknow",trim(eunit)
+      stop
+    end if
+
+    !reverse array if necessary
+    if(energy(2)<energy(1)) then
+      energy(:) = energy(size(energy):1:-1)
+      kappa(:) = kappa(size(kappa):1:-1)
+    end if
+
+    !check if photobins are intialized
+    if(maxval(photoBinEleft)==0d0) then
+      print *,"ERROR: empty photobins when interpolating dust Qabs"
+      print *," from file "//trim(fname)
+      print *,"You probably need to define a photobins metric before"
+      print *," the call to krome_load_opacity_table"
+      stop
+    end if
+
+    !check lower limit
+    if(photoBinEleft(1)<energy(1)) then
+      print *,"ERROR: dust table "//trim(fname)//" energy lower bound (eV)"
+      print *,photoBinEleft(1), "<", energy(1)
+      stop
+    end if
+
+    !check upper limit
+    if(photoBinEright(nPhotoBins)>energy(size(energy))) then
+      print *,"ERROR: dust table "//trim(fname)//" energy upper bound (eV)"
+      print *,photoBinEright(nPhotoBins), ">", energy(size(energy))
+      stop
+    end if
+
+    !interpolate on current energy distribution
+    do j=1,nPhotoBins
+      do i=2,size(energy)
+        !find left bound position
+        if(photoBinEleft(j)>energy(i-1) &
+            .and. photoBinEleft(j)<energy(i)) then
+        dE = energy(i)-energy(i-1)
+        fL = (photoBinEleft(j)-energy(i-1))/dE &
+            * (kappa(i)-kappa(i-1)) + kappa(i-1)
+        iL = i
+      end if
+
+      !find right bound position
+      if(photoBinEright(j)>energy(i-1) &
+          .and. photoBinEright(j)<energy(i)) then
+      dE = energy(i)-energy(i-1)
+      fR = (photoBinEright(j)-energy(i-1))/dE &
+          * (kappa(i)-kappa(i-1)) + kappa(i-1)
+      iR = i
+    end if
+  end do
+
+  !sum opacity for the given photo bin
+  kk = 0d0
+  !if there are other opacity points in between left and right limits
+  if(iR-iL>0) then
+    kk = kk + (energy(iL)-photoBinEleft(j))*(fL+kappa(iL))/2d0
+    kk = kk + (photoBinEright(j)-energy(iR-1))*(fR+kappa(iR-1))/2d0
+    !sum points in between
+    do i=iL,iR-2
+      kk = kk + (energy(i+1)-energy(i))*(kappa(i+1)+kappa(i))/2d0
+    end do
+  elseif(iR==iL) then
+    !no opacity points in between
+    kk = kk + (fL+fR)*(photoBinEright(j)-photoBinEleft(j))/2d0
+  else
+    print *,"ERROR: dust opacity interpolation error, iR-iL<0!"
+    print *,"iR,iL:",iR,iL
+    stop
+  end if
+
+  !copy to common and scale to bin size
+  dE = photoBinEright(j)-photoBinEleft(j)
+  opacityDust(j) = kk/dE
+
+end do
+
+!dump interpolated opacity
+open(newunit=fileUnit,file="opacityDust.interp",status="replace")
+do j=1,nPhotoBins
+  write(fileUnit,*) photoBinEmid(j),opacityDust(j)
+end do
+close(fileUnit)
+
+!dump original opacity file (as loaded by krome)
+open(newunit=fileUnit,file="opacityDust.org",status="replace")
+do i=1,size(energy)
+  write(fileUnit,*) energy(i),kappa(i)
+end do
+close(fileUnit)
+
+end subroutine load_opacity_table
+
+!*************************
+!get the intensity of the photon flux at
+! a given energy in eV.
+! returned value is in eV/cm2/s/Hz
+function get_photoIntensity(energy)
+use krome_commons
+implicit none
+real*8::get_photoIntensity,energy
+integer::i
+
+!check if requested energy is lower than the lowest limit
+if(energy<photoBinEleft(1)) then
+  get_photoIntensity = 0d0 !photoBinJ(1)
+  return
+end if
+
+!check if requested energy is greater that the the largest limit
+if(energy>photoBinEright(nPhotoBins)) then
+  get_photoIntensity = 0d0 !photoBinJ(nPhotoBins)
+  return
+end if
+
+!look for the interval
+do i=1,nPhotoBins
+  if(photoBinEleft(i).le.energy .and. photoBinEright(i).ge.energy) then
+    get_photoIntensity = photoBinJ(i)
+    return
+  end if
+end do
+
+!error if nothing found
+print *,"ERROR: no interval found in get_photoIntensity"
+print *,"energy:",energy,"eV"
+stop !halt program
+
+end function get_photoIntensity
+
+!*********************
+!initialize/tabulate the bin-based xsecs
+subroutine init_photoBins(Tgas)
+use krome_constants
+use krome_commons
+use krome_dust
+use krome_getphys
+implicit none
+integer::i,j
+real*8::Tgas,imass(nspec),kt2
+real*8::energy_eV,kk,energyL,energyR,dshift(nmols)
+
+!rise error if photobins are not defined
+if(photoBinEmid(nPhotoBins)==0d0) then
+  print *,"ERROR: when using photo bins you must define"
+  print *," the energy interval in bins!"
+  stop
+end if
+
+!get inverse of mass
+imass(:) = get_imass()
+
+!precompute adimensional line broadening
+dshift(:) = 0d0
+
+call load_xsec("swri_C__C+_E.dat", xsec211_val, xsec211_Emin, xsec211_n, xsec211_idE)
+call load_xsec("swri_H2__H2+_E.dat", xsec212_val, xsec212_Emin, xsec212_n, xsec212_idE)
+call load_xsec("swri_H-__H_E.dat", xsec213_val, xsec213_Emin, xsec213_n, xsec213_idE)
+call load_xsec("swri_CH__C_H.dat", xsec214_val, xsec214_Emin, xsec214_n, xsec214_idE)
+call load_xsec("swri_CH__CH+_E.dat", xsec215_val, xsec215_Emin, xsec215_n, xsec215_idE)
+call load_xsec("swri_C2__C_C.dat", xsec216_val, xsec216_Emin, xsec216_n, xsec216_idE)
+call load_xsec("swri_OH__O_H.dat", xsec217_val, xsec217_Emin, xsec217_n, xsec217_idE)
+call load_xsec("swri_OH__OH+_E.dat", xsec218_val, xsec218_Emin, xsec218_n, xsec218_idE)
+call load_xsec("swri_H2O__OH_H.dat", xsec219_val, xsec219_Emin, xsec219_n, xsec219_idE)
+call load_xsec("swri_H2O__H2O+_E.dat", xsec220_val, xsec220_Emin, xsec220_n, xsec220_idE)
+call load_xsec("swri_O2__O2+_E.dat", xsec221_val, xsec221_Emin, xsec221_n, xsec221_idE)
+call load_xsec("swri_O2__O_O.dat", xsec222_val, xsec222_Emin, xsec222_n, xsec222_idE)
+call load_xsec("swri_H2__H+_H_E.dat", xsec223_val, xsec223_Emin, xsec223_n, xsec223_idE)
+
+!tabulate the xsecs into a bin-based array
+do j=1,nPhotoBins
+  energyL = photoBinEleft(j)
+  energyR = photoBinEright(j)
+  energy_eV = photoBinEmid(j) !energy of the bin in eV
+
+  !H -> H+ + E
+  kk = 0d0
+  if(energy_eV>1.360d+01.and.energy_eV<5.000d+04) kk =  sigma_v96(energy_ev, 4.298d-01, 5.475d+04, 3.288d+01, 2.963d+00, 0.000d+00, 0.000d+00, 0.000d+00)
+  !$omp parallel
+  photoBinJTab(1,j) = kk
+  !$omp end parallel
+
+  !HE -> HE+ + E
+  kk = 0d0
+  if(energy_eV>2.459d+01.and.energy_eV<5.000d+04) kk =  sigma_v96(energy_ev, 1.361d+01, 9.492d+02, 1.469d+00, 3.188d+00, 2.039d+00, 4.434d-01, 2.136d+00)
+  !$omp parallel
+  photoBinJTab(2,j) = kk
+  !$omp end parallel
+
+  !HE+ -> HE++ + E
+  kk = 0d0
+  if(energy_eV>5.442d+01.and.energy_eV<5.000d+04) kk =  sigma_v96(energy_ev, 1.720d+00, 1.369d+04, 3.288d+01, 2.963d+00, 0.000d+00, 0.000d+00, 0.000d+00)
+  !$omp parallel
+  photoBinJTab(3,j) = kk
+  !$omp end parallel
+
+  !O -> O+ + E
+  kk = 0d0
+  if(energy_eV>1.362d+01.and.energy_eV<5.380d+02) kk =  sigma_v96(energy_ev, 1.240d+00, 1.745d+03, 3.784d+00, 1.764d+01, 7.589d-02, 8.698d+00, 1.271d-01)
+  !$omp parallel
+  photoBinJTab(4,j) = kk
+  !$omp end parallel
+
+  !C -> C+ + E
+  kk = 0d0
+  if(energy_eV>0.0.and.energy_eV<1.d8) kk = xsec_interp(energyL, energyR, xsec211_val(:), xsec211_Emin,xsec211_idE, dshift(idx_C))
+  !$omp parallel
+  photoBinJTab(5,j) = kk
+  !$omp end parallel
+
+  !H2 -> H2+ + E
+  kk = 0d0
+  if(energy_eV>0.0.and.energy_eV<1.d8) kk = xsec_interp(energyL, energyR, xsec212_val(:), xsec212_Emin,xsec212_idE, dshift(idx_H2))
+  !$omp parallel
+  photoBinJTab(6,j) = kk
+  !$omp end parallel
+
+  !H- -> H + E
+  kk = 0d0
+  if(energy_eV>0.0.and.energy_eV<1.d8) kk = xsec_interp(energyL, energyR, xsec213_val(:), xsec213_Emin,xsec213_idE, dshift(idx_Hk))
+  !$omp parallel
+  photoBinJTab(7,j) = kk
+  !$omp end parallel
+
+  !CH -> C + H
+  kk = 0d0
+  if(energy_eV>0.0.and.energy_eV<1.d8) kk = xsec_interp(energyL, energyR, xsec214_val(:), xsec214_Emin,xsec214_idE, dshift(idx_CH))
+  !$omp parallel
+  photoBinJTab(8,j) = kk
+  !$omp end parallel
+
+  !CH -> CH+ + E
+  kk = 0d0
+  if(energy_eV>0.0.and.energy_eV<1.d8) kk = xsec_interp(energyL, energyR, xsec215_val(:), xsec215_Emin,xsec215_idE, dshift(idx_CH))
+  !$omp parallel
+  photoBinJTab(9,j) = kk
+  !$omp end parallel
+
+  !C2 -> C + C
+  kk = 0d0
+  if(energy_eV>0.0.and.energy_eV<1.d8) kk = xsec_interp(energyL, energyR, xsec216_val(:), xsec216_Emin,xsec216_idE, dshift(idx_C2))
+  !$omp parallel
+  photoBinJTab(10,j) = kk
+  !$omp end parallel
+
+  !OH -> O + H
+  kk = 0d0
+  if(energy_eV>0.0.and.energy_eV<1.d8) kk = xsec_interp(energyL, energyR, xsec217_val(:), xsec217_Emin,xsec217_idE, dshift(idx_OH))
+  !$omp parallel
+  photoBinJTab(11,j) = kk
+  !$omp end parallel
+
+  !OH -> OH+ + E
+  kk = 0d0
+  if(energy_eV>0.0.and.energy_eV<1.d8) kk = xsec_interp(energyL, energyR, xsec218_val(:), xsec218_Emin,xsec218_idE, dshift(idx_OH))
+  !$omp parallel
+  photoBinJTab(12,j) = kk
+  !$omp end parallel
+
+  !H2O -> OH + H
+  kk = 0d0
+  if(energy_eV>0.0.and.energy_eV<1.d8) kk = xsec_interp(energyL, energyR, xsec219_val(:), xsec219_Emin,xsec219_idE, dshift(idx_H2O))
+  !$omp parallel
+  photoBinJTab(13,j) = kk
+  !$omp end parallel
+
+  !H2O -> H2O+ + E
+  kk = 0d0
+  if(energy_eV>0.0.and.energy_eV<1.d8) kk = xsec_interp(energyL, energyR, xsec220_val(:), xsec220_Emin,xsec220_idE, dshift(idx_H2O))
+  !$omp parallel
+  photoBinJTab(14,j) = kk
+  !$omp end parallel
+
+  !O2 -> O2+ + E
+  kk = 0d0
+  if(energy_eV>0.0.and.energy_eV<1.d8) kk = xsec_interp(energyL, energyR, xsec221_val(:), xsec221_Emin,xsec221_idE, dshift(idx_O2))
+  !$omp parallel
+  photoBinJTab(15,j) = kk
+  !$omp end parallel
+
+  !O2 -> O + O
+  kk = 0d0
+  if(energy_eV>0.0.and.energy_eV<1.d8) kk = xsec_interp(energyL, energyR, xsec222_val(:), xsec222_Emin,xsec222_idE, dshift(idx_O2))
+  !$omp parallel
+  photoBinJTab(16,j) = kk
+  !$omp end parallel
+
+  !H2 -> H+ + H + E
+  kk = 0d0
+  if(energy_eV>0.0.and.energy_eV<1.d8) kk = xsec_interp(energyL, energyR, xsec223_val(:), xsec223_Emin,xsec223_idE, dshift(idx_H2))
+  !$omp parallel
+  photoBinJTab(17,j) = kk
+  !$omp end parallel
+
+end do
+
+!save interpolated xsecs to file
+call save_xsec("swri_C__C+_E.interp",5)
+call save_xsec("swri_H2__H2+_E.interp",6)
+call save_xsec("swri_H-__H_E.interp",7)
+call save_xsec("swri_CH__C_H.interp",8)
+call save_xsec("swri_CH__CH+_E.interp",9)
+call save_xsec("swri_C2__C_C.interp",10)
+call save_xsec("swri_OH__O_H.interp",11)
+call save_xsec("swri_OH__OH+_E.interp",12)
+call save_xsec("swri_H2O__OH_H.interp",13)
+call save_xsec("swri_H2O__H2O+_E.interp",14)
+call save_xsec("swri_O2__O2+_E.interp",15)
+call save_xsec("swri_O2__O_O.interp",16)
+call save_xsec("swri_H2__H+_H_E.interp",17)
+
+!energy tresholds (eV)
+!$omp parallel
+photoBinEth(1) = 1.360d+01 !H -> H+ + E
+!$omp end parallel
+!$omp parallel
+photoBinEth(2) = 2.459d+01 !HE -> HE+ + E
+!$omp end parallel
+!$omp parallel
+photoBinEth(3) = 5.442d+01 !HE+ -> HE++ + E
+!$omp end parallel
+!$omp parallel
+photoBinEth(4) = 1.362d+01 !O -> O+ + E
+!$omp end parallel
+!$omp parallel
+photoBinEth(5) = 0.0 !C -> C+ + E
+!$omp end parallel
+!$omp parallel
+photoBinEth(6) = 0.0 !H2 -> H2+ + E
+!$omp end parallel
+!$omp parallel
+photoBinEth(7) = 0.0 !H- -> H + E
+!$omp end parallel
+!$omp parallel
+photoBinEth(8) = 0.0 !CH -> C + H
+!$omp end parallel
+!$omp parallel
+photoBinEth(9) = 0.0 !CH -> CH+ + E
+!$omp end parallel
+!$omp parallel
+photoBinEth(10) = 0.0 !C2 -> C + C
+!$omp end parallel
+!$omp parallel
+photoBinEth(11) = 0.0 !OH -> O + H
+!$omp end parallel
+!$omp parallel
+photoBinEth(12) = 0.0 !OH -> OH+ + E
+!$omp end parallel
+!$omp parallel
+photoBinEth(13) = 0.0 !H2O -> OH + H
+!$omp end parallel
+!$omp parallel
+photoBinEth(14) = 0.0 !H2O -> H2O+ + E
+!$omp end parallel
+!$omp parallel
+photoBinEth(15) = 0.0 !O2 -> O2+ + E
+!$omp end parallel
+!$omp parallel
+photoBinEth(16) = 0.0 !O2 -> O + O
+!$omp end parallel
+!$omp parallel
+photoBinEth(17) = 0.0 !H2 -> H+ + H + E
+!$omp end parallel
+
+!interpolate dust qabs
+
+!map with X->B/C transition to bin corrspondence
+
+end subroutine init_photoBins
+
+!**********************
+!save xsecs with index idx to file
+subroutine save_xsec(fname,idx)
+use krome_commons
+implicit none
+character(len=*)::fname
+integer::idx,j
+real*8::energyLeft,energyRight
+
+open(22,file=trim(fname),status="replace")
+do j=1,nPhotoBins
+  energyLeft = photoBinELeft(j) !left bin energy, eV
+  energyRight = photoBinERight(j) !right bin energy, eV
+  write(22,*) energyLeft, energyRight, photoBinJTab(idx,j)
+end do
+close(22)
+
+end subroutine save_xsec
+
+!**********************
+!compute integrals to derive phtorates (thin)
+subroutine calc_photoBins()
+use krome_commons
+implicit none
+real*8::n(nspec)
+
+n(:) = 0d0
+call calc_photoBins_thick(n)
+
+end subroutine calc_photoBins
+
+!**********************
+!compute integrals to derive phtorates (thick)
+subroutine calc_photoBins_thick(n)
+use krome_commons
+use krome_constants
+use krome_subs
+use krome_getphys
+implicit none
+integer::i,j
+real*8::dE,kk,Jval,E,Eth,n(:),ncol(nmols),tau
+
+!init rates and heating
+photoBinRates(:) = 0d0 !1/s/Hz
+photoBinHeats(:) = 0d0 !eV/s/Hz
+GHabing_thin = 0d0 !habing flux
+!loop on energy bins
+do j=1,nPhotoBins
+  dE = photoBinEdelta(j) !energy interval, eV
+  E = photoBinEmid(j) !energy of the bin in eV
+  Jval = photoBinJ(j) !radiation intensity eV/s/cm2/sr/Hz
+  if(E>=6d0.and.E<=13.6)then
+    GHabing_thin = GHabing_thin + Jval * dE
+  endif
+  tau = 0d0
+  !loop on reactions
+  do i=1,nPhotoRea
+    Eth = photoBinEth(i) !reaction energy treshold, eV
+    if(E>Eth) then
+      !approx bin integral
+      kk = photoBinJTab(i,j)*Jval/E*dE
+      photoBinRates(i) = photoBinRates(i) + kk
+    end if
+  end do
+end do
+
+!Final Habing flux
+GHabing_thin = GHabing_thin * 4d0 * pi / (1.6d-3) * iplanck_eV * eV_to_erg
+
+!converts to 1/s
+photoBinRates(:) = 4d0*pi*photoBinRates(:) * iplanck_eV
+
+end subroutine calc_photoBins_thick
+
+!********************
+!Verner+96 cross section fit (cm2)
+function sigma_v96(energy_eV,E0,sigma_0,ya,P,yw,y0,y1)
+implicit none
+real*8::sigma_v96,energy_eV,sigma_0,Fy,yw,x,y,E0
+real*8::y0,y1,ya,P
+x = energy_eV/E0 - y0
+y = sqrt(x**2 + y1**2)
+Fy = ((x - 1.d0)**2 + yw**2) *  y**(0.5*P-5.5) &
+    * (1.d0+sqrt(y/ya))**(-P)
+sigma_v96 = 1d-18 * sigma_0 * Fy !cm2
+end function sigma_v96
+
+!********************
+!Verner+96 cross section fit (cm2)
+!Average by numerical integration
+function sigma_v96_int(E_low,E_high,E0,sigma_0,ya,P,yw,y0,y1)
+real*8::sigma_v96_int,E_low,E_high,sigma_0,integral,yw,x,y,E0
+real*8::y0,y1,ya,P
+real*8::binWidth,dE,E
+integer::i
+integer,parameter::N=100
+integral = 0d0
+binWidth = E_high-E_low
+dE = binWidth/real(N,kind=8)
+do i=1,N
+  E = E_low + (i-0.5)*dE
+  integral = integral + sigma_v96(E,E0,sigma_0,ya,P,yw,y0,y1)*dE
+end do
+sigma_v96_int = integral / binWidth !cm2
+end function sigma_v96_int
+
+!********************
+function heat_v96(energy_eV,Eth,E0,sigma_0,ya,P,yw,y0,y1)
+!Heating with Verner+96 cross section fit (cm2*eV)
+use krome_constants
+real*8::heat_v96,energy_eV,sigma_0,Fy,yw,x,y,E0,Eth
+real*8::y0,y1,ya,P
+x = energy_eV/E0 - y0
+y = sqrt(x**2 + y1**2)
+Fy = ((x - 1.d0)**2 + yw**2) *  y**(0.5*P-5.5) &
+    * (1.d0+sqrt(y/ya))**(-P)
+heat_v96 = 1d-18 * sigma_0 * Fy * (energy_eV - Eth) !cm2*eV
+end function heat_v96
+
+!************************
+!load the xsecs from file and get limits
+subroutine load_xsec(fname,xsec_val,xsec_Emin,xsec_n,xsec_idE)
+implicit none
+real*8,allocatable::xsec_val(:)
+real*8::xsec_Emin,xsec_dE,xsec_val_tmp(int(1e6)),rout(2)
+real*8::xsec_E_tmp(size(xsec_val_tmp)),xsec_idE,diff
+integer::xsec_n,ios
+character(*)::fname
+
+!if file already loaded skip subroutine
+if(allocated(xsec_val)) return
+
+xsec_n = 0 !number of lines found
+!open file
+open(33,file=fname,status="old",iostat=ios)
+!check if file exists
+if(ios.ne.0) then
+  print *,"ERROR: problems loading "//fname
+  stop
+end if
+
+!read file line-by-line
+do
+  read(33,*,iostat=ios) rout(:) !read line
+  if(ios<0) exit !eof
+  if(ios/=0) cycle !skip blanks
+  xsec_n = xsec_n + 1 !increase line number
+  xsec_val_tmp(xsec_n) = rout(2) !read xsec value cm2
+  xsec_E_tmp(xsec_n) = rout(1) !read energy value eV
+  !compute the dE for the first interval
+  if(xsec_n==2) xsec_dE = xsec_E_tmp(2)-xsec_E_tmp(1)
+  !check if all the intervals have the same spacing
+  if(xsec_n>2) then
+    diff = xsec_E_tmp(xsec_n)-xsec_E_tmp(xsec_n-1)
+    if(abs(diff/xsec_dE-1d0)>1d-6) then
+      print *,"ERROR: spacing problem in file "//fname
+      print *," energy points should be equally spaced!"
+      print *,"Point number: ",xsec_n
+      print *,"Found ",diff
+      print *,"Should be",xsec_dE
+      stop
+    end if
+  end if
+end do
+close(33)
+
+!store the minimum energy
+xsec_Emin = xsec_E_tmp(1)
+!allocate the array with the values
+allocate(xsec_val(xsec_n))
+!copy the values from the temp array to the allocated one
+xsec_val(:) = xsec_val_tmp(1:xsec_n)
+!store the inverse of the delta energy
+xsec_idE = 1d0 / xsec_dE
+
+end subroutine load_xsec
+
+!**********************
+!return averaged xsec in the energy range [xL,xR]
+! units: eV, cm2; broadening shift is adimensional
+function xsec_interp(xL,xR,xsec_val,xsec_Emin,xsec_idE,dshift) result(xsecA)
+use krome_user_commons
+implicit none
+real*8::xsecA,dE,dshift,dE_shift,eL,eR,dxi
+real*8::energy,xsec_val(:),xsec_Emin,xsec_idE,xL,xR
+integer::idx
+
+!xsec energy step (regular grid)
+dE = 1d0/xsec_idE
+!store inverse of bin size
+dxi = 1d0/(xR-xL)
+xsecA = 0d0 !init integrated xsec
+!loop on xsec vals
+do idx=1,size(xsec_val)
+  eL = (idx-1)*dE+xsec_Emin !left interval
+  eR = eL + dE !right interval
+  energy = (eL+eR)/2d0 !mid point
+
+  !compute line broadening
+  eL = eL - 0.5d0*dshift*energy
+  eR = eR + 0.5d0*dshift*energy
+
+  !if xsec energy in the interval compute area
+  if(xR<eL.and.xL<eL) then
+    xsecA = xsecA + 0d0
+  elseif(xR>eL.and.xL>eL) then
+    xsecA = xsecA + 0d0
+  else
+    !renormalize xsec area considering partial overlap
+    xsecA = xsecA +xsec_val(idx) * (min(eR,xR)-max(eL,xL)) &
+        * dxi
+  end if
+end do
+
+end function xsec_interp
+
+!**********************
+!linear interpolation for the photo xsec
+function xsec_interp_mid(energy,xsec_val,xsec_Emin,xsec_n,xsec_idE)
+implicit none
+real*8::xsec_interp_mid,E0
+real*8::energy,xsec_val(:),xsec_Emin,xsec_idE
+integer::xsec_n,idx
+
+xsec_interp_mid = 0d0
+!retrive index
+idx = (energy-xsec_Emin) * xsec_idE + 1
+
+!lower bound
+E0 = xsec_Emin + (idx-1)/xsec_idE
+
+!out of the limits is zero
+if(idx<1.or.idx>xsec_n-1) return
+
+!linear interpolation
+xsec_interp_mid = (energy-E0) * xsec_idE &
+    * (xsec_val(idx+1)-xsec_val(idx)) + xsec_val(idx)
+
+!avoid negative xsec values when outside the limits
+xsec_interp_mid = max(xsec_interp_mid,0d0)
+
+end function xsec_interp_mid
+
+!************************
+!load photodissociation data from default file
+subroutine kpd_H2_loadData()
+use krome_commons
+implicit none
+integer::unit,ios,ii,jj
+real*8::xE,dE,pre
+character(len=20)::fname
+
+!open file to read
+fname = "H2pdB.dat"
+open(newunit=unit,file=trim(fname),status="old",iostat=ios)
+!check for errors
+if(ios/=0) then
+  print *,"ERROR: problem loading file "//trim(fname)
+  stop
+end if
+
+!init data default
+H2pdData_EX(:) = 0d0
+H2pdData_dE(:,:) = 0d0
+H2pdData_pre(:,:) = 0d0
+
+!loop on file to read
+do
+  read(unit,*,iostat=ios) ii,jj,xE,dE,pre
+  !skip comments
+  if(ios==59.or.ios==5010) cycle
+  !exit when eof
+  if(ios/=0) exit
+  !store data
+  H2pdData_EX(ii+1) = xE !ground level energy, eV
+  H2pdData_dE(ii+1,jj+1) = dE !Ej-Ei energy, eV
+  H2pdData_pre(ii+1,jj+1) = pre !precomp (see file header)
+end do
+
+!check if enough data have been loaded (file size is expected)
+if((ii+1/=H2pdData_nvibX).or.(jj+1/=H2pdData_nvibB)) then
+  !print error message
+  print *,"ERROR: missing data when loading "//fname
+  print *,"found:",ii+1,jj+1
+  print *,"expected:",H2pdData_nvibX,H2pdData_nvibB
+  stop
+end if
+
+close(unit)
+
+end subroutine kpd_H2_loadData
+
+!************************
+subroutine kpd_bin_map()
+use krome_commons
+implicit none
+integer::i,j,k
+logical::found
+
+!loop on excited states (B)
+do i=1,H2pdData_nvibB
+  !loop on ground states (X)
+  do j=1,H2pdData_nvibX
+    !if prefactor is zero no need to check map
+    ! default is set to 1 (be aware of it!)
+    if(H2pdData_pre(j,i)==0d0) then
+      H2pdData_binMap(j,i) = 1
+      cycle
+    end if
+
+    found = .false.
+    !loop on bins
+    do k=1,nPhotoBins
+      !find energy bin corresponding on the given dE
+      if((photoBinEleft(k).le.H2pdData_dE(j,i)) &
+          .and. (photoBinEright(k).ge.H2pdData_dE(j,i))) then
+      H2pdData_binMap(j,i) = k
+      found = .true.
+    end if
+  end do
+  !error if outside bounds
+  if(.not.found) then
+    print *,"ERROR: problem when creating H2"
+    print *," photodissociation map!"
+    print *," min/max (eV):", minval(photoBinEleft), &
+        maxval(photoBinEright)
+    print *," transition:",j,i
+    print *," corresponding energy (eV):",H2pdData_dE(j,i)
+    print *," transitions min/max (eV):", &
+        minval(H2pdData_dE, mask=((H2pdData_dE>0d0) .and. &
+        (H2pdData_pre>0d0))), &
+        maxval(H2pdData_dE, mask=(H2pdData_pre>0d0))
+    stop
+  end if
+end do
+end do
+
+end subroutine kpd_bin_map
+
+!************************
+!compute vibrational partition function at given Tgas
+! for all the loaded energies (for H2 Solomon)
+function partitionH2_vib(Tgas) result(z)
+use krome_constants
+use krome_commons
+implicit none
+real*8::Tgas,z(H2pdData_nvibX),b
+integer::j
+
+!prepare partition function from ground (X) levels energies
+b = iboltzmann_eV/Tgas
+z(:) = exp(-H2pdData_EX(:)*b)
+
+!normalize
+z(:) = z(:)/sum(z)
+
+end function partitionH2_vib
+
+!************************
+!compute H2 photodissociation rate (Solomon)
+! state to state, using preloded data, 1/s
+function kpd_H2(Tgas) result(kpd)
+use krome_commons
+implicit none
+integer::i,j
+real*8::Tgas,kpd,dE,z(H2pdData_nvibX)
+
+!get partition for ground state X
+z(:) = partitionH2_vib(Tgas)
+
+!compute the rate, using preloaded data
+kpd = 0d0
+!loop on excited states (B)
+do i=1,H2pdData_nvibB
+!compute rate for ith state
+kpd = kpd + sum(H2pdData_pre(:,i) &
+    * photoBinJ(H2pdData_binMap(:,i)) * z(:))
+end do
+
+end function kpd_H2
+
+!************************
+!photodissociation H2 xsec from atomic data (for opacity)
+function kpd_H2_xsec(Tgas) result(xsec)
+use krome_constants
+use krome_commons
+implicit none
+real*8::xsec(nPhotoBins),z(H2pdData_nvibX)
+real*8::Tgas
+integer::i
+
+!get partition for ground state X
+z(:) = partitionH2_vib(Tgas)
+
+xsec(:) = 0d0
+!loop on excited states (B)
+do i=1,H2pdData_nvibB
+xsec(H2pdData_binMap(:,i)) = &
+    xsec(H2pdData_binMap(:,i)) &
+    + H2pdData_pre(:,i)*z(:)
+end do
+
+!cm2
+xsec(:) = xsec(:)*planck_eV
+
+end function kpd_H2_xsec
+
+!************************
+!H2 direct photodissociation in the Lyman-Werner bands
+! cross-section in cm^2 fit by Abel et al. 1997 of
+! data by Allison&Dalgarno 1969
+function H2_sigmaLW(energy_eV)
+use krome_commons
+implicit none
+real*8::H2_sigmaLW,energy_eV
+real*8::sL0,sW0,sL1,sW1,fact
+
+!initialization
+sL0 = 0d0
+sL1 = 0d0
+sW0 = 0d0
+sW1 = 0d0
+
+if(energy_eV>14.675.and.energy_eV<16.820)then
+sL0 = 1d-18*1d1**(15.1289-1.05139*energy_eV)
+elseif(energy_eV>16.820.and.energy_eV<17.6d0)then
+sL0 = 1d-18*1d1**(-31.41d0+1.8042d-2*energy_eV**3-4.2339d-5*energy_eV**5)
+endif
+
+if(energy_eV>14.675d0.and.energy_eV<17.7d0)then
+sW0 = 1d-18*1d1**(13.5311d0-0.9182618*energy_eV)
+endif
+
+if(energy_eV>14.159d0.and.energy_eV<15.302d0)then
+sL1 = 1d-18*1d1**(12.0218406d0-0.819429*energy_eV)
+elseif(energy_eV>15.302d0.and.energy_eV<17.2d0)then
+sL1 = 1d-18*1d1**(16.04644d0-1.082438*energy_eV)
+endif
+
+if(energy_eV>14.159d0.and.energy_eV<17.2d0)then
+sW1 = 1d-18*1d1**(12.87367-0.85088597*energy_eV)
+endif
+
+fact = 1d0/(phys_orthoParaRatio+1d0)
+
+H2_sigmaLW = fact*(sL0+sW0)+(1d0-fact)*(sL1+sW1)
+
+end function H2_sigmaLW
+
+! *****************************
+! load kabs from file
+subroutine find_Av_load_kabs2(file_name)
+use krome_commons
+use krome_constants
+implicit none
+integer,parameter::imax=10000
+character(len=*),intent(in),optional::file_name
+character(len=200)::fname
+integer::ios, unit, icount, i, j
+real*8::tmp_energy(imax), tmp_data(imax), f1, f2, kavg, ksum
+real*8,allocatable::Jdraine(:)
+
+! check if energy bins are set
+if(maxval(photoBinEleft)==0d0) then
+print *, "ERROR: to load kabs for Av G0 finder you"
+print *, " have to initialize some energy bins!"
+stop
+end if
+
+! check if optional argument is present
+fname = "kabs_draine_Rv31.dat"
+if(present(file_name)) then
+fname = trim(file_name)
+end if
+
+! open file to read
+open(newunit=unit, file=fname, status="old", iostat=ios)
+! check if file is there
+if(ios/=0) then
+print *, "ERROR: Kabs file not found!"
+print *, trim(fname)
+stop
+end if
+
+! loop on file lines
+icount = 1
+do
+read(unit, *, iostat=ios) tmp_energy(icount), &
+    tmp_data(icount)
+if(ios/=0) exit
+icount = icount + 1
+end do
+close(unit)
+
+! convert microns to eV
+tmp_energy(1:icount-1) = planck_eV * clight &
+    / (tmp_energy(1:icount-1) * 1d-4)
+
+! get corresponding draine flux
+allocate(Jdraine(icount-1))
+Jdraine(:) = get_draine(tmp_energy(1:icount-1))
+
+! loop on photobins to get average kabs
+do j=1,nPhotoBins
+kavg = 0d0
+ksum = 0d0
+do i=1,icount-2
+  ! integrate only in the bin range
+  if(tmp_energy(i)>=photoBinEleft(j) &
+      .and. tmp_energy(i+1)<=photoBinEright(j)) then
+  ! numerator integral Jdraine(E)kabs(E)/E
+  f1 = tmp_data(i)*Jdraine(i)/tmp_energy(i)
+  f2 = tmp_data(i+1)*Jdraine(i+1)/tmp_energy(i+1)
+  kavg = kavg + (f1+f2) / 2d0 &
+      * (tmp_energy(i+1)-tmp_energy(i))
+
+  ! denominator integral Jdraine(E)/E
+  f1 = Jdraine(i)/tmp_energy(i)
+  f2 = Jdraine(i+1)/tmp_energy(i+1)
+  ksum = ksum + (f1+f2) / 2d0 &
+      * (tmp_energy(i+1)-tmp_energy(i))
+end if
+!!$           if(tmp_energy(i)<photoBinEmid(j) &
+    !!$                .and. tmp_energy(i+1)>photoBinEmid(j)) then
+!!$              kavg = (photoBinEmid(j) - tmp_energy(i)) &
+    !!$                   / (tmp_energy(i+1) - tmp_energy(i)) &
+    !!$                   * (tmp_data(i+1) - tmp_data(i)) + tmp_data(i)
+!!$              print *,photoBinEmid(j), kavg
+!!$           end if
+end do
+! ratio of the integral is average absorption in the bin
+find_Av_draine_kabs(j) = kavg / (ksum+1d-40)
+end do
+
+end subroutine find_Av_load_kabs2
+
+! *****************************
+! load kabs from file
+subroutine find_Av_load_kabs(file_name)
+use krome_commons
+use krome_constants
+implicit none
+character(len=*),intent(in),optional::file_name
+character(len=200)::fname
+real*8::opacityDust_org(nPhotoBins)
+
+! check if energy bins are set
+if(maxval(photoBinEleft)==0d0) then
+print *, "ERROR: to load kabs for Av G0 finder you"
+print *, " have to initialize some energy bins!"
+stop
+end if
+
+! check if optional argument is present
+fname = "kabs_draine_Rv31.dat"
+if(present(file_name)) then
+fname = trim(file_name)
+end if
+
+opacityDust_org = opacityDust
+
+call load_opacity_table(fname, "micron")
+
+! ratio of the integral is average absorption in the bin
+find_Av_draine_kabs = opacityDust
+
+opacityDust = opacityDust_org
+
+end subroutine find_Av_load_kabs
+
+! *********************************
+! given the current photo bin intensity distribution
+! estimates G0 and Av using the bins in the Draine range
+subroutine estimate_G0_Av(G0, Av, n, d2g)
+use krome_constants
+use krome_commons
+use krome_getphys
+use krome_subs
+implicit none
+real*8,intent(out)::G0, Av
+real*8,intent(in)::d2g, n(nspec)
+real*8::lnG0, mu, ntot
+real*8::ydata(nPhotoBins)
+integer::i
+logical, save ::first_call=.true.
+real*8,  save ::XH,Jdraine(nPhotoBins),xdata(nPhotoBins)
+integer, save ::lb,ub,ndraine
+!$omp threadprivate(first_call,XH,Jdraine,xdata,lb,ub,ndraine)
+
+if (first_call) then
+! get non-attenuated draine flux
+Jdraine(:) = get_draine(photoBinEmid(:))
+
+! only consider bins that have non-attenuated draine radiation
+lb=0
+do i=1,nPhotoBins
+if (Jdraine(i)>0 .and. lb==0) lb=i
+if (Jdraine(i)>0) ub=i
+end do
+ndraine = ub - lb + 1
+
+! mean molecular weight and gas density
+mu = get_mu(n(:))
+ntot = sum(n(1:nspec))
+
+! find mass fraction of H-nuclei as xH = mp * n_H / rho
+xH = (p_mass * get_Hnuclei(n(:))) / (p_mass * mu * ntot)
+
+! now we can calculate the xdata, which are constant:
+
+! loop on photo bins
+do i=lb,ub
+! compute x in y = Av*x + ln(G0)
+xdata(i-lb+1) = -find_Av_draine_kabs(i) * 1.8d21 * p_mass * d2g / xH
+end do
+
+! make sure we only do this once
+! NOTICE: we assume hydrogen mass fraction is constant
+! NOTICE: but this is implicitly the case anyway
+! NOTICE: because below we translate between
+! NOTICE: column density and Av
+first_call = .false.
+end if
+
+! loop on photo bins
+do i=lb,ub
+! compute y in y = Av*x + ln(G0)
+ydata(i - lb + 1) = log(photoBinJ(i) + 1d-200) - log(Jdraine(i))
+end do
+
+! needs at least one bin
+if(ndraine<=1) then
+print *,"ERROR: you want to estimate G0 and Av with less than 2 bins in the"
+print *," Draine range, 5-13.6 eV! Nbins(Draine)=",ndraine
+stop
+end if
+
+! call least squares to compute Av and ln(G0)
+call llsq(ndraine, xdata(1:ndraine), ydata(1:ndraine), &
+    Av, lnG0)
+
+! Apply prior
+if(lnG0 < -7d0 .or. lnG0 > 7d0) then
+if(lnG0 < -7d0) lnG0 = -7d0
+if(lnG0 > 7d0) lnG0 = 7d0
+Av = sum(( ydata(1:ndraine)-lnG0)*xdata(1:ndraine))/sum(xdata(1:ndraine)**2)
+end if
+
+if(Av < 0d0) then
+Av = 0d0
+lnG0 = sum( ydata(1:ndraine))/ndraine
+endif
+
+! return G0
+G0 = exp(lnG0)
+
+end subroutine estimate_G0_Av
+
+! ************************
+function get_draine(energy_list) result(Jdraine)
+use krome_commons
+use krome_constants
+implicit none
+integer::i
+real*8,intent(in)::energy_list(:)
+real*8::x, Jdraine(size(energy_list))
+
+do i=1,size(energy_list)
+x = energy_list(i) !eV
+!eV/cm2/sr
+if(x<13.6d0.and.x>5d0) then
+Jdraine(i) = (1.658d6*x - 2.152d5*x**2 + 6.919d3*x**3) &
+    * x *planck_eV
+else
+Jdraine(i) = 0d0
+end if
+end do
+end function get_draine
+
+end module krome_photo
+
+!############### MODULE ##############
+module krome_tabs
+contains
+
+!***********************+
+function coe_tab(n)
+!interface to tabs
+use krome_subs
+use krome_getphys
+use krome_phfuncs
+use krome_grfuncs
+use krome_constants
+use krome_commons
+use krome_user_commons
+implicit none
+integer::idx,j
+real*8::Tgas, coe_tab(nrea),n(nspec),small
+
+Tgas = max(n(idx_Tgas),phys_Tcmb)
+small = 0d0
+
+coe_tab(:) = coe(n(:))
+
+end function coe_tab
+
+!**************************
+!compute rates that remain constant during solver call
+subroutine makeStoreOnceRates(n)
+use krome_commons
+implicit none
+real*8,intent(in)::n(nspec)
+real*8::small
+
+small = 0d0
+rateEvaluateOnce(:) = 0d0
+
+!H -> H+ + E
+rateEvaluateOnce(246) = small + (4.6d-1&
+    *user_crate)
+
+!HE -> HE+ + E
+rateEvaluateOnce(247) = small + (5.d-1&
+    *user_crate)
+
+!O -> O+ + E
+rateEvaluateOnce(248) = small + (2.8d0&
+    *user_crate)
+
+!CO -> C + O
+rateEvaluateOnce(249) = small + (5d0&
+    *user_crate)
+
+!CO -> CO+ + E
+rateEvaluateOnce(250) = small + (3d0&
+    *user_crate)
+
+!C2 -> C + C
+rateEvaluateOnce(251) = small + (2.37d2&
+    *user_crate)
+
+!H2 -> H + H
+rateEvaluateOnce(252) = small + (1d-1&
+    *user_crate)
+
+!H2 -> H+ + H-
+rateEvaluateOnce(253) = small + (3d-4&
+    *user_crate)
+
+!H2 -> H2+ + E
+rateEvaluateOnce(254) = small + (9.3d-1&
+    *user_crate)
+
+!C -> C+ + E
+rateEvaluateOnce(255) = small + (1.02d3&
+    *user_crate)
+
+!CH -> C + H
+rateEvaluateOnce(256) = small + (7.3d2&
+    *user_crate)
+
+!O2 -> O + O
+rateEvaluateOnce(257) = small + (7.5d2&
+    *user_crate)
+
+!O2 -> O2+ + E
+rateEvaluateOnce(258) = small + (1.17d2&
+    *user_crate)
+
+!OH -> O + H
+rateEvaluateOnce(259) = small + (5.1d2&
+    *user_crate)
+
+!CH2 -> CH2+ + E
+rateEvaluateOnce(260) = small + (5d2&
+    *user_crate)
+
+!H2O -> OH + H
+rateEvaluateOnce(261) = small + (9.7d2&
+    *user_crate)
+
+!HCO -> CO + H
+rateEvaluateOnce(262) = small + (4.21d2&
+    *user_crate)
+
+!HCO -> HCO+ + E
+rateEvaluateOnce(263) = small + (1.17d3&
+    *user_crate)
+
+!H2 -> H + H+ + E
+rateEvaluateOnce(264) = small + (9.3d-1&
+    *user_crate)
+
+end subroutine makeStoreOnceRates
+
+end module krome_tabs
+
+!############### MODULE ##############
+module KROME_coolingGH
+end module KROME_coolingGH
+
+
+!############### MODULE ##############
+module KROME_cooling
+! *************************************************************
+!  This file has been generated with:
+!  KROME 14.08.dev on 2018-08-27 09:46:28
+!  Changeset be164d7
+!  see http://kromepackage.org
+!
+!  Written and developed by Tommaso Grassi and Stefano Bovino
+!
+!  Contributors:
+!  J.Boulangier, T.Frostholm, D.Galli, F.A.Gianturco, T.Haugboelle,
+!  A.Lupi, J.Prieto, J.Ramsey, D.R.G.Schleicher, D.Seifried, E.Simoncini,
+!  E.Tognelli
+!  KROME is provided "as it is", without any warranty.
+! *************************************************************
+integer,parameter::coolTab_n=int(1e2)
+integer,parameter::nZrate=0
+real*8::coolTab(nZrate,coolTab_n),coolTab_logTlow, coolTab_logTup
+real*8::coolTab_T(coolTab_n),inv_coolTab_T(coolTab_n-1),inv_coolTab_idx
+contains
+
+!*******************
+function cooling(n,inTgas)
+use krome_commons
+implicit none
+real*8::n(:),inTgas,cooling,Tgas
+
+Tgas = inTgas
+cooling = sum(get_cooling_array(n(:),Tgas))
+
+end function cooling
+
+!*******************************
+function get_cooling_array(n, Tgas)
+use krome_commons
+implicit none
+real*8::n(:), Tgas
+real*8::get_cooling_array(ncools),cools(ncools)
+real*8::f1,f2,smooth
+
+f1 = 1d0
+f2 = 1d0
+
+!returns cooling in erg/cm3/s
+cools(:) = 0d0
+
+cools(idx_cool_custom) = cooling_custom(n(:),Tgas)
+
+get_cooling_array(:) = cools(:)
+
+end function get_cooling_array
+
+!*****************************
+function cooling_custom(n,Tgas)
+use krome_commons
+use krome_subs
+use krome_constants
+implicit none
+real*8::n(:),Tgas,cooling_custom
+
+cooling_custom = 0d0
+
+end function cooling_custom
+
+!**********************************
+function kpla(n,Tgas)
+!Planck opacity mean fit (Lenzuni+1996)
+!only denisity dependent (note that the
+! fit provided by Lenzuni is wrong)
+! valid for T<3e3 K
+!use krome_subs
+use krome_commons
+use krome_getphys
+implicit none
+real*8::kpla,rhogas,Tgas,n(:),y
+real*8::a0,a1,m(nspec)
+
+m(:) = get_mass()
+rhogas = sum(n(1:nmols)*m(1:nmols)) !g/cm3
+
+kpla = 0.d0
+!opacity is zero under 1e-12 g/cm3
+if(rhogas<1d-12) return
+
+!fit coefficients
+a0 = 1.000042d0
+a1 = 2.14989d0
+
+!log density cannot exceed 0.5 g/cm3
+y = log10(min(rhogas,0.5d0))
+
+kpla = 1d1**(a0*y + a1) !fit density only
+
+end function kpla
+
+!*****************************
+function coolingChem(n,Tgas)
+implicit none
+real*8::coolingChem,n(:),Tgas
+
+!note that this function is a dummy.
+! For chemical cooling you should see
+! heatingChem function in krome_heating.f90
+
+coolingChem = 0.d0
+
+end function coolingChem
+
+!***********************
+subroutine mylin2(a,b)
+!solve Ax=B analytically for a 2-levels system
+implicit none
+integer,parameter::n=2
+real*8::a(n,n),b(n),c(n),iab
+
+!uncomment this: safer but slower function
+!if(a(2,2)==a(2,1)) then
+!   print *,"ERROR: a22=a21 in mylin2"
+!   stop
+!end if
+iab = b(1)/(a(2,2)-a(2,1))
+c(1) = a(2,2) * iab
+c(2) = -a(2,1) * iab
+b(:) = c(:)
+
+end subroutine mylin2
+
+!************************
+subroutine mylin3(a,b)
+!solve Ax=B analytically for a 3-levels system
+implicit none
+integer,parameter::n=3
+real*8::iab,a(n,n),b(n),c(n)
+
+!uncomment this: safer but slower function
+!if(a(2,2)==a(2,3)) then
+!   print *,"ERROR: a22=a23 in mylin3"
+!   stop
+!end if
+
+!uncomment this: safer but slower
+!if(a(2,1)*a(3,2)+a(2,2)*a(3,3)+a(2,3)*a(3,1) == &
+    !     a(2,1)*a(3,3)+a(2,2)*a(3,1)+a(2,3)*a(3,2)) then
+!   print *,"ERROR: division by zero in mylin3"
+!   stop
+!end if
+
+iab = b(1) / (a(2,1)*(a(3,3)-a(3,2)) + a(2,2)*(a(3,1)-a(3,3)) &
+    + a(2,3)*(a(3,2)-a(3,1)))
+c(1) = (a(2,3)*a(3,2)-a(2,2)*a(3,3)) * iab
+c(2) = -(a(2,3)*a(3,1)-a(2,1)*a(3,3)) * iab
+c(3) = (a(3,1)*a(2,2)-a(2,1)*a(3,2)) * iab
+b(:) = c(:)
+
+end subroutine mylin3
+
+!************************************
+subroutine plot_cool(n)
+!routine to plot cooling at runtime
+real*8::n(:),Tgas,Tmin,Tmax
+real*8::cool_atomic,cool_H2,cool_HD,cool_tot, cool_totGP,cool_H2GP
+real*8::cool_dH,cool_Z
+integer::i,imax
+imax = 1000
+Tmin = log10(1d1)
+Tmax = log10(1d8)
+print *,"plotting cooling..."
+open(33,file="KROME_cooling_plot.dat",status="replace")
+do i=1,imax
+Tgas = 1d1**(i*(Tmax-Tmin)/imax+Tmin)
+cool_H2 = 0.d0
+cool_H2GP = 0.d0
+cool_HD = 0.d0
+cool_atomic = 0.d0
+cool_Z = 0.d0
+cool_dH = 0.d0
+cool_tot = cool_H2 + cool_atomic + cool_HD + cool_Z + cool_dH
+cool_totGP = cool_H2GP + cool_atomic + cool_HD + cool_Z + cool_dH
+write(33,'(99E12.3e3)') Tgas, cool_tot, cool_totGP, cool_H2, &
+    cool_atomic, cool_HD, cool_H2GP, cool_Z, cool_dH
+end do
+close(33)
+print *,"done!"
+
+end subroutine plot_cool
+
+!***********************************
+!routine to dump cooling in unit nfile
+subroutine dump_cool(n,Tgas,nfile)
+use krome_commons
+implicit none
+real*8::Tgas,n(:),cools(ncools)
+integer::nfile
+
+cools(:) = get_cooling_array(n(:),Tgas)
+write(nfile,'(99E14.5e3)') Tgas, sum(cools), cools(:)
+
+end subroutine dump_cool
+
+end module KROME_cooling
+
+!############### MODULE ##############
+module KROME_heating
+contains
+
+! *************************************************************
+!  This file has been generated with:
+!  KROME 14.08.dev on 2018-08-27 09:46:28
+!  Changeset be164d7
+!  see http://kromepackage.org
+!
+!  Written and developed by Tommaso Grassi and Stefano Bovino
+!
+!  Contributors:
+!  J.Boulangier, T.Frostholm, D.Galli, F.A.Gianturco, T.Haugboelle,
+!  A.Lupi, J.Prieto, J.Ramsey, D.R.G.Schleicher, D.Seifried, E.Simoncini,
+!  E.Tognelli
+!  KROME is provided "as it is", without any warranty.
+! *************************************************************
+
+!************************
+function heating(n,inTgas,k,nH2dust)
+implicit none
+real*8::n(:), Tgas, inTgas, k(:), nH2dust
+real*8::heating
+
+Tgas = inTgas
+heating = sum(get_heating_array(n(:),Tgas,k(:), nH2dust))
+
+end function heating
+
+!*******************************
+function get_heating_array(n, Tgas, k, nH2dust)
+use krome_commons
+implicit none
+real*8::n(:), Tgas, k(:), nH2dust
+real*8::get_heating_array(nheats),heats(nheats)
+real*8::smooth,f1,f2
+!returns heating in erg/cm3/s
+
+heats(:) = 0.d0
+
+f2 = 1.
+
+heats(idx_heat_custom) = heat_custom(n(:),Tgas)
+
+get_heating_array(:) = heats(:)
+
+end function get_heating_array
+
+!*************************
+function heat_custom(n,Tgas)
+use krome_commons
+use krome_subs
+use krome_constants
+implicit none
+real*8::n(:),Tgas,heat_custom
+
+heat_custom = 0d0
+
+end function heat_custom
+
+end module KROME_heating
+
+!############### MODULE ##############
+module krome_ode
+contains
+
+! *************************************************************
+!  This file has been generated with:
+!  KROME 14.08.dev on 2018-08-27 09:46:28
+!  Changeset be164d7
+!  see http://kromepackage.org
+!
+!  Written and developed by Tommaso Grassi and Stefano Bovino
+!
+!  Contributors:
+!  J.Boulangier, T.Frostholm, D.Galli, F.A.Gianturco, T.Haugboelle,
+!  A.Lupi, J.Prieto, J.Ramsey, D.R.G.Schleicher, D.Seifried, E.Simoncini,
+!  E.Tognelli
+!  KROME is provided "as it is", without any warranty.
+! *************************************************************
+
+subroutine fex(neq,tt,nin,dn)
+use krome_commons
+use krome_constants
+use krome_subs
+use krome_cooling
+use krome_heating
+use krome_tabs
+use krome_photo
+use krome_gadiab
+use krome_getphys
+use krome_phfuncs
+use krome_fit
+implicit none
+integer::neq,idust
+real*8::tt,dn(neq),n(neq),k(nrea),krome_gamma
+real*8::gamma,Tgas,vgas,ntot,nH2dust,nd,nin(neq)
+real*8::rr
+integer::i,r1,r2,r3,p1,p2,p3
+
+n(:) = nin(:)
+
+nH2dust = 0.d0
+n(idx_CR) = 1.d0
+n(idx_g)  = 1.d0
+n(idx_dummy) = 1.d0
+
+dn(:) = 0.d0 !initialize differentials
+n(idx_Tgas) = max(n(idx_tgas),2.73d0)
+n(idx_Tgas) = min(n(idx_tgas),1d9)
+Tgas = n(idx_Tgas) !get temperature
+
+k(:) = coe_tab(n(:)) !compute coefficients
+
+!E
+!E
+dn(idx_E) = &
+    -k(1)*n(idx_H)*n(idx_E) &
+    +2.d0*k(1)*n(idx_H)*n(idx_E) &
+    -k(2)*n(idx_Hj)*n(idx_E) &
+    -k(3)*n(idx_Hj)*n(idx_E) &
+    -k(4)*n(idx_HE)*n(idx_E) &
+    +2.d0*k(4)*n(idx_HE)*n(idx_E) &
+    -k(5)*n(idx_HEj)*n(idx_E) &
+    -k(6)*n(idx_HEj)*n(idx_E) &
+    -k(7)*n(idx_HEj)*n(idx_E) &
+    +2.d0*k(7)*n(idx_HEj)*n(idx_E) &
+    -k(15)*n(idx_HEjj)*n(idx_E) &
+    -k(16)*n(idx_H)*n(idx_E) &
+    +k(17)*n(idx_Hk)*n(idx_H) &
+    -k(22)*n(idx_H2)*n(idx_E) &
+    +k(22)*n(idx_H2)*n(idx_E) &
+    -k(24)*n(idx_Hk)*n(idx_E) &
+    +2.d0*k(24)*n(idx_Hk)*n(idx_E) &
+    +k(25)*n(idx_Hk)*n(idx_H) &
+    +k(26)*n(idx_Hk)*n(idx_H) &
+    +k(28)*n(idx_Hk)*n(idx_Hj) &
+    -k(29)*n(idx_H2j)*n(idx_E) &
+    -k(30)*n(idx_H2j)*n(idx_E) &
+    -k(36)*n(idx_Cj)*n(idx_E) &
+    -k(37)*n(idx_Cj)*n(idx_E) &
+    -k(38)*n(idx_Cj)*n(idx_E) &
+    -k(39)*n(idx_Oj)*n(idx_E) &
+    -k(40)*n(idx_Oj)*n(idx_E) &
+    -k(41)*n(idx_C)*n(idx_E) &
+    +2.d0*k(41)*n(idx_C)*n(idx_E) &
+    -k(42)*n(idx_O)*n(idx_E) &
+    +2.d0*k(42)*n(idx_O)*n(idx_E) &
+    +k(60)*n(idx_CH)*n(idx_O) &
+    -k(161)*n(idx_H3j)*n(idx_E) &
+    -k(162)*n(idx_H3j)*n(idx_E) &
+    -k(163)*n(idx_CHj)*n(idx_E) &
+    -k(164)*n(idx_CH2j)*n(idx_E) &
+    -k(165)*n(idx_CH2j)*n(idx_E) &
+    -k(166)*n(idx_CH2j)*n(idx_E) &
+    -k(167)*n(idx_CH3j)*n(idx_E) &
+    -k(168)*n(idx_CH3j)*n(idx_E) &
+    -k(169)*n(idx_CH3j)*n(idx_E) &
+    -k(170)*n(idx_OHj)*n(idx_E) &
+    -k(171)*n(idx_H2Oj)*n(idx_E) &
+    -k(172)*n(idx_H2Oj)*n(idx_E) &
+    -k(173)*n(idx_H2Oj)*n(idx_E) &
+    -k(174)*n(idx_H3Oj)*n(idx_E) &
+    -k(175)*n(idx_H3Oj)*n(idx_E) &
+    -k(176)*n(idx_H3Oj)*n(idx_E) &
+    -k(177)*n(idx_H3Oj)*n(idx_E) &
+    -k(178)*n(idx_O2j)*n(idx_E) &
+    -k(179)*n(idx_COj)*n(idx_E) &
+    -k(180)*n(idx_HCOj)*n(idx_E) &
+    -k(181)*n(idx_HCOj)*n(idx_E) &
+    -k(182)*n(idx_HOCj)*n(idx_E) &
+    +k(183)*n(idx_Hk)*n(idx_C) &
+    +k(184)*n(idx_Hk)*n(idx_O) &
+    +k(185)*n(idx_Hk)*n(idx_OH) &
+    +k(186)*n(idx_Ck)*n(idx_H) &
+    +k(187)*n(idx_Ck)*n(idx_H2) &
+    +k(188)*n(idx_Ck)*n(idx_O) &
+    +k(189)*n(idx_Ok)*n(idx_H) &
+    +k(190)*n(idx_Ok)*n(idx_H2) &
+    +k(191)*n(idx_Ok)*n(idx_C) &
+    -k(194)*n(idx_C)*n(idx_E) &
+    -k(203)*n(idx_O)*n(idx_E) &
+    +k(207)*n(idx_H) &
+    +k(208)*n(idx_HE) &
+    +k(209)*n(idx_HEj) &
+    +k(210)*n(idx_O) &
+    +k(211)*n(idx_C) &
+    +k(212)*n(idx_H2) &
+    +k(213)*n(idx_Hk) &
+    +k(215)*n(idx_CH) &
+    +k(218)*n(idx_OH) &
+    +k(220)*n(idx_H2O) &
+    +k(221)*n(idx_O2) &
+    +k(223)*n(idx_H2) &
+    +k(229)*n(idx_Ck) &
+    +k(232)*n(idx_CH2) &
+    +k(236)*n(idx_Ok) &
+    +k(246)*n(idx_H) &
+    +k(247)*n(idx_HE) &
+    +k(248)*n(idx_O) &
+    +k(250)*n(idx_CO) &
+    +k(254)*n(idx_H2) &
+    +k(255)*n(idx_C) &
+    +k(258)*n(idx_O2) &
+    +k(260)*n(idx_CH2) &
+    +k(263)*n(idx_HCO) &
+    +k(264)*n(idx_H2)
+
+!H-
+!H-
+dn(idx_Hk) = &
+    +k(16)*n(idx_H)*n(idx_E) &
+    -k(17)*n(idx_Hk)*n(idx_H) &
+    -k(24)*n(idx_Hk)*n(idx_E) &
+    -k(25)*n(idx_Hk)*n(idx_H) &
+    -k(26)*n(idx_Hk)*n(idx_H) &
+    -k(27)*n(idx_Hk)*n(idx_Hj) &
+    -k(28)*n(idx_Hk)*n(idx_Hj) &
+    -k(31)*n(idx_H2j)*n(idx_Hk) &
+    -k(160)*n(idx_HEj)*n(idx_Hk) &
+    -k(183)*n(idx_Hk)*n(idx_C) &
+    -k(184)*n(idx_Hk)*n(idx_O) &
+    -k(185)*n(idx_Hk)*n(idx_OH) &
+    -k(213)*n(idx_Hk) &
+    +k(253)*n(idx_H2)
+
+!C-
+!C-
+dn(idx_Ck) = &
+    -k(158)*n(idx_Ck)*n(idx_Hj) &
+    -k(186)*n(idx_Ck)*n(idx_H) &
+    -k(187)*n(idx_Ck)*n(idx_H2) &
+    -k(188)*n(idx_Ck)*n(idx_O) &
+    +k(194)*n(idx_C)*n(idx_E) &
+    -k(229)*n(idx_Ck)
+
+!O-
+!O-
+dn(idx_Ok) = &
+    -k(159)*n(idx_Ok)*n(idx_Hj) &
+    -k(189)*n(idx_Ok)*n(idx_H) &
+    -k(190)*n(idx_Ok)*n(idx_H2) &
+    -k(191)*n(idx_Ok)*n(idx_C) &
+    +k(203)*n(idx_O)*n(idx_E) &
+    -k(236)*n(idx_Ok)
+
+!H
+!H
+dn(idx_H) = &
+    -k(1)*n(idx_H)*n(idx_E) &
+    +k(2)*n(idx_Hj)*n(idx_E) &
+    +k(3)*n(idx_Hj)*n(idx_E) &
+    -k(8)*n(idx_HEj)*n(idx_H) &
+    +k(9)*n(idx_HE)*n(idx_Hj) &
+    +k(10)*n(idx_HE)*n(idx_Hj) &
+    +2.d0*k(11)*n(idx_H2)*n(idx_HE) &
+    +k(13)*n(idx_H2)*n(idx_HEj) &
+    +2.d0*k(14)*n(idx_H2)*n(idx_HEj) &
+    -k(16)*n(idx_H)*n(idx_E) &
+    -k(17)*n(idx_Hk)*n(idx_H) &
+    -k(18)*n(idx_H)*n(idx_Hj) &
+    -k(19)*n(idx_H)*n(idx_Hj) &
+    -k(20)*n(idx_H2j)*n(idx_H) &
+    +k(21)*n(idx_H2)*n(idx_Hj) &
+    +2.d0*k(22)*n(idx_H2)*n(idx_E) &
+    -k(23)*n(idx_H2)*n(idx_H) &
+    +3.d0*k(23)*n(idx_H2)*n(idx_H) &
+    +k(24)*n(idx_Hk)*n(idx_E) &
+    -k(25)*n(idx_Hk)*n(idx_H) &
+    +2.d0*k(25)*n(idx_Hk)*n(idx_H) &
+    -k(26)*n(idx_Hk)*n(idx_H) &
+    +2.d0*k(26)*n(idx_Hk)*n(idx_H) &
+    +2.d0*k(27)*n(idx_Hk)*n(idx_Hj) &
+    +2.d0*k(29)*n(idx_H2j)*n(idx_E) &
+    +2.d0*k(30)*n(idx_H2j)*n(idx_E) &
+    +k(31)*n(idx_H2j)*n(idx_Hk) &
+    +2.d0*k(32)*n(idx_H2)*n(idx_H2) &
+    -2.d0*k(33)*n(idx_H)*n(idx_H)*n(idx_HE) &
+    -3.d0*k(34)*n(idx_H)*n(idx_H)*n(idx_H) &
+    +k(34)*n(idx_H)*n(idx_H)*n(idx_H) &
+    -2.d0*k(35)*n(idx_H2)*n(idx_H)*n(idx_H) &
+    -k(43)*n(idx_Oj)*n(idx_H) &
+    +k(44)*n(idx_O)*n(idx_Hj) &
+    +k(46)*n(idx_C)*n(idx_Hj) &
+    -k(47)*n(idx_Cj)*n(idx_H) &
+    -k(51)*n(idx_OH)*n(idx_H) &
+    +2.d0*k(51)*n(idx_OH)*n(idx_H) &
+    +k(55)*n(idx_C)*n(idx_H2) &
+    -k(56)*n(idx_CH)*n(idx_H) &
+    +k(57)*n(idx_CH)*n(idx_H2) &
+    +k(58)*n(idx_CH)*n(idx_C) &
+    +k(59)*n(idx_CH)*n(idx_O) &
+    -k(62)*n(idx_CH2)*n(idx_H) &
+    +2.d0*k(63)*n(idx_CH2)*n(idx_O) &
+    +k(65)*n(idx_CH2)*n(idx_O) &
+    +k(69)*n(idx_O)*n(idx_H2) &
+    -k(70)*n(idx_OH)*n(idx_H) &
+    -k(71)*n(idx_OH)*n(idx_H) &
+    +k(72)*n(idx_H2)*n(idx_OH) &
+    +k(73)*n(idx_C)*n(idx_OH) &
+    +k(74)*n(idx_C)*n(idx_OH) &
+    +k(75)*n(idx_O)*n(idx_OH) &
+    +k(76)*n(idx_O)*n(idx_OH) &
+    -k(78)*n(idx_H2O)*n(idx_H) &
+    -k(79)*n(idx_O2)*n(idx_H) &
+    -k(83)*n(idx_CO)*n(idx_H) &
+    +k(84)*n(idx_H2j)*n(idx_H2) &
+    -k(85)*n(idx_H3j)*n(idx_H) &
+    +k(86)*n(idx_C)*n(idx_H2j) &
+    +k(88)*n(idx_C)*n(idx_H3j) &
+    +k(89)*n(idx_Cj)*n(idx_H2) &
+    -k(90)*n(idx_CHj)*n(idx_H) &
+    +k(91)*n(idx_CHj)*n(idx_H2) &
+    +k(92)*n(idx_CHj)*n(idx_O) &
+    -k(93)*n(idx_CH2j)*n(idx_H) &
+    +k(94)*n(idx_CH2j)*n(idx_H2) &
+    +k(95)*n(idx_CH2j)*n(idx_O) &
+    -k(96)*n(idx_CH3j)*n(idx_H) &
+    +k(100)*n(idx_Oj)*n(idx_H2) &
+    +k(101)*n(idx_O)*n(idx_H2j) &
+    +k(103)*n(idx_O)*n(idx_H3j) &
+    +k(106)*n(idx_OH)*n(idx_Cj) &
+    +k(107)*n(idx_OH)*n(idx_Cj) &
+    +k(108)*n(idx_OHj)*n(idx_H2) &
+    +k(109)*n(idx_H2Oj)*n(idx_H2) &
+    +k(112)*n(idx_H2O)*n(idx_Cj) &
+    +k(113)*n(idx_H2O)*n(idx_Cj) &
+    +k(114)*n(idx_H2O)*n(idx_Cj) &
+    +k(129)*n(idx_CH)*n(idx_Hj) &
+    +k(130)*n(idx_CH)*n(idx_Hj) &
+    +k(133)*n(idx_CH2)*n(idx_Hj) &
+    +k(134)*n(idx_CH2)*n(idx_Hj) &
+    +k(137)*n(idx_CH2)*n(idx_HEj) &
+    +k(138)*n(idx_CH2)*n(idx_HEj) &
+    +k(140)*n(idx_OH)*n(idx_Hj) &
+    +k(141)*n(idx_OH)*n(idx_Hj) &
+    +k(142)*n(idx_OH)*n(idx_HEj) &
+    +k(143)*n(idx_OH)*n(idx_HEj) &
+    +k(144)*n(idx_H2O)*n(idx_Hj) &
+    +k(145)*n(idx_H2O)*n(idx_Hj) &
+    +k(148)*n(idx_H2O)*n(idx_HEj) &
+    +k(149)*n(idx_H2O)*n(idx_HEj) &
+    +k(152)*n(idx_O2)*n(idx_Hj) &
+    -k(157)*n(idx_COj)*n(idx_H) &
+    +k(158)*n(idx_Ck)*n(idx_Hj) &
+    +k(159)*n(idx_Ok)*n(idx_Hj) &
+    +k(160)*n(idx_HEj)*n(idx_Hk) &
+    +k(161)*n(idx_H3j)*n(idx_E) &
+    +3.d0*k(162)*n(idx_H3j)*n(idx_E) &
+    +k(163)*n(idx_CHj)*n(idx_E) &
+    +k(164)*n(idx_CH2j)*n(idx_E) &
+    +2.d0*k(166)*n(idx_CH2j)*n(idx_E) &
+    +k(167)*n(idx_CH3j)*n(idx_E) &
+    +2.d0*k(169)*n(idx_CH3j)*n(idx_E) &
+    +k(170)*n(idx_OHj)*n(idx_E) &
+    +k(172)*n(idx_H2Oj)*n(idx_E) &
+    +2.d0*k(173)*n(idx_H2Oj)*n(idx_E) &
+    +2.d0*k(174)*n(idx_H3Oj)*n(idx_E) &
+    +k(175)*n(idx_H3Oj)*n(idx_E) &
+    +k(176)*n(idx_H3Oj)*n(idx_E) &
+    +k(180)*n(idx_HCOj)*n(idx_E) &
+    +k(182)*n(idx_HOCj)*n(idx_E) &
+    -k(186)*n(idx_Ck)*n(idx_H) &
+    -k(189)*n(idx_Ok)*n(idx_H) &
+    +2.d0*k(192)*n(idx_H2)*n(idx_Hj) &
+    -k(195)*n(idx_C)*n(idx_H) &
+    -k(199)*n(idx_Cj)*n(idx_H) &
+    -k(204)*n(idx_O)*n(idx_H) &
+    -k(206)*n(idx_OH)*n(idx_H) &
+    -k(207)*n(idx_H) &
+    +k(213)*n(idx_Hk) &
+    +k(214)*n(idx_CH) &
+    +k(217)*n(idx_OH) &
+    +k(219)*n(idx_H2O) &
+    +k(223)*n(idx_H2) &
+    +2.d0*k(225)*n(idx_H2) &
+    +k(226)*n(idx_H2j) &
+    +k(228)*n(idx_H3j) &
+    +k(231)*n(idx_CH2) &
+    +k(233)*n(idx_CH2j) &
+    +k(234)*n(idx_CH3j) &
+    +k(241)*n(idx_H2Oj) &
+    +k(244)*n(idx_H3Oj) &
+    -k(246)*n(idx_H) &
+    +2.d0*k(252)*n(idx_H2) &
+    +k(256)*n(idx_CH) &
+    +k(259)*n(idx_OH) &
+    +k(261)*n(idx_H2O) &
+    +k(262)*n(idx_HCO) &
+    +k(264)*n(idx_H2) &
+    -k(273)*n(idx_H)*n(idx_O) &
+    -k(274)*n(idx_OH)*n(idx_H)
+
+!HE
+!HE
+dn(idx_HE) = &
+    -k(4)*n(idx_HE)*n(idx_E) &
+    +k(5)*n(idx_HEj)*n(idx_E) &
+    +k(6)*n(idx_HEj)*n(idx_E) &
+    +k(8)*n(idx_HEj)*n(idx_H) &
+    -k(9)*n(idx_HE)*n(idx_Hj) &
+    -k(10)*n(idx_HE)*n(idx_Hj) &
+    -k(11)*n(idx_H2)*n(idx_HE) &
+    +k(11)*n(idx_H2)*n(idx_HE) &
+    +k(12)*n(idx_H2)*n(idx_HEj) &
+    +k(13)*n(idx_H2)*n(idx_HEj) &
+    -k(33)*n(idx_H)*n(idx_H)*n(idx_HE) &
+    +k(33)*n(idx_H)*n(idx_H)*n(idx_HE) &
+    +k(45)*n(idx_O)*n(idx_HEj) &
+    +k(48)*n(idx_C)*n(idx_HEj) &
+    +k(49)*n(idx_C)*n(idx_HEj) &
+    +k(50)*n(idx_C)*n(idx_HEj) &
+    +k(135)*n(idx_CH2)*n(idx_HEj) &
+    +k(136)*n(idx_CH2)*n(idx_HEj) &
+    +k(137)*n(idx_CH2)*n(idx_HEj) &
+    +k(138)*n(idx_CH2)*n(idx_HEj) &
+    +k(139)*n(idx_C2)*n(idx_HEj) &
+    +k(142)*n(idx_OH)*n(idx_HEj) &
+    +k(143)*n(idx_OH)*n(idx_HEj) &
+    +k(146)*n(idx_H2O)*n(idx_HEj) &
+    +k(147)*n(idx_H2O)*n(idx_HEj) &
+    +k(148)*n(idx_H2O)*n(idx_HEj) &
+    +k(149)*n(idx_H2O)*n(idx_HEj) &
+    +k(150)*n(idx_H2O)*n(idx_HEj) &
+    +k(151)*n(idx_H2O)*n(idx_HEj) &
+    +k(153)*n(idx_O2)*n(idx_HEj) &
+    +k(154)*n(idx_O2)*n(idx_HEj) &
+    +k(155)*n(idx_CO)*n(idx_HEj) &
+    +k(156)*n(idx_CO)*n(idx_HEj) &
+    +k(160)*n(idx_HEj)*n(idx_Hk) &
+    -k(208)*n(idx_HE) &
+    -k(247)*n(idx_HE)
+
+!H2
+!H2
+dn(idx_H2) = &
+    -k(11)*n(idx_H2)*n(idx_HE) &
+    -k(12)*n(idx_H2)*n(idx_HEj) &
+    -k(13)*n(idx_H2)*n(idx_HEj) &
+    -k(14)*n(idx_H2)*n(idx_HEj) &
+    +k(17)*n(idx_Hk)*n(idx_H) &
+    +k(20)*n(idx_H2j)*n(idx_H) &
+    -k(21)*n(idx_H2)*n(idx_Hj) &
+    -k(22)*n(idx_H2)*n(idx_E) &
+    -k(23)*n(idx_H2)*n(idx_H) &
+    +k(31)*n(idx_H2j)*n(idx_Hk) &
+    -2.d0*k(32)*n(idx_H2)*n(idx_H2) &
+    +k(32)*n(idx_H2)*n(idx_H2) &
+    +k(33)*n(idx_H)*n(idx_H)*n(idx_HE) &
+    +k(34)*n(idx_H)*n(idx_H)*n(idx_H) &
+    -k(35)*n(idx_H2)*n(idx_H)*n(idx_H) &
+    +2.d0*k(35)*n(idx_H2)*n(idx_H)*n(idx_H) &
+    -k(52)*n(idx_HOCj)*n(idx_H2) &
+    +k(52)*n(idx_HOCj)*n(idx_H2) &
+    -k(55)*n(idx_C)*n(idx_H2) &
+    +k(56)*n(idx_CH)*n(idx_H) &
+    -k(57)*n(idx_CH)*n(idx_H2) &
+    +k(62)*n(idx_CH2)*n(idx_H) &
+    +k(64)*n(idx_CH2)*n(idx_O) &
+    -k(69)*n(idx_O)*n(idx_H2) &
+    +k(70)*n(idx_OH)*n(idx_H) &
+    +k(71)*n(idx_OH)*n(idx_H) &
+    -k(72)*n(idx_H2)*n(idx_OH) &
+    +k(78)*n(idx_H2O)*n(idx_H) &
+    -k(80)*n(idx_O2)*n(idx_H2) &
+    -k(84)*n(idx_H2j)*n(idx_H2) &
+    +k(85)*n(idx_H3j)*n(idx_H) &
+    +k(87)*n(idx_C)*n(idx_H3j) &
+    -k(89)*n(idx_Cj)*n(idx_H2) &
+    +k(90)*n(idx_CHj)*n(idx_H) &
+    -k(91)*n(idx_CHj)*n(idx_H2) &
+    +k(93)*n(idx_CH2j)*n(idx_H) &
+    -k(94)*n(idx_CH2j)*n(idx_H2) &
+    +k(96)*n(idx_CH3j)*n(idx_H) &
+    +k(97)*n(idx_CH3j)*n(idx_O) &
+    +k(98)*n(idx_CH3j)*n(idx_O) &
+    -k(100)*n(idx_Oj)*n(idx_H2) &
+    +k(102)*n(idx_O)*n(idx_H3j) &
+    +k(104)*n(idx_OH)*n(idx_H3j) &
+    +k(105)*n(idx_OH)*n(idx_H3j) &
+    -k(108)*n(idx_OHj)*n(idx_H2) &
+    -k(109)*n(idx_H2Oj)*n(idx_H2) &
+    +k(110)*n(idx_H2O)*n(idx_H3j) &
+    +k(111)*n(idx_H2O)*n(idx_H3j) &
+    +k(116)*n(idx_H3Oj)*n(idx_C) &
+    +k(122)*n(idx_CO)*n(idx_H3j) &
+    +k(123)*n(idx_CO)*n(idx_H3j) &
+    +k(124)*n(idx_CO)*n(idx_H3j) &
+    +k(125)*n(idx_CO)*n(idx_H3j) &
+    +k(131)*n(idx_CH2)*n(idx_Hj) &
+    +k(132)*n(idx_CH2)*n(idx_Hj) &
+    +k(135)*n(idx_CH2)*n(idx_HEj) &
+    +k(136)*n(idx_CH2)*n(idx_HEj) &
+    +k(161)*n(idx_H3j)*n(idx_E) &
+    +k(165)*n(idx_CH2j)*n(idx_E) &
+    +k(168)*n(idx_CH3j)*n(idx_E) &
+    +k(171)*n(idx_H2Oj)*n(idx_E) &
+    +k(175)*n(idx_H3Oj)*n(idx_E) &
+    +k(177)*n(idx_H3Oj)*n(idx_E) &
+    -k(187)*n(idx_Ck)*n(idx_H2) &
+    -k(190)*n(idx_Ok)*n(idx_H2) &
+    -k(192)*n(idx_H2)*n(idx_Hj) &
+    -k(193)*n(idx_H2)*n(idx_Hj) &
+    -k(196)*n(idx_C)*n(idx_H2) &
+    -k(200)*n(idx_Cj)*n(idx_H2) &
+    -k(212)*n(idx_H2) &
+    -k(223)*n(idx_H2) &
+    -k(225)*n(idx_H2) &
+    +k(227)*n(idx_H3j) &
+    +k(235)*n(idx_CH3j) &
+    +k(240)*n(idx_H2Oj) &
+    +k(245)*n(idx_H3Oj) &
+    -k(252)*n(idx_H2) &
+    -k(253)*n(idx_H2) &
+    -k(254)*n(idx_H2) &
+    -k(264)*n(idx_H2)
+
+!C
+!C
+dn(idx_C) = &
+    +k(36)*n(idx_Cj)*n(idx_E) &
+    +k(37)*n(idx_Cj)*n(idx_E) &
+    +k(38)*n(idx_Cj)*n(idx_E) &
+    -k(41)*n(idx_C)*n(idx_E) &
+    -k(46)*n(idx_C)*n(idx_Hj) &
+    +k(47)*n(idx_Cj)*n(idx_H) &
+    -k(48)*n(idx_C)*n(idx_HEj) &
+    -k(49)*n(idx_C)*n(idx_HEj) &
+    -k(50)*n(idx_C)*n(idx_HEj) &
+    -k(55)*n(idx_C)*n(idx_H2) &
+    +k(56)*n(idx_CH)*n(idx_H) &
+    -k(58)*n(idx_CH)*n(idx_C) &
+    +k(61)*n(idx_CH)*n(idx_O) &
+    +k(67)*n(idx_C2)*n(idx_O) &
+    +k(68)*n(idx_C2)*n(idx_O) &
+    -k(73)*n(idx_C)*n(idx_OH) &
+    -k(74)*n(idx_C)*n(idx_OH) &
+    -k(81)*n(idx_O2)*n(idx_C) &
+    -k(82)*n(idx_O2)*n(idx_C) &
+    +k(83)*n(idx_CO)*n(idx_H) &
+    -k(86)*n(idx_C)*n(idx_H2j) &
+    -k(87)*n(idx_C)*n(idx_H3j) &
+    -k(88)*n(idx_C)*n(idx_H3j) &
+    +k(99)*n(idx_C2)*n(idx_Oj) &
+    +k(115)*n(idx_H2O)*n(idx_Cj) &
+    -k(116)*n(idx_H3Oj)*n(idx_C) &
+    -k(120)*n(idx_C)*n(idx_O2j) &
+    -k(121)*n(idx_C)*n(idx_O2j) &
+    -k(126)*n(idx_HCOj)*n(idx_C) &
+    +k(139)*n(idx_C2)*n(idx_HEj) &
+    +k(156)*n(idx_CO)*n(idx_HEj) &
+    +k(158)*n(idx_Ck)*n(idx_Hj) &
+    +k(163)*n(idx_CHj)*n(idx_E) &
+    +k(165)*n(idx_CH2j)*n(idx_E) &
+    +k(166)*n(idx_CH2j)*n(idx_E) &
+    +k(179)*n(idx_COj)*n(idx_E) &
+    +k(181)*n(idx_HCOj)*n(idx_E) &
+    -k(183)*n(idx_Hk)*n(idx_C) &
+    -k(191)*n(idx_Ok)*n(idx_C) &
+    -k(194)*n(idx_C)*n(idx_E) &
+    -k(195)*n(idx_C)*n(idx_H) &
+    -k(196)*n(idx_C)*n(idx_H2) &
+    -2.d0*k(197)*n(idx_C)*n(idx_C) &
+    -k(198)*n(idx_C)*n(idx_O) &
+    -k(211)*n(idx_C) &
+    +k(214)*n(idx_CH) &
+    +2.d0*k(216)*n(idx_C2) &
+    +k(224)*n(idx_CO) &
+    +k(229)*n(idx_Ck) &
+    +k(230)*n(idx_CHj) &
+    +k(249)*n(idx_CO) &
+    +2.d0*k(251)*n(idx_C2) &
+    -k(255)*n(idx_C) &
+    +k(256)*n(idx_CH) &
+    -2.d0*k(265)*n(idx_C)*n(idx_C) &
+    -2.d0*k(266)*n(idx_C)*n(idx_C) &
+    -k(267)*n(idx_C)*n(idx_O) &
+    -k(268)*n(idx_C)*n(idx_O) &
+    -k(271)*n(idx_C)*n(idx_Oj) &
+    -k(272)*n(idx_C)*n(idx_Oj)
+
+!O
+!O
+dn(idx_O) = &
+    +k(39)*n(idx_Oj)*n(idx_E) &
+    +k(40)*n(idx_Oj)*n(idx_E) &
+    -k(42)*n(idx_O)*n(idx_E) &
+    +k(43)*n(idx_Oj)*n(idx_H) &
+    -k(44)*n(idx_O)*n(idx_Hj) &
+    -k(45)*n(idx_O)*n(idx_HEj) &
+    +k(51)*n(idx_OH)*n(idx_H) &
+    -k(59)*n(idx_CH)*n(idx_O) &
+    -k(60)*n(idx_CH)*n(idx_O) &
+    -k(61)*n(idx_CH)*n(idx_O) &
+    -k(63)*n(idx_CH2)*n(idx_O) &
+    -k(64)*n(idx_CH2)*n(idx_O) &
+    -k(65)*n(idx_CH2)*n(idx_O) &
+    -k(66)*n(idx_CH2)*n(idx_O) &
+    -k(67)*n(idx_C2)*n(idx_O) &
+    -k(68)*n(idx_C2)*n(idx_O) &
+    -k(69)*n(idx_O)*n(idx_H2) &
+    +k(70)*n(idx_OH)*n(idx_H) &
+    +k(71)*n(idx_OH)*n(idx_H) &
+    -k(75)*n(idx_O)*n(idx_OH) &
+    -k(76)*n(idx_O)*n(idx_OH) &
+    +k(77)*n(idx_OH)*n(idx_OH) &
+    +k(79)*n(idx_O2)*n(idx_H) &
+    +k(81)*n(idx_O2)*n(idx_C) &
+    +k(82)*n(idx_O2)*n(idx_C) &
+    -k(92)*n(idx_CHj)*n(idx_O) &
+    -k(95)*n(idx_CH2j)*n(idx_O) &
+    -k(97)*n(idx_CH3j)*n(idx_O) &
+    -k(98)*n(idx_CH3j)*n(idx_O) &
+    -k(101)*n(idx_O)*n(idx_H2j) &
+    -k(102)*n(idx_O)*n(idx_H3j) &
+    -k(103)*n(idx_O)*n(idx_H3j) &
+    +k(117)*n(idx_O2)*n(idx_Cj) &
+    +k(120)*n(idx_C)*n(idx_O2j) &
+    +k(154)*n(idx_O2)*n(idx_HEj) &
+    +k(155)*n(idx_CO)*n(idx_HEj) &
+    +k(159)*n(idx_Ok)*n(idx_Hj) &
+    +k(170)*n(idx_OHj)*n(idx_E) &
+    +k(171)*n(idx_H2Oj)*n(idx_E) &
+    +k(173)*n(idx_H2Oj)*n(idx_E) &
+    +k(175)*n(idx_H3Oj)*n(idx_E) &
+    +2.d0*k(178)*n(idx_O2j)*n(idx_E) &
+    +k(179)*n(idx_COj)*n(idx_E) &
+    -k(184)*n(idx_Hk)*n(idx_O) &
+    -k(188)*n(idx_Ck)*n(idx_O) &
+    -k(198)*n(idx_C)*n(idx_O) &
+    -k(201)*n(idx_Cj)*n(idx_O) &
+    -k(202)*n(idx_Cj)*n(idx_O) &
+    -k(203)*n(idx_O)*n(idx_E) &
+    -k(204)*n(idx_O)*n(idx_H) &
+    -2.d0*k(205)*n(idx_O)*n(idx_O) &
+    -k(210)*n(idx_O) &
+    +k(217)*n(idx_OH) &
+    +2.d0*k(222)*n(idx_O2) &
+    +k(224)*n(idx_CO) &
+    +k(236)*n(idx_Ok) &
+    +k(237)*n(idx_OHj) &
+    +k(238)*n(idx_H2Oj) &
+    -k(248)*n(idx_O) &
+    +k(249)*n(idx_CO) &
+    +2.d0*k(257)*n(idx_O2) &
+    +k(259)*n(idx_OH) &
+    -k(267)*n(idx_C)*n(idx_O) &
+    -k(268)*n(idx_C)*n(idx_O) &
+    -k(269)*n(idx_Cj)*n(idx_O) &
+    -k(270)*n(idx_Cj)*n(idx_O) &
+    -k(273)*n(idx_H)*n(idx_O) &
+    -2.d0*k(275)*n(idx_O)*n(idx_O)
+
+!OH
+!OH
+dn(idx_OH) = &
+    -k(51)*n(idx_OH)*n(idx_H) &
+    +k(61)*n(idx_CH)*n(idx_O) &
+    +k(66)*n(idx_CH2)*n(idx_O) &
+    +k(69)*n(idx_O)*n(idx_H2) &
+    -k(70)*n(idx_OH)*n(idx_H) &
+    -k(71)*n(idx_OH)*n(idx_H) &
+    -k(72)*n(idx_H2)*n(idx_OH) &
+    -k(73)*n(idx_C)*n(idx_OH) &
+    -k(74)*n(idx_C)*n(idx_OH) &
+    -k(75)*n(idx_O)*n(idx_OH) &
+    -k(76)*n(idx_O)*n(idx_OH) &
+    -2.d0*k(77)*n(idx_OH)*n(idx_OH) &
+    +k(78)*n(idx_H2O)*n(idx_H) &
+    +k(79)*n(idx_O2)*n(idx_H) &
+    +2.d0*k(80)*n(idx_O2)*n(idx_H2) &
+    +k(83)*n(idx_CO)*n(idx_H) &
+    -k(104)*n(idx_OH)*n(idx_H3j) &
+    -k(105)*n(idx_OH)*n(idx_H3j) &
+    -k(106)*n(idx_OH)*n(idx_Cj) &
+    -k(107)*n(idx_OH)*n(idx_Cj) &
+    +k(119)*n(idx_O2)*n(idx_CH2j) &
+    -k(140)*n(idx_OH)*n(idx_Hj) &
+    -k(141)*n(idx_OH)*n(idx_Hj) &
+    -k(142)*n(idx_OH)*n(idx_HEj) &
+    -k(143)*n(idx_OH)*n(idx_HEj) &
+    +k(146)*n(idx_H2O)*n(idx_HEj) &
+    +k(147)*n(idx_H2O)*n(idx_HEj) &
+    +k(172)*n(idx_H2Oj)*n(idx_E) &
+    +k(174)*n(idx_H3Oj)*n(idx_E) &
+    +k(177)*n(idx_H3Oj)*n(idx_E) &
+    +k(181)*n(idx_HCOj)*n(idx_E) &
+    +k(184)*n(idx_Hk)*n(idx_O) &
+    -k(185)*n(idx_Hk)*n(idx_OH) &
+    +k(189)*n(idx_Ok)*n(idx_H) &
+    +k(204)*n(idx_O)*n(idx_H) &
+    -k(206)*n(idx_OH)*n(idx_H) &
+    -k(217)*n(idx_OH) &
+    -k(218)*n(idx_OH) &
+    +k(219)*n(idx_H2O) &
+    +k(239)*n(idx_H2Oj) &
+    +k(243)*n(idx_H3Oj) &
+    -k(259)*n(idx_OH) &
+    +k(261)*n(idx_H2O) &
+    +k(273)*n(idx_H)*n(idx_O) &
+    -k(274)*n(idx_OH)*n(idx_H)
+
+!CO
+!CO
+dn(idx_CO) = &
+    -k(53)*n(idx_HOCj)*n(idx_CO) &
+    +k(53)*n(idx_HOCj)*n(idx_CO) &
+    -k(54)*n(idx_HOCj)*n(idx_CO) &
+    +k(54)*n(idx_HOCj)*n(idx_CO) &
+    +k(59)*n(idx_CH)*n(idx_O) &
+    +k(63)*n(idx_CH2)*n(idx_O) &
+    +k(64)*n(idx_CH2)*n(idx_O) &
+    +k(67)*n(idx_C2)*n(idx_O) &
+    +k(68)*n(idx_C2)*n(idx_O) &
+    +k(73)*n(idx_C)*n(idx_OH) &
+    +k(74)*n(idx_C)*n(idx_OH) &
+    +k(81)*n(idx_O2)*n(idx_C) &
+    +k(82)*n(idx_O2)*n(idx_C) &
+    -k(83)*n(idx_CO)*n(idx_H) &
+    +k(118)*n(idx_O2)*n(idx_Cj) &
+    -k(122)*n(idx_CO)*n(idx_H3j) &
+    -k(123)*n(idx_CO)*n(idx_H3j) &
+    -k(124)*n(idx_CO)*n(idx_H3j) &
+    -k(125)*n(idx_CO)*n(idx_H3j) &
+    +k(126)*n(idx_HCOj)*n(idx_C) &
+    +k(127)*n(idx_HCOj)*n(idx_H2O) &
+    +k(128)*n(idx_HCOj)*n(idx_H2O) &
+    -k(155)*n(idx_CO)*n(idx_HEj) &
+    -k(156)*n(idx_CO)*n(idx_HEj) &
+    +k(157)*n(idx_COj)*n(idx_H) &
+    +k(180)*n(idx_HCOj)*n(idx_E) &
+    +k(182)*n(idx_HOCj)*n(idx_E) &
+    +k(188)*n(idx_Ck)*n(idx_O) &
+    +k(191)*n(idx_Ok)*n(idx_C) &
+    +k(198)*n(idx_C)*n(idx_O) &
+    -k(224)*n(idx_CO) &
+    -k(249)*n(idx_CO) &
+    -k(250)*n(idx_CO) &
+    +k(262)*n(idx_HCO) &
+    +k(267)*n(idx_C)*n(idx_O) &
+    +k(268)*n(idx_C)*n(idx_O)
+
+!CH
+!CH
+dn(idx_CH) = &
+    +k(55)*n(idx_C)*n(idx_H2) &
+    -k(56)*n(idx_CH)*n(idx_H) &
+    -k(57)*n(idx_CH)*n(idx_H2) &
+    -k(58)*n(idx_CH)*n(idx_C) &
+    -k(59)*n(idx_CH)*n(idx_O) &
+    -k(60)*n(idx_CH)*n(idx_O) &
+    -k(61)*n(idx_CH)*n(idx_O) &
+    +k(62)*n(idx_CH2)*n(idx_H) &
+    +k(66)*n(idx_CH2)*n(idx_O) &
+    -k(129)*n(idx_CH)*n(idx_Hj) &
+    -k(130)*n(idx_CH)*n(idx_Hj) &
+    +k(164)*n(idx_CH2j)*n(idx_E) &
+    +k(168)*n(idx_CH3j)*n(idx_E) &
+    +k(169)*n(idx_CH3j)*n(idx_E) &
+    +k(183)*n(idx_Hk)*n(idx_C) &
+    +k(186)*n(idx_Ck)*n(idx_H) &
+    +k(195)*n(idx_C)*n(idx_H) &
+    -k(214)*n(idx_CH) &
+    -k(215)*n(idx_CH) &
+    +k(231)*n(idx_CH2) &
+    -k(256)*n(idx_CH)
+
+!CH2
+!CH2
+dn(idx_CH2) = &
+    +k(57)*n(idx_CH)*n(idx_H2) &
+    -k(62)*n(idx_CH2)*n(idx_H) &
+    -k(63)*n(idx_CH2)*n(idx_O) &
+    -k(64)*n(idx_CH2)*n(idx_O) &
+    -k(65)*n(idx_CH2)*n(idx_O) &
+    -k(66)*n(idx_CH2)*n(idx_O) &
+    -k(131)*n(idx_CH2)*n(idx_Hj) &
+    -k(132)*n(idx_CH2)*n(idx_Hj) &
+    -k(133)*n(idx_CH2)*n(idx_Hj) &
+    -k(134)*n(idx_CH2)*n(idx_Hj) &
+    -k(135)*n(idx_CH2)*n(idx_HEj) &
+    -k(136)*n(idx_CH2)*n(idx_HEj) &
+    -k(137)*n(idx_CH2)*n(idx_HEj) &
+    -k(138)*n(idx_CH2)*n(idx_HEj) &
+    +k(167)*n(idx_CH3j)*n(idx_E) &
+    +k(187)*n(idx_Ck)*n(idx_H2) &
+    +k(196)*n(idx_C)*n(idx_H2) &
+    -k(231)*n(idx_CH2) &
+    -k(232)*n(idx_CH2) &
+    -k(260)*n(idx_CH2)
+
+!C2
+!C2
+dn(idx_C2) = &
+    +k(58)*n(idx_CH)*n(idx_C) &
+    -k(67)*n(idx_C2)*n(idx_O) &
+    -k(68)*n(idx_C2)*n(idx_O) &
+    -k(99)*n(idx_C2)*n(idx_Oj) &
+    -k(139)*n(idx_C2)*n(idx_HEj) &
+    +k(197)*n(idx_C)*n(idx_C) &
+    -k(216)*n(idx_C2) &
+    -k(251)*n(idx_C2) &
+    +k(265)*n(idx_C)*n(idx_C) &
+    +k(266)*n(idx_C)*n(idx_C)
+
+!HCO
+!HCO
+dn(idx_HCO) = &
+    +k(65)*n(idx_CH2)*n(idx_O) &
+    -k(262)*n(idx_HCO) &
+    -k(263)*n(idx_HCO)
+
+!H2O
+!H2O
+dn(idx_H2O) = &
+    +k(72)*n(idx_H2)*n(idx_OH) &
+    +k(77)*n(idx_OH)*n(idx_OH) &
+    -k(78)*n(idx_H2O)*n(idx_H) &
+    -k(110)*n(idx_H2O)*n(idx_H3j) &
+    -k(111)*n(idx_H2O)*n(idx_H3j) &
+    -k(112)*n(idx_H2O)*n(idx_Cj) &
+    -k(113)*n(idx_H2O)*n(idx_Cj) &
+    -k(114)*n(idx_H2O)*n(idx_Cj) &
+    -k(115)*n(idx_H2O)*n(idx_Cj) &
+    -k(127)*n(idx_HCOj)*n(idx_H2O) &
+    -k(128)*n(idx_HCOj)*n(idx_H2O) &
+    -k(144)*n(idx_H2O)*n(idx_Hj) &
+    -k(145)*n(idx_H2O)*n(idx_Hj) &
+    -k(146)*n(idx_H2O)*n(idx_HEj) &
+    -k(147)*n(idx_H2O)*n(idx_HEj) &
+    -k(148)*n(idx_H2O)*n(idx_HEj) &
+    -k(149)*n(idx_H2O)*n(idx_HEj) &
+    -k(150)*n(idx_H2O)*n(idx_HEj) &
+    -k(151)*n(idx_H2O)*n(idx_HEj) &
+    +k(176)*n(idx_H3Oj)*n(idx_E) &
+    +k(185)*n(idx_Hk)*n(idx_OH) &
+    +k(190)*n(idx_Ok)*n(idx_H2) &
+    +k(206)*n(idx_OH)*n(idx_H) &
+    -k(219)*n(idx_H2O) &
+    -k(220)*n(idx_H2O) &
+    +k(242)*n(idx_H3Oj) &
+    -k(261)*n(idx_H2O) &
+    +k(274)*n(idx_OH)*n(idx_H)
+
+!O2
+!O2
+dn(idx_O2) = &
+    +k(75)*n(idx_O)*n(idx_OH) &
+    +k(76)*n(idx_O)*n(idx_OH) &
+    -k(79)*n(idx_O2)*n(idx_H) &
+    -k(80)*n(idx_O2)*n(idx_H2) &
+    -k(81)*n(idx_O2)*n(idx_C) &
+    -k(82)*n(idx_O2)*n(idx_C) &
+    -k(117)*n(idx_O2)*n(idx_Cj) &
+    -k(118)*n(idx_O2)*n(idx_Cj) &
+    -k(119)*n(idx_O2)*n(idx_CH2j) &
+    +k(121)*n(idx_C)*n(idx_O2j) &
+    -k(152)*n(idx_O2)*n(idx_Hj) &
+    -k(153)*n(idx_O2)*n(idx_HEj) &
+    -k(154)*n(idx_O2)*n(idx_HEj) &
+    +k(205)*n(idx_O)*n(idx_O) &
+    -k(221)*n(idx_O2) &
+    -k(222)*n(idx_O2) &
+    -k(257)*n(idx_O2) &
+    -k(258)*n(idx_O2) &
+    +k(275)*n(idx_O)*n(idx_O)
+
+!H+
+!H+
+dn(idx_Hj) = &
+    +k(1)*n(idx_H)*n(idx_E) &
+    -k(2)*n(idx_Hj)*n(idx_E) &
+    -k(3)*n(idx_Hj)*n(idx_E) &
+    +k(8)*n(idx_HEj)*n(idx_H) &
+    -k(9)*n(idx_HE)*n(idx_Hj) &
+    -k(10)*n(idx_HE)*n(idx_Hj) &
+    +k(13)*n(idx_H2)*n(idx_HEj) &
+    -k(18)*n(idx_H)*n(idx_Hj) &
+    -k(19)*n(idx_H)*n(idx_Hj) &
+    +k(20)*n(idx_H2j)*n(idx_H) &
+    -k(21)*n(idx_H2)*n(idx_Hj) &
+    -k(27)*n(idx_Hk)*n(idx_Hj) &
+    -k(28)*n(idx_Hk)*n(idx_Hj) &
+    +k(43)*n(idx_Oj)*n(idx_H) &
+    -k(44)*n(idx_O)*n(idx_Hj) &
+    -k(46)*n(idx_C)*n(idx_Hj) &
+    +k(47)*n(idx_Cj)*n(idx_H) &
+    -k(129)*n(idx_CH)*n(idx_Hj) &
+    -k(130)*n(idx_CH)*n(idx_Hj) &
+    -k(131)*n(idx_CH2)*n(idx_Hj) &
+    -k(132)*n(idx_CH2)*n(idx_Hj) &
+    -k(133)*n(idx_CH2)*n(idx_Hj) &
+    -k(134)*n(idx_CH2)*n(idx_Hj) &
+    -k(140)*n(idx_OH)*n(idx_Hj) &
+    -k(141)*n(idx_OH)*n(idx_Hj) &
+    -k(144)*n(idx_H2O)*n(idx_Hj) &
+    -k(145)*n(idx_H2O)*n(idx_Hj) &
+    +k(146)*n(idx_H2O)*n(idx_HEj) &
+    +k(147)*n(idx_H2O)*n(idx_HEj) &
+    -k(152)*n(idx_O2)*n(idx_Hj) &
+    +k(157)*n(idx_COj)*n(idx_H) &
+    -k(158)*n(idx_Ck)*n(idx_Hj) &
+    -k(159)*n(idx_Ok)*n(idx_Hj) &
+    -k(192)*n(idx_H2)*n(idx_Hj) &
+    +k(192)*n(idx_H2)*n(idx_Hj) &
+    -k(193)*n(idx_H2)*n(idx_Hj) &
+    +k(207)*n(idx_H) &
+    +k(223)*n(idx_H2) &
+    +k(226)*n(idx_H2j) &
+    +k(227)*n(idx_H3j) &
+    +k(230)*n(idx_CHj) &
+    +k(237)*n(idx_OHj) &
+    +k(239)*n(idx_H2Oj) &
+    +k(242)*n(idx_H3Oj) &
+    +k(246)*n(idx_H) &
+    +k(253)*n(idx_H2) &
+    +k(264)*n(idx_H2)
+
+!HE+
+!HE+
+dn(idx_HEj) = &
+    +k(4)*n(idx_HE)*n(idx_E) &
+    -k(5)*n(idx_HEj)*n(idx_E) &
+    -k(6)*n(idx_HEj)*n(idx_E) &
+    -k(7)*n(idx_HEj)*n(idx_E) &
+    -k(8)*n(idx_HEj)*n(idx_H) &
+    +k(9)*n(idx_HE)*n(idx_Hj) &
+    +k(10)*n(idx_HE)*n(idx_Hj) &
+    -k(12)*n(idx_H2)*n(idx_HEj) &
+    -k(13)*n(idx_H2)*n(idx_HEj) &
+    -k(14)*n(idx_H2)*n(idx_HEj) &
+    +k(14)*n(idx_H2)*n(idx_HEj) &
+    +k(15)*n(idx_HEjj)*n(idx_E) &
+    -k(45)*n(idx_O)*n(idx_HEj) &
+    -k(48)*n(idx_C)*n(idx_HEj) &
+    -k(49)*n(idx_C)*n(idx_HEj) &
+    -k(50)*n(idx_C)*n(idx_HEj) &
+    -k(135)*n(idx_CH2)*n(idx_HEj) &
+    -k(136)*n(idx_CH2)*n(idx_HEj) &
+    -k(137)*n(idx_CH2)*n(idx_HEj) &
+    -k(138)*n(idx_CH2)*n(idx_HEj) &
+    -k(139)*n(idx_C2)*n(idx_HEj) &
+    -k(142)*n(idx_OH)*n(idx_HEj) &
+    -k(143)*n(idx_OH)*n(idx_HEj) &
+    -k(146)*n(idx_H2O)*n(idx_HEj) &
+    -k(147)*n(idx_H2O)*n(idx_HEj) &
+    -k(148)*n(idx_H2O)*n(idx_HEj) &
+    -k(149)*n(idx_H2O)*n(idx_HEj) &
+    -k(150)*n(idx_H2O)*n(idx_HEj) &
+    -k(151)*n(idx_H2O)*n(idx_HEj) &
+    -k(153)*n(idx_O2)*n(idx_HEj) &
+    -k(154)*n(idx_O2)*n(idx_HEj) &
+    -k(155)*n(idx_CO)*n(idx_HEj) &
+    -k(156)*n(idx_CO)*n(idx_HEj) &
+    -k(160)*n(idx_HEj)*n(idx_Hk) &
+    +k(208)*n(idx_HE) &
+    -k(209)*n(idx_HEj) &
+    +k(247)*n(idx_HE)
+
+!H2+
+!H2+
+dn(idx_H2j) = &
+    +k(12)*n(idx_H2)*n(idx_HEj) &
+    +k(18)*n(idx_H)*n(idx_Hj) &
+    +k(19)*n(idx_H)*n(idx_Hj) &
+    -k(20)*n(idx_H2j)*n(idx_H) &
+    +k(21)*n(idx_H2)*n(idx_Hj) &
+    +k(28)*n(idx_Hk)*n(idx_Hj) &
+    -k(29)*n(idx_H2j)*n(idx_E) &
+    -k(30)*n(idx_H2j)*n(idx_E) &
+    -k(31)*n(idx_H2j)*n(idx_Hk) &
+    -k(84)*n(idx_H2j)*n(idx_H2) &
+    +k(85)*n(idx_H3j)*n(idx_H) &
+    -k(86)*n(idx_C)*n(idx_H2j) &
+    -k(101)*n(idx_O)*n(idx_H2j) &
+    +k(212)*n(idx_H2) &
+    -k(226)*n(idx_H2j) &
+    +k(228)*n(idx_H3j) &
+    +k(238)*n(idx_H2Oj) &
+    +k(243)*n(idx_H3Oj) &
+    +k(254)*n(idx_H2)
+
+!C+
+!C+
+dn(idx_Cj) = &
+    -k(36)*n(idx_Cj)*n(idx_E) &
+    -k(37)*n(idx_Cj)*n(idx_E) &
+    -k(38)*n(idx_Cj)*n(idx_E) &
+    +k(41)*n(idx_C)*n(idx_E) &
+    +k(46)*n(idx_C)*n(idx_Hj) &
+    -k(47)*n(idx_Cj)*n(idx_H) &
+    +k(48)*n(idx_C)*n(idx_HEj) &
+    +k(49)*n(idx_C)*n(idx_HEj) &
+    +k(50)*n(idx_C)*n(idx_HEj) &
+    -k(89)*n(idx_Cj)*n(idx_H2) &
+    +k(90)*n(idx_CHj)*n(idx_H) &
+    -k(106)*n(idx_OH)*n(idx_Cj) &
+    -k(107)*n(idx_OH)*n(idx_Cj) &
+    -k(112)*n(idx_H2O)*n(idx_Cj) &
+    -k(113)*n(idx_H2O)*n(idx_Cj) &
+    -k(114)*n(idx_H2O)*n(idx_Cj) &
+    -k(115)*n(idx_H2O)*n(idx_Cj) &
+    -k(117)*n(idx_O2)*n(idx_Cj) &
+    -k(118)*n(idx_O2)*n(idx_Cj) &
+    +k(121)*n(idx_C)*n(idx_O2j) &
+    +k(135)*n(idx_CH2)*n(idx_HEj) &
+    +k(136)*n(idx_CH2)*n(idx_HEj) &
+    +k(139)*n(idx_C2)*n(idx_HEj) &
+    +k(155)*n(idx_CO)*n(idx_HEj) &
+    -k(199)*n(idx_Cj)*n(idx_H) &
+    -k(200)*n(idx_Cj)*n(idx_H2) &
+    -k(201)*n(idx_Cj)*n(idx_O) &
+    -k(202)*n(idx_Cj)*n(idx_O) &
+    +k(211)*n(idx_C) &
+    +k(255)*n(idx_C) &
+    -k(269)*n(idx_Cj)*n(idx_O) &
+    -k(270)*n(idx_Cj)*n(idx_O)
+
+!O+
+!O+
+dn(idx_Oj) = &
+    -k(39)*n(idx_Oj)*n(idx_E) &
+    -k(40)*n(idx_Oj)*n(idx_E) &
+    +k(42)*n(idx_O)*n(idx_E) &
+    -k(43)*n(idx_Oj)*n(idx_H) &
+    +k(44)*n(idx_O)*n(idx_Hj) &
+    +k(45)*n(idx_O)*n(idx_HEj) &
+    -k(99)*n(idx_C2)*n(idx_Oj) &
+    -k(100)*n(idx_Oj)*n(idx_H2) &
+    +k(118)*n(idx_O2)*n(idx_Cj) &
+    +k(142)*n(idx_OH)*n(idx_HEj) &
+    +k(143)*n(idx_OH)*n(idx_HEj) &
+    +k(154)*n(idx_O2)*n(idx_HEj) &
+    +k(156)*n(idx_CO)*n(idx_HEj) &
+    +k(210)*n(idx_O) &
+    +k(240)*n(idx_H2Oj) &
+    +k(248)*n(idx_O) &
+    -k(271)*n(idx_C)*n(idx_Oj) &
+    -k(272)*n(idx_C)*n(idx_Oj)
+
+!HOC+
+!HOC+
+dn(idx_HOCj) = &
+    -k(52)*n(idx_HOCj)*n(idx_H2) &
+    -k(53)*n(idx_HOCj)*n(idx_CO) &
+    -k(54)*n(idx_HOCj)*n(idx_CO) &
+    +k(97)*n(idx_CH3j)*n(idx_O) &
+    +k(112)*n(idx_H2O)*n(idx_Cj) &
+    +k(124)*n(idx_CO)*n(idx_H3j) &
+    +k(125)*n(idx_CO)*n(idx_H3j) &
+    -k(182)*n(idx_HOCj)*n(idx_E)
+
+!HCO+
+!HCO+
+dn(idx_HCOj) = &
+    +k(52)*n(idx_HOCj)*n(idx_H2) &
+    +k(53)*n(idx_HOCj)*n(idx_CO) &
+    +k(54)*n(idx_HOCj)*n(idx_CO) &
+    +k(60)*n(idx_CH)*n(idx_O) &
+    +k(95)*n(idx_CH2j)*n(idx_O) &
+    +k(98)*n(idx_CH3j)*n(idx_O) &
+    +k(113)*n(idx_H2O)*n(idx_Cj) &
+    +k(114)*n(idx_H2O)*n(idx_Cj) &
+    +k(116)*n(idx_H3Oj)*n(idx_C) &
+    +k(119)*n(idx_O2)*n(idx_CH2j) &
+    +k(122)*n(idx_CO)*n(idx_H3j) &
+    +k(123)*n(idx_CO)*n(idx_H3j) &
+    -k(126)*n(idx_HCOj)*n(idx_C) &
+    -k(127)*n(idx_HCOj)*n(idx_H2O) &
+    -k(128)*n(idx_HCOj)*n(idx_H2O) &
+    -k(180)*n(idx_HCOj)*n(idx_E) &
+    -k(181)*n(idx_HCOj)*n(idx_E) &
+    +k(263)*n(idx_HCO)
+
+!H3+
+!H3+
+dn(idx_H3j) = &
+    +k(84)*n(idx_H2j)*n(idx_H2) &
+    -k(85)*n(idx_H3j)*n(idx_H) &
+    -k(87)*n(idx_C)*n(idx_H3j) &
+    -k(88)*n(idx_C)*n(idx_H3j) &
+    -k(102)*n(idx_O)*n(idx_H3j) &
+    -k(103)*n(idx_O)*n(idx_H3j) &
+    -k(104)*n(idx_OH)*n(idx_H3j) &
+    -k(105)*n(idx_OH)*n(idx_H3j) &
+    -k(110)*n(idx_H2O)*n(idx_H3j) &
+    -k(111)*n(idx_H2O)*n(idx_H3j) &
+    -k(122)*n(idx_CO)*n(idx_H3j) &
+    -k(123)*n(idx_CO)*n(idx_H3j) &
+    -k(124)*n(idx_CO)*n(idx_H3j) &
+    -k(125)*n(idx_CO)*n(idx_H3j) &
+    -k(161)*n(idx_H3j)*n(idx_E) &
+    -k(162)*n(idx_H3j)*n(idx_E) &
+    +k(193)*n(idx_H2)*n(idx_Hj) &
+    -k(227)*n(idx_H3j) &
+    -k(228)*n(idx_H3j)
+
+!CH+
+!CH+
+dn(idx_CHj) = &
+    +k(86)*n(idx_C)*n(idx_H2j) &
+    +k(87)*n(idx_C)*n(idx_H3j) &
+    +k(89)*n(idx_Cj)*n(idx_H2) &
+    -k(90)*n(idx_CHj)*n(idx_H) &
+    -k(91)*n(idx_CHj)*n(idx_H2) &
+    -k(92)*n(idx_CHj)*n(idx_O) &
+    +k(93)*n(idx_CH2j)*n(idx_H) &
+    +k(126)*n(idx_HCOj)*n(idx_C) &
+    +k(129)*n(idx_CH)*n(idx_Hj) &
+    +k(130)*n(idx_CH)*n(idx_Hj) &
+    +k(131)*n(idx_CH2)*n(idx_Hj) &
+    +k(132)*n(idx_CH2)*n(idx_Hj) &
+    +k(137)*n(idx_CH2)*n(idx_HEj) &
+    +k(138)*n(idx_CH2)*n(idx_HEj) &
+    -k(163)*n(idx_CHj)*n(idx_E) &
+    +k(199)*n(idx_Cj)*n(idx_H) &
+    +k(215)*n(idx_CH) &
+    -k(230)*n(idx_CHj) &
+    +k(233)*n(idx_CH2j) &
+    +k(235)*n(idx_CH3j)
+
+!CH2+
+!CH2+
+dn(idx_CH2j) = &
+    +k(88)*n(idx_C)*n(idx_H3j) &
+    +k(91)*n(idx_CHj)*n(idx_H2) &
+    -k(93)*n(idx_CH2j)*n(idx_H) &
+    -k(94)*n(idx_CH2j)*n(idx_H2) &
+    -k(95)*n(idx_CH2j)*n(idx_O) &
+    +k(96)*n(idx_CH3j)*n(idx_H) &
+    -k(119)*n(idx_O2)*n(idx_CH2j) &
+    +k(133)*n(idx_CH2)*n(idx_Hj) &
+    +k(134)*n(idx_CH2)*n(idx_Hj) &
+    -k(164)*n(idx_CH2j)*n(idx_E) &
+    -k(165)*n(idx_CH2j)*n(idx_E) &
+    -k(166)*n(idx_CH2j)*n(idx_E) &
+    +k(200)*n(idx_Cj)*n(idx_H2) &
+    +k(232)*n(idx_CH2) &
+    -k(233)*n(idx_CH2j) &
+    +k(234)*n(idx_CH3j) &
+    +k(260)*n(idx_CH2)
+
+!CO+
+!CO+
+dn(idx_COj) = &
+    +k(92)*n(idx_CHj)*n(idx_O) &
+    +k(99)*n(idx_C2)*n(idx_Oj) &
+    +k(106)*n(idx_OH)*n(idx_Cj) &
+    +k(107)*n(idx_OH)*n(idx_Cj) &
+    +k(117)*n(idx_O2)*n(idx_Cj) &
+    +k(120)*n(idx_C)*n(idx_O2j) &
+    -k(157)*n(idx_COj)*n(idx_H) &
+    -k(179)*n(idx_COj)*n(idx_E) &
+    +k(201)*n(idx_Cj)*n(idx_O) &
+    +k(202)*n(idx_Cj)*n(idx_O) &
+    +k(250)*n(idx_CO) &
+    +k(269)*n(idx_Cj)*n(idx_O) &
+    +k(270)*n(idx_Cj)*n(idx_O) &
+    +k(271)*n(idx_C)*n(idx_Oj) &
+    +k(272)*n(idx_C)*n(idx_Oj)
+
+!CH3+
+!CH3+
+dn(idx_CH3j) = &
+    +k(94)*n(idx_CH2j)*n(idx_H2) &
+    -k(96)*n(idx_CH3j)*n(idx_H) &
+    -k(97)*n(idx_CH3j)*n(idx_O) &
+    -k(98)*n(idx_CH3j)*n(idx_O) &
+    -k(167)*n(idx_CH3j)*n(idx_E) &
+    -k(168)*n(idx_CH3j)*n(idx_E) &
+    -k(169)*n(idx_CH3j)*n(idx_E) &
+    -k(234)*n(idx_CH3j) &
+    -k(235)*n(idx_CH3j)
+
+!OH+
+!OH+
+dn(idx_OHj) = &
+    +k(100)*n(idx_Oj)*n(idx_H2) &
+    +k(101)*n(idx_O)*n(idx_H2j) &
+    +k(102)*n(idx_O)*n(idx_H3j) &
+    -k(108)*n(idx_OHj)*n(idx_H2) &
+    +k(140)*n(idx_OH)*n(idx_Hj) &
+    +k(141)*n(idx_OH)*n(idx_Hj) &
+    +k(148)*n(idx_H2O)*n(idx_HEj) &
+    +k(149)*n(idx_H2O)*n(idx_HEj) &
+    -k(170)*n(idx_OHj)*n(idx_E) &
+    +k(218)*n(idx_OH) &
+    -k(237)*n(idx_OHj) &
+    +k(241)*n(idx_H2Oj) &
+    +k(245)*n(idx_H3Oj)
+
+!H2O+
+!H2O+
+dn(idx_H2Oj) = &
+    +k(103)*n(idx_O)*n(idx_H3j) &
+    +k(104)*n(idx_OH)*n(idx_H3j) &
+    +k(105)*n(idx_OH)*n(idx_H3j) &
+    +k(108)*n(idx_OHj)*n(idx_H2) &
+    -k(109)*n(idx_H2Oj)*n(idx_H2) &
+    +k(115)*n(idx_H2O)*n(idx_Cj) &
+    +k(144)*n(idx_H2O)*n(idx_Hj) &
+    +k(145)*n(idx_H2O)*n(idx_Hj) &
+    +k(150)*n(idx_H2O)*n(idx_HEj) &
+    +k(151)*n(idx_H2O)*n(idx_HEj) &
+    -k(171)*n(idx_H2Oj)*n(idx_E) &
+    -k(172)*n(idx_H2Oj)*n(idx_E) &
+    -k(173)*n(idx_H2Oj)*n(idx_E) &
+    +k(220)*n(idx_H2O) &
+    -k(238)*n(idx_H2Oj) &
+    -k(239)*n(idx_H2Oj) &
+    -k(240)*n(idx_H2Oj) &
+    -k(241)*n(idx_H2Oj) &
+    +k(244)*n(idx_H3Oj)
+
+!H3O+
+!H3O+
+dn(idx_H3Oj) = &
+    +k(109)*n(idx_H2Oj)*n(idx_H2) &
+    +k(110)*n(idx_H2O)*n(idx_H3j) &
+    +k(111)*n(idx_H2O)*n(idx_H3j) &
+    -k(116)*n(idx_H3Oj)*n(idx_C) &
+    +k(127)*n(idx_HCOj)*n(idx_H2O) &
+    +k(128)*n(idx_HCOj)*n(idx_H2O) &
+    -k(174)*n(idx_H3Oj)*n(idx_E) &
+    -k(175)*n(idx_H3Oj)*n(idx_E) &
+    -k(176)*n(idx_H3Oj)*n(idx_E) &
+    -k(177)*n(idx_H3Oj)*n(idx_E) &
+    -k(242)*n(idx_H3Oj) &
+    -k(243)*n(idx_H3Oj) &
+    -k(244)*n(idx_H3Oj) &
+    -k(245)*n(idx_H3Oj)
+
+!O2+
+!O2+
+dn(idx_O2j) = &
+    -k(120)*n(idx_C)*n(idx_O2j) &
+    -k(121)*n(idx_C)*n(idx_O2j) &
+    +k(152)*n(idx_O2)*n(idx_Hj) &
+    +k(153)*n(idx_O2)*n(idx_HEj) &
+    -k(178)*n(idx_O2j)*n(idx_E) &
+    +k(221)*n(idx_O2) &
+    +k(258)*n(idx_O2)
+
+!HE++
+!HE++
+dn(idx_HEjj) = &
+    +k(7)*n(idx_HEj)*n(idx_E) &
+    -k(15)*n(idx_HEjj)*n(idx_E) &
+    +k(209)*n(idx_HEj)
+
+!CR
+!CR
+dn(idx_CR) = &
+    0.d0
+
+!g
+
+!g
+dn(idx_g) = 0.d0
+
+!Tgas
+
+!Tgas
+dn(idx_Tgas) = 0.d0
+
+!dummy
+
+!dummy
+dn(idx_dummy) = 0.d0
+
+last_coe(:) = k(:)
+
+end subroutine fex
+
+!***************************
+subroutine jes(neq, tt, n, j, ian, jan, pdj)
+use krome_commons
+use krome_subs
+use krome_tabs
+use krome_cooling
+use krome_heating
+use krome_constants
+use krome_gadiab
+use krome_getphys
+implicit none
+integer::neq, j, ian, jan, r1, r2, p1, p2, p3, i
+real*8::tt, n(neq), pdj(neq), dr1, dr2, kk,k(nrea),Tgas
+real*8::nn(neq),dn0,dn1,dnn,nH2dust,dn(neq),krome_gamma
+
+nH2dust = 0.d0
+Tgas = n(idx_Tgas)
+
+k(:) = last_coe(:) !get rate coefficients
+
+if(j==1) then
+elseif(j==1) then
+pdj(1) =  &
+    -k(42)*n(idx_O)  &
+    -k(6)*n(idx_HEj)  &
+    -k(36)*n(idx_Cj)  &
+    -k(5)*n(idx_HEj)  &
+    -k(181)*n(idx_HCOj)  &
+    -k(168)*n(idx_CH3j)  &
+    -k(39)*n(idx_Oj)  &
+    -k(180)*n(idx_HCOj)  &
+    -k(169)*n(idx_CH3j)  &
+    +2.d0*k(24)*n(idx_Hk)  &
+    +2.d0*k(4)*n(idx_HE)  &
+    -k(1)*n(idx_H)  &
+    -k(166)*n(idx_CH2j)  &
+    -k(16)*n(idx_H)  &
+    -k(182)*n(idx_HOCj)  &
+    -k(4)*n(idx_HE)  &
+    +k(22)*n(idx_H2)  &
+    -k(162)*n(idx_H3j)  &
+    -k(38)*n(idx_Cj)  &
+    -k(178)*n(idx_O2j)  &
+    -k(173)*n(idx_H2Oj)  &
+    -k(179)*n(idx_COj)  &
+    -k(40)*n(idx_Oj)  &
+    -k(167)*n(idx_CH3j)  &
+    +2.d0*k(41)*n(idx_C)  &
+    -k(29)*n(idx_H2j)  &
+    -k(194)*n(idx_C)  &
+    -k(7)*n(idx_HEj)  &
+    -k(163)*n(idx_CHj)  &
+    -k(203)*n(idx_O)  &
+    -k(24)*n(idx_Hk)  &
+    -k(175)*n(idx_H3Oj)  &
+    +2.d0*k(7)*n(idx_HEj)  &
+    -k(176)*n(idx_H3Oj)  &
+    -k(177)*n(idx_H3Oj)  &
+    -k(2)*n(idx_Hj)  &
+    -k(161)*n(idx_H3j)  &
+    -k(22)*n(idx_H2)  &
+    +2.d0*k(42)*n(idx_O)  &
+    -k(37)*n(idx_Cj)  &
+    -k(3)*n(idx_Hj)  &
+    -k(164)*n(idx_CH2j)  &
+    -k(174)*n(idx_H3Oj)  &
+    -k(170)*n(idx_OHj)  &
+    -k(172)*n(idx_H2Oj)  &
+    +2.d0*k(1)*n(idx_H)  &
+    -k(41)*n(idx_C)  &
+    -k(30)*n(idx_H2j)  &
+    -k(171)*n(idx_H2Oj)  &
+    -k(165)*n(idx_CH2j)  &
+    -k(15)*n(idx_HEjj)
+pdj(2) =  &
+    +k(16)*n(idx_H)  &
+    -k(24)*n(idx_Hk)
+pdj(3) =  &
+    +k(194)*n(idx_C)
+pdj(4) =  &
+    +k(203)*n(idx_O)
+pdj(5) =  &
+    +k(180)*n(idx_HCOj)  &
+    +k(163)*n(idx_CHj)  &
+    +k(3)*n(idx_Hj)  &
+    +2.d0*k(173)*n(idx_H2Oj)  &
+    +2.d0*k(29)*n(idx_H2j)  &
+    +2.d0*k(169)*n(idx_CH3j)  &
+    +k(24)*n(idx_Hk)  &
+    +k(167)*n(idx_CH3j)  &
+    -k(1)*n(idx_H)  &
+    -k(16)*n(idx_H)  &
+    +2.d0*k(22)*n(idx_H2)  &
+    +k(182)*n(idx_HOCj)  &
+    +2.d0*k(166)*n(idx_CH2j)  &
+    +k(161)*n(idx_H3j)  &
+    +3.d0*k(162)*n(idx_H3j)  &
+    +k(2)*n(idx_Hj)  &
+    +k(176)*n(idx_H3Oj)  &
+    +2.d0*k(30)*n(idx_H2j)  &
+    +k(172)*n(idx_H2Oj)  &
+    +k(170)*n(idx_OHj)  &
+    +k(175)*n(idx_H3Oj)  &
+    +2.d0*k(174)*n(idx_H3Oj)  &
+    +k(164)*n(idx_CH2j)
+pdj(6) =  &
+    -k(4)*n(idx_HE)  &
+    +k(6)*n(idx_HEj)  &
+    +k(5)*n(idx_HEj)
+pdj(7) =  &
+    +k(165)*n(idx_CH2j)  &
+    +k(175)*n(idx_H3Oj)  &
+    +k(168)*n(idx_CH3j)  &
+    +k(171)*n(idx_H2Oj)  &
+    +k(161)*n(idx_H3j)  &
+    +k(177)*n(idx_H3Oj)  &
+    -k(22)*n(idx_H2)
+pdj(8) =  &
+    +k(38)*n(idx_Cj)  &
+    +k(165)*n(idx_CH2j)  &
+    +k(163)*n(idx_CHj)  &
+    +k(179)*n(idx_COj)  &
+    +k(37)*n(idx_Cj)  &
+    +k(181)*n(idx_HCOj)  &
+    +k(166)*n(idx_CH2j)  &
+    -k(194)*n(idx_C)  &
+    -k(41)*n(idx_C)  &
+    +k(36)*n(idx_Cj)
+pdj(9) =  &
+    +k(175)*n(idx_H3Oj)  &
+    -k(42)*n(idx_O)  &
+    -k(203)*n(idx_O)  &
+    +k(179)*n(idx_COj)  &
+    +k(173)*n(idx_H2Oj)  &
+    +k(171)*n(idx_H2Oj)  &
+    +k(170)*n(idx_OHj)  &
+    +k(40)*n(idx_Oj)  &
+    +2.d0*k(178)*n(idx_O2j)  &
+    +k(39)*n(idx_Oj)
+pdj(10) =  &
+    +k(174)*n(idx_H3Oj)  &
+    +k(177)*n(idx_H3Oj)  &
+    +k(172)*n(idx_H2Oj)  &
+    +k(181)*n(idx_HCOj)
+pdj(11) =  &
+    +k(182)*n(idx_HOCj)  &
+    +k(180)*n(idx_HCOj)
+pdj(12) =  &
+    +k(169)*n(idx_CH3j)  &
+    +k(168)*n(idx_CH3j)  &
+    +k(164)*n(idx_CH2j)
+pdj(13) =  &
+    +k(167)*n(idx_CH3j)
+pdj(16) =  &
+    +k(176)*n(idx_H3Oj)
+pdj(18) =  &
+    -k(2)*n(idx_Hj)  &
+    -k(3)*n(idx_Hj)  &
+    +k(1)*n(idx_H)
+pdj(19) =  &
+    +k(4)*n(idx_HE)  &
+    -k(5)*n(idx_HEj)  &
+    +k(15)*n(idx_HEjj)  &
+    -k(7)*n(idx_HEj)  &
+    -k(6)*n(idx_HEj)
+pdj(20) =  &
+    -k(30)*n(idx_H2j)  &
+    -k(29)*n(idx_H2j)
+pdj(21) =  &
+    -k(36)*n(idx_Cj)  &
+    -k(38)*n(idx_Cj)  &
+    -k(37)*n(idx_Cj)  &
+    +k(41)*n(idx_C)
+pdj(22) =  &
+    +k(42)*n(idx_O)  &
+    -k(39)*n(idx_Oj)  &
+    -k(40)*n(idx_Oj)
+pdj(23) =  &
+    -k(182)*n(idx_HOCj)
+pdj(24) =  &
+    -k(180)*n(idx_HCOj)  &
+    -k(181)*n(idx_HCOj)
+pdj(25) =  &
+    -k(162)*n(idx_H3j)  &
+    -k(161)*n(idx_H3j)
+pdj(26) =  &
+    -k(163)*n(idx_CHj)
+pdj(27) =  &
+    -k(166)*n(idx_CH2j)  &
+    -k(164)*n(idx_CH2j)  &
+    -k(165)*n(idx_CH2j)
+pdj(28) =  &
+    -k(179)*n(idx_COj)
+pdj(29) =  &
+    -k(167)*n(idx_CH3j)  &
+    -k(168)*n(idx_CH3j)  &
+    -k(169)*n(idx_CH3j)
+pdj(30) =  &
+    -k(170)*n(idx_OHj)
+pdj(31) =  &
+    -k(173)*n(idx_H2Oj)  &
+    -k(172)*n(idx_H2Oj)  &
+    -k(171)*n(idx_H2Oj)
+pdj(32) =  &
+    -k(176)*n(idx_H3Oj)  &
+    -k(175)*n(idx_H3Oj)  &
+    -k(177)*n(idx_H3Oj)  &
+    -k(174)*n(idx_H3Oj)
+pdj(33) =  &
+    -k(178)*n(idx_O2j)
+pdj(34) =  &
+    +k(7)*n(idx_HEj)  &
+    -k(15)*n(idx_HEjj)
+elseif(j==2) then
+pdj(1) =  &
+    +k(184)*n(idx_O)  &
+    +k(183)*n(idx_C)  &
+    -k(24)*n(idx_E)  &
+    +k(26)*n(idx_H)  &
+    +k(185)*n(idx_OH)  &
+    +k(28)*n(idx_Hj)  &
+    +k(17)*n(idx_H)  &
+    +k(25)*n(idx_H)  &
+    +2.d0*k(24)*n(idx_E)  &
+    +k(213)
+pdj(2) =  &
+    -k(24)*n(idx_E)  &
+    -k(31)*n(idx_H2j)  &
+    -k(28)*n(idx_Hj)  &
+    -k(185)*n(idx_OH)  &
+    -k(27)*n(idx_Hj)  &
+    -k(213)  &
+    -k(17)*n(idx_H)  &
+    -k(184)*n(idx_O)  &
+    -k(183)*n(idx_C)  &
+    -k(25)*n(idx_H)  &
+    -k(160)*n(idx_HEj)  &
+    -k(26)*n(idx_H)
+pdj(5) =  &
+    +k(31)*n(idx_H2j)  &
+    +2.d0*k(26)*n(idx_H)  &
+    +2.d0*k(27)*n(idx_Hj)  &
+    -k(26)*n(idx_H)  &
+    +2.d0*k(25)*n(idx_H)  &
+    -k(17)*n(idx_H)  &
+    +k(24)*n(idx_E)  &
+    +k(160)*n(idx_HEj)  &
+    -k(25)*n(idx_H)  &
+    +k(213)
+pdj(6) =  &
+    +k(160)*n(idx_HEj)
+pdj(7) =  &
+    +k(31)*n(idx_H2j)  &
+    +k(17)*n(idx_H)
+pdj(8) =  &
+    -k(183)*n(idx_C)
+pdj(9) =  &
+    -k(184)*n(idx_O)
+pdj(10) =  &
+    +k(184)*n(idx_O)  &
+    -k(185)*n(idx_OH)
+pdj(12) =  &
+    +k(183)*n(idx_C)
+pdj(16) =  &
+    +k(185)*n(idx_OH)
+pdj(18) =  &
+    -k(28)*n(idx_Hj)  &
+    -k(27)*n(idx_Hj)
+pdj(19) =  &
+    -k(160)*n(idx_HEj)
+pdj(20) =  &
+    -k(31)*n(idx_H2j)  &
+    +k(28)*n(idx_Hj)
+elseif(j==3) then
+pdj(1) =  &
+    +k(187)*n(idx_H2)  &
+    +k(188)*n(idx_O)  &
+    +k(229)  &
+    +k(186)*n(idx_H)
+pdj(3) =  &
+    -k(229)  &
+    -k(158)*n(idx_Hj)  &
+    -k(187)*n(idx_H2)  &
+    -k(188)*n(idx_O)  &
+    -k(186)*n(idx_H)
+pdj(5) =  &
+    -k(186)*n(idx_H)  &
+    +k(158)*n(idx_Hj)
+pdj(7) =  &
+    -k(187)*n(idx_H2)
+pdj(8) =  &
+    +k(158)*n(idx_Hj)  &
+    +k(229)
+pdj(9) =  &
+    -k(188)*n(idx_O)
+pdj(11) =  &
+    +k(188)*n(idx_O)
+pdj(12) =  &
+    +k(186)*n(idx_H)
+pdj(13) =  &
+    +k(187)*n(idx_H2)
+pdj(18) =  &
+    -k(158)*n(idx_Hj)
+elseif(j==4) then
+pdj(1) =  &
+    +k(236)  &
+    +k(189)*n(idx_H)  &
+    +k(191)*n(idx_C)  &
+    +k(190)*n(idx_H2)
+pdj(4) =  &
+    -k(191)*n(idx_C)  &
+    -k(236)  &
+    -k(159)*n(idx_Hj)  &
+    -k(189)*n(idx_H)  &
+    -k(190)*n(idx_H2)
+pdj(5) =  &
+    -k(189)*n(idx_H)  &
+    +k(159)*n(idx_Hj)
+pdj(7) =  &
+    -k(190)*n(idx_H2)
+pdj(8) =  &
+    -k(191)*n(idx_C)
+pdj(9) =  &
+    +k(236)  &
+    +k(159)*n(idx_Hj)
+pdj(10) =  &
+    +k(189)*n(idx_H)
+pdj(11) =  &
+    +k(191)*n(idx_C)
+pdj(16) =  &
+    +k(190)*n(idx_H2)
+pdj(18) =  &
+    -k(159)*n(idx_Hj)
+elseif(j==5) then
+pdj(1) =  &
+    +k(246)  &
+    +k(189)*n(idx_Ok)  &
+    +k(26)*n(idx_Hk)  &
+    +k(186)*n(idx_Ck)  &
+    -k(1)*n(idx_E)  &
+    +k(207)  &
+    +k(25)*n(idx_Hk)  &
+    +2.d0*k(1)*n(idx_E)  &
+    -k(16)*n(idx_E)  &
+    +k(17)*n(idx_Hk)
+pdj(2) =  &
+    -k(26)*n(idx_Hk)  &
+    -k(25)*n(idx_Hk)  &
+    +k(16)*n(idx_E)  &
+    -k(17)*n(idx_Hk)
+pdj(3) =  &
+    -k(186)*n(idx_Ck)
+pdj(4) =  &
+    -k(189)*n(idx_Ok)
+pdj(5) =  &
+    -k(199)*n(idx_Cj)  &
+    -k(43)*n(idx_Oj)  &
+    -k(186)*n(idx_Ck)  &
+    -k(274)*n(idx_OH)  &
+    -k(70)*n(idx_OH)  &
+    -k(26)*n(idx_Hk)  &
+    -k(17)*n(idx_Hk)  &
+    -4.d0*k(35)*n(idx_H2)*n(idx_H)  &
+    -k(189)*n(idx_Ok)  &
+    -k(195)*n(idx_C)  &
+    -k(25)*n(idx_Hk)  &
+    -k(83)*n(idx_CO)  &
+    -k(79)*n(idx_O2)  &
+    -k(18)*n(idx_Hj)  &
+    -k(8)*n(idx_HEj)  &
+    -k(206)*n(idx_OH)  &
+    -k(90)*n(idx_CHj)  &
+    -9.d0*k(34)*n(idx_H)*n(idx_H)  &
+    +3.d0*k(34)*n(idx_H)*n(idx_H)  &
+    -k(273)*n(idx_O)  &
+    -k(78)*n(idx_H2O)  &
+    -k(51)*n(idx_OH)  &
+    -k(96)*n(idx_CH3j)  &
+    +2.d0*k(26)*n(idx_Hk)  &
+    -k(1)*n(idx_E)  &
+    -k(85)*n(idx_H3j)  &
+    -k(47)*n(idx_Cj)  &
+    -k(93)*n(idx_CH2j)  &
+    -k(19)*n(idx_Hj)  &
+    -k(62)*n(idx_CH2)  &
+    -k(71)*n(idx_OH)  &
+    -k(207)  &
+    +2.d0*k(25)*n(idx_Hk)  &
+    +3.d0*k(23)*n(idx_H2)  &
+    -k(56)*n(idx_CH)  &
+    -k(23)*n(idx_H2)  &
+    -k(246)  &
+    -k(20)*n(idx_H2j)  &
+    -k(157)*n(idx_COj)  &
+    -k(16)*n(idx_E)  &
+    -k(204)*n(idx_O)  &
+    -4.d0*k(33)*n(idx_H)*n(idx_HE)  &
+    +2.d0*k(51)*n(idx_OH)
+pdj(6) =  &
+    +2.d0*k(33)*n(idx_H)*n(idx_HE)  &
+    -2.d0*k(33)*n(idx_H)*n(idx_HE)  &
+    +k(8)*n(idx_HEj)
+pdj(7) =  &
+    +4.d0*k(35)*n(idx_H2)*n(idx_H)  &
+    +k(96)*n(idx_CH3j)  &
+    +k(93)*n(idx_CH2j)  &
+    +k(78)*n(idx_H2O)  &
+    +2.d0*k(33)*n(idx_H)*n(idx_HE)  &
+    +k(70)*n(idx_OH)  &
+    -2.d0*k(35)*n(idx_H2)*n(idx_H)  &
+    +k(20)*n(idx_H2j)  &
+    -k(23)*n(idx_H2)  &
+    +k(56)*n(idx_CH)  &
+    +k(90)*n(idx_CHj)  &
+    +k(71)*n(idx_OH)  &
+    +k(85)*n(idx_H3j)  &
+    +3.d0*k(34)*n(idx_H)*n(idx_H)  &
+    +k(62)*n(idx_CH2)  &
+    +k(17)*n(idx_Hk)
+pdj(8) =  &
+    +k(47)*n(idx_Cj)  &
+    -k(195)*n(idx_C)  &
+    +k(56)*n(idx_CH)  &
+    +k(83)*n(idx_CO)
+pdj(9) =  &
+    -k(273)*n(idx_O)  &
+    +k(43)*n(idx_Oj)  &
+    +k(70)*n(idx_OH)  &
+    +k(71)*n(idx_OH)  &
+    -k(204)*n(idx_O)  &
+    +k(79)*n(idx_O2)  &
+    +k(51)*n(idx_OH)
+pdj(10) =  &
+    -k(51)*n(idx_OH)  &
+    +k(78)*n(idx_H2O)  &
+    -k(70)*n(idx_OH)  &
+    -k(71)*n(idx_OH)  &
+    +k(83)*n(idx_CO)  &
+    +k(189)*n(idx_Ok)  &
+    -k(206)*n(idx_OH)  &
+    +k(204)*n(idx_O)  &
+    +k(79)*n(idx_O2)  &
+    -k(274)*n(idx_OH)  &
+    +k(273)*n(idx_O)
+pdj(11) =  &
+    +k(157)*n(idx_COj)  &
+    -k(83)*n(idx_CO)
+pdj(12) =  &
+    -k(56)*n(idx_CH)  &
+    +k(186)*n(idx_Ck)  &
+    +k(195)*n(idx_C)  &
+    +k(62)*n(idx_CH2)
+pdj(13) =  &
+    -k(62)*n(idx_CH2)
+pdj(16) =  &
+    +k(274)*n(idx_OH)  &
+    +k(206)*n(idx_OH)  &
+    -k(78)*n(idx_H2O)
+pdj(17) =  &
+    -k(79)*n(idx_O2)
+pdj(18) =  &
+    +k(246)  &
+    +k(157)*n(idx_COj)  &
+    +k(207)  &
+    +k(43)*n(idx_Oj)  &
+    -k(18)*n(idx_Hj)  &
+    +k(20)*n(idx_H2j)  &
+    +k(1)*n(idx_E)  &
+    -k(19)*n(idx_Hj)  &
+    +k(8)*n(idx_HEj)  &
+    +k(47)*n(idx_Cj)
+pdj(19) =  &
+    -k(8)*n(idx_HEj)
+pdj(20) =  &
+    +k(18)*n(idx_Hj)  &
+    -k(20)*n(idx_H2j)  &
+    +k(19)*n(idx_Hj)  &
+    +k(85)*n(idx_H3j)
+pdj(21) =  &
+    -k(199)*n(idx_Cj)  &
+    -k(47)*n(idx_Cj)  &
+    +k(90)*n(idx_CHj)
+pdj(22) =  &
+    -k(43)*n(idx_Oj)
+pdj(25) =  &
+    -k(85)*n(idx_H3j)
+pdj(26) =  &
+    +k(93)*n(idx_CH2j)  &
+    +k(199)*n(idx_Cj)  &
+    -k(90)*n(idx_CHj)
+pdj(27) =  &
+    +k(96)*n(idx_CH3j)  &
+    -k(93)*n(idx_CH2j)
+pdj(28) =  &
+    -k(157)*n(idx_COj)
+pdj(29) =  &
+    -k(96)*n(idx_CH3j)
+elseif(j==6) then
+pdj(1) =  &
+    +k(247)  &
+    +2.d0*k(4)*n(idx_E)  &
+    +k(208)  &
+    -k(4)*n(idx_E)
+pdj(5) =  &
+    +k(9)*n(idx_Hj)  &
+    +k(10)*n(idx_Hj)  &
+    +2.d0*k(11)*n(idx_H2)  &
+    -2.d0*k(33)*n(idx_H)*n(idx_H)
+pdj(6) =  &
+    -k(10)*n(idx_Hj)  &
+    -k(208)  &
+    +k(33)*n(idx_H)*n(idx_H)  &
+    -k(11)*n(idx_H2)  &
+    -k(33)*n(idx_H)*n(idx_H)  &
+    -k(9)*n(idx_Hj)  &
+    -k(4)*n(idx_E)  &
+    -k(247)  &
+    +k(11)*n(idx_H2)
+pdj(7) =  &
+    -k(11)*n(idx_H2)  &
+    +k(33)*n(idx_H)*n(idx_H)
+pdj(18) =  &
+    -k(9)*n(idx_Hj)  &
+    -k(10)*n(idx_Hj)
+pdj(19) =  &
+    +k(9)*n(idx_Hj)  &
+    +k(10)*n(idx_Hj)  &
+    +k(4)*n(idx_E)  &
+    +k(208)  &
+    +k(247)
+elseif(j==7) then
+pdj(1) =  &
+    -k(22)*n(idx_E)  &
+    +k(190)*n(idx_Ok)  &
+    +k(223)  &
+    +k(22)*n(idx_E)  &
+    +k(254)  &
+    +k(264)  &
+    +k(212)  &
+    +k(187)*n(idx_Ck)
+pdj(2) =  &
+    +k(253)
+pdj(3) =  &
+    -k(187)*n(idx_Ck)
+pdj(4) =  &
+    -k(190)*n(idx_Ok)
+pdj(5) =  &
+    +k(94)*n(idx_CH2j)  &
+    +2.d0*k(225)  &
+    -k(23)*n(idx_H)  &
+    +k(57)*n(idx_CH)  &
+    +2.d0*k(11)*n(idx_HE)  &
+    +k(223)  &
+    -2.d0*k(35)*n(idx_H)*n(idx_H)  &
+    +2.d0*k(22)*n(idx_E)  &
+    +k(100)*n(idx_Oj)  &
+    +k(108)*n(idx_OHj)  &
+    +k(84)*n(idx_H2j)  &
+    +k(21)*n(idx_Hj)  &
+    +2.d0*k(252)  &
+    +k(89)*n(idx_Cj)  &
+    +k(13)*n(idx_HEj)  &
+    +2.d0*k(14)*n(idx_HEj)  &
+    +2.d0*k(192)*n(idx_Hj)  &
+    +k(69)*n(idx_O)  &
+    +4.d0*k(32)*n(idx_H2)  &
+    +3.d0*k(23)*n(idx_H)  &
+    +k(55)*n(idx_C)  &
+    +k(72)*n(idx_OH)  &
+    +k(109)*n(idx_H2Oj)  &
+    +k(264)  &
+    +k(91)*n(idx_CHj)
+pdj(6) =  &
+    +k(12)*n(idx_HEj)  &
+    -k(11)*n(idx_HE)  &
+    +k(13)*n(idx_HEj)  &
+    +k(11)*n(idx_HE)
+pdj(7) =  &
+    -k(13)*n(idx_HEj)  &
+    -k(52)*n(idx_HOCj)  &
+    -k(57)*n(idx_CH)  &
+    -k(55)*n(idx_C)  &
+    -k(94)*n(idx_CH2j)  &
+    -k(23)*n(idx_H)  &
+    -k(84)*n(idx_H2j)  &
+    -k(187)*n(idx_Ck)  &
+    -k(35)*n(idx_H)*n(idx_H)  &
+    +2.d0*k(35)*n(idx_H)*n(idx_H)  &
+    -k(196)*n(idx_C)  &
+    -k(89)*n(idx_Cj)  &
+    -k(200)*n(idx_Cj)  &
+    -k(225)  &
+    -k(193)*n(idx_Hj)  &
+    -k(22)*n(idx_E)  &
+    -k(212)  &
+    -k(264)  &
+    -k(192)*n(idx_Hj)  &
+    -k(11)*n(idx_HE)  &
+    -k(253)  &
+    -k(14)*n(idx_HEj)  &
+    -k(252)  &
+    -k(108)*n(idx_OHj)  &
+    -k(80)*n(idx_O2)  &
+    -k(12)*n(idx_HEj)  &
+    -k(69)*n(idx_O)  &
+    -k(109)*n(idx_H2Oj)  &
+    -k(21)*n(idx_Hj)  &
+    +2.d0*k(32)*n(idx_H2)  &
+    -k(72)*n(idx_OH)  &
+    -k(223)  &
+    -k(91)*n(idx_CHj)  &
+    -k(100)*n(idx_Oj)  &
+    -4.d0*k(32)*n(idx_H2)  &
+    +k(52)*n(idx_HOCj)  &
+    -k(190)*n(idx_Ok)  &
+    -k(254)
+pdj(8) =  &
+    -k(55)*n(idx_C)  &
+    -k(196)*n(idx_C)
+pdj(9) =  &
+    -k(69)*n(idx_O)
+pdj(10) =  &
+    +k(69)*n(idx_O)  &
+    +2.d0*k(80)*n(idx_O2)  &
+    -k(72)*n(idx_OH)
+pdj(12) =  &
+    -k(57)*n(idx_CH)  &
+    +k(55)*n(idx_C)
+pdj(13) =  &
+    +k(196)*n(idx_C)  &
+    +k(57)*n(idx_CH)  &
+    +k(187)*n(idx_Ck)
+pdj(16) =  &
+    +k(72)*n(idx_OH)  &
+    +k(190)*n(idx_Ok)
+pdj(17) =  &
+    -k(80)*n(idx_O2)
+pdj(18) =  &
+    -k(193)*n(idx_Hj)  &
+    -k(21)*n(idx_Hj)  &
+    +k(223)  &
+    +k(192)*n(idx_Hj)  &
+    -k(192)*n(idx_Hj)  &
+    +k(253)  &
+    +k(264)  &
+    +k(13)*n(idx_HEj)
+pdj(19) =  &
+    -k(13)*n(idx_HEj)  &
+    -k(12)*n(idx_HEj)  &
+    +k(14)*n(idx_HEj)  &
+    -k(14)*n(idx_HEj)
+pdj(20) =  &
+    +k(21)*n(idx_Hj)  &
+    -k(84)*n(idx_H2j)  &
+    +k(212)  &
+    +k(254)  &
+    +k(12)*n(idx_HEj)
+pdj(21) =  &
+    -k(89)*n(idx_Cj)  &
+    -k(200)*n(idx_Cj)
+pdj(22) =  &
+    -k(100)*n(idx_Oj)
+pdj(23) =  &
+    -k(52)*n(idx_HOCj)
+pdj(24) =  &
+    +k(52)*n(idx_HOCj)
+pdj(25) =  &
+    +k(84)*n(idx_H2j)  &
+    +k(193)*n(idx_Hj)
+pdj(26) =  &
+    +k(89)*n(idx_Cj)  &
+    -k(91)*n(idx_CHj)
+pdj(27) =  &
+    -k(94)*n(idx_CH2j)  &
+    +k(200)*n(idx_Cj)  &
+    +k(91)*n(idx_CHj)
+pdj(29) =  &
+    +k(94)*n(idx_CH2j)
+pdj(30) =  &
+    +k(100)*n(idx_Oj)  &
+    -k(108)*n(idx_OHj)
+pdj(31) =  &
+    -k(109)*n(idx_H2Oj)  &
+    +k(108)*n(idx_OHj)
+pdj(32) =  &
+    +k(109)*n(idx_H2Oj)
+elseif(j==8) then
+pdj(1) =  &
+    +k(255)  &
+    +k(183)*n(idx_Hk)  &
+    +k(191)*n(idx_Ok)  &
+    -k(194)*n(idx_E)  &
+    +2.d0*k(41)*n(idx_E)  &
+    +k(211)  &
+    -k(41)*n(idx_E)
+pdj(2) =  &
+    -k(183)*n(idx_Hk)
+pdj(3) =  &
+    +k(194)*n(idx_E)
+pdj(4) =  &
+    -k(191)*n(idx_Ok)
+pdj(5) =  &
+    +k(74)*n(idx_OH)  &
+    +k(86)*n(idx_H2j)  &
+    +k(58)*n(idx_CH)  &
+    +k(46)*n(idx_Hj)  &
+    +k(73)*n(idx_OH)  &
+    -k(195)*n(idx_H)  &
+    +k(88)*n(idx_H3j)  &
+    +k(55)*n(idx_H2)
+pdj(6) =  &
+    +k(50)*n(idx_HEj)  &
+    +k(48)*n(idx_HEj)  &
+    +k(49)*n(idx_HEj)
+pdj(7) =  &
+    -k(55)*n(idx_H2)  &
+    +k(116)*n(idx_H3Oj)  &
+    +k(87)*n(idx_H3j)  &
+    -k(196)*n(idx_H2)
+pdj(8) =  &
+    -k(87)*n(idx_H3j)  &
+    -4.d0*k(266)*n(idx_C)  &
+    -4.d0*k(265)*n(idx_C)  &
+    -4.d0*k(197)*n(idx_C)  &
+    -k(191)*n(idx_Ok)  &
+    -k(194)*n(idx_E)  &
+    -k(196)*n(idx_H2)  &
+    -k(272)*n(idx_Oj)  &
+    -k(271)*n(idx_Oj)  &
+    -k(255)  &
+    -k(116)*n(idx_H3Oj)  &
+    -k(268)*n(idx_O)  &
+    -k(49)*n(idx_HEj)  &
+    -k(88)*n(idx_H3j)  &
+    -k(58)*n(idx_CH)  &
+    -k(46)*n(idx_Hj)  &
+    -k(50)*n(idx_HEj)  &
+    -k(73)*n(idx_OH)  &
+    -k(120)*n(idx_O2j)  &
+    -k(55)*n(idx_H2)  &
+    -k(267)*n(idx_O)  &
+    -k(86)*n(idx_H2j)  &
+    -k(183)*n(idx_Hk)  &
+    -k(48)*n(idx_HEj)  &
+    -k(198)*n(idx_O)  &
+    -k(121)*n(idx_O2j)  &
+    -k(74)*n(idx_OH)  &
+    -k(195)*n(idx_H)  &
+    -k(211)  &
+    -k(126)*n(idx_HCOj)  &
+    -k(82)*n(idx_O2)  &
+    -k(81)*n(idx_O2)  &
+    -k(41)*n(idx_E)
+pdj(9) =  &
+    +k(81)*n(idx_O2)  &
+    -k(268)*n(idx_O)  &
+    -k(267)*n(idx_O)  &
+    +k(120)*n(idx_O2j)  &
+    -k(198)*n(idx_O)  &
+    +k(82)*n(idx_O2)
+pdj(10) =  &
+    -k(73)*n(idx_OH)  &
+    -k(74)*n(idx_OH)
+pdj(11) =  &
+    +k(81)*n(idx_O2)  &
+    +k(267)*n(idx_O)  &
+    +k(74)*n(idx_OH)  &
+    +k(73)*n(idx_OH)  &
+    +k(191)*n(idx_Ok)  &
+    +k(198)*n(idx_O)  &
+    +k(126)*n(idx_HCOj)  &
+    +k(268)*n(idx_O)  &
+    +k(82)*n(idx_O2)
+pdj(12) =  &
+    -k(58)*n(idx_CH)  &
+    +k(183)*n(idx_Hk)  &
+    +k(55)*n(idx_H2)  &
+    +k(195)*n(idx_H)
+pdj(13) =  &
+    +k(196)*n(idx_H2)
+pdj(14) =  &
+    +k(58)*n(idx_CH)  &
+    +2.d0*k(265)*n(idx_C)  &
+    +2.d0*k(197)*n(idx_C)  &
+    +2.d0*k(266)*n(idx_C)
+pdj(17) =  &
+    +k(121)*n(idx_O2j)  &
+    -k(82)*n(idx_O2)  &
+    -k(81)*n(idx_O2)
+pdj(18) =  &
+    -k(46)*n(idx_Hj)
+pdj(19) =  &
+    -k(48)*n(idx_HEj)  &
+    -k(49)*n(idx_HEj)  &
+    -k(50)*n(idx_HEj)
+pdj(20) =  &
+    -k(86)*n(idx_H2j)
+pdj(21) =  &
+    +k(255)  &
+    +k(50)*n(idx_HEj)  &
+    +k(121)*n(idx_O2j)  &
+    +k(46)*n(idx_Hj)  &
+    +k(48)*n(idx_HEj)  &
+    +k(49)*n(idx_HEj)  &
+    +k(41)*n(idx_E)  &
+    +k(211)
+pdj(22) =  &
+    -k(271)*n(idx_Oj)  &
+    -k(272)*n(idx_Oj)
+pdj(24) =  &
+    -k(126)*n(idx_HCOj)  &
+    +k(116)*n(idx_H3Oj)
+pdj(25) =  &
+    -k(87)*n(idx_H3j)  &
+    -k(88)*n(idx_H3j)
+pdj(26) =  &
+    +k(87)*n(idx_H3j)  &
+    +k(126)*n(idx_HCOj)  &
+    +k(86)*n(idx_H2j)
+pdj(27) =  &
+    +k(88)*n(idx_H3j)
+pdj(28) =  &
+    +k(120)*n(idx_O2j)  &
+    +k(271)*n(idx_Oj)  &
+    +k(272)*n(idx_Oj)
+pdj(32) =  &
+    -k(116)*n(idx_H3Oj)
+pdj(33) =  &
+    -k(120)*n(idx_O2j)  &
+    -k(121)*n(idx_O2j)
+elseif(j==9) then
+pdj(1) =  &
+    -k(203)*n(idx_E)  &
+    +k(60)*n(idx_CH)  &
+    +2.d0*k(42)*n(idx_E)  &
+    +k(248)  &
+    +k(210)  &
+    -k(42)*n(idx_E)  &
+    +k(184)*n(idx_Hk)  &
+    +k(188)*n(idx_Ck)
+pdj(2) =  &
+    -k(184)*n(idx_Hk)
+pdj(3) =  &
+    -k(188)*n(idx_Ck)
+pdj(4) =  &
+    +k(203)*n(idx_E)
+pdj(5) =  &
+    +2.d0*k(63)*n(idx_CH2)  &
+    +k(44)*n(idx_Hj)  &
+    +k(103)*n(idx_H3j)  &
+    -k(273)*n(idx_H)  &
+    +k(92)*n(idx_CHj)  &
+    -k(204)*n(idx_H)  &
+    +k(95)*n(idx_CH2j)  &
+    +k(101)*n(idx_H2j)  &
+    +k(76)*n(idx_OH)  &
+    +k(69)*n(idx_H2)  &
+    +k(75)*n(idx_OH)  &
+    +k(59)*n(idx_CH)  &
+    +k(65)*n(idx_CH2)
+pdj(6) =  &
+    +k(45)*n(idx_HEj)
+pdj(7) =  &
+    +k(102)*n(idx_H3j)  &
+    +k(98)*n(idx_CH3j)  &
+    +k(97)*n(idx_CH3j)  &
+    -k(69)*n(idx_H2)  &
+    +k(64)*n(idx_CH2)
+pdj(8) =  &
+    -k(267)*n(idx_C)  &
+    -k(198)*n(idx_C)  &
+    -k(268)*n(idx_C)  &
+    +k(67)*n(idx_C2)  &
+    +k(68)*n(idx_C2)  &
+    +k(61)*n(idx_CH)
+pdj(9) =  &
+    -k(267)*n(idx_C)  &
+    -k(203)*n(idx_E)  &
+    -k(59)*n(idx_CH)  &
+    -k(273)*n(idx_H)  &
+    -k(202)*n(idx_Cj)  &
+    -k(270)*n(idx_Cj)  &
+    -k(42)*n(idx_E)  &
+    -k(198)*n(idx_C)  &
+    -k(188)*n(idx_Ck)  &
+    -k(45)*n(idx_HEj)  &
+    -k(65)*n(idx_CH2)  &
+    -k(103)*n(idx_H3j)  &
+    -k(184)*n(idx_Hk)  &
+    -k(204)*n(idx_H)  &
+    -k(201)*n(idx_Cj)  &
+    -k(101)*n(idx_H2j)  &
+    -k(92)*n(idx_CHj)  &
+    -k(210)  &
+    -k(102)*n(idx_H3j)  &
+    -k(269)*n(idx_Cj)  &
+    -4.d0*k(275)*n(idx_O)  &
+    -k(67)*n(idx_C2)  &
+    -k(248)  &
+    -k(60)*n(idx_CH)  &
+    -k(66)*n(idx_CH2)  &
+    -k(61)*n(idx_CH)  &
+    -k(75)*n(idx_OH)  &
+    -k(63)*n(idx_CH2)  &
+    -4.d0*k(205)*n(idx_O)  &
+    -k(69)*n(idx_H2)  &
+    -k(95)*n(idx_CH2j)  &
+    -k(98)*n(idx_CH3j)  &
+    -k(44)*n(idx_Hj)  &
+    -k(97)*n(idx_CH3j)  &
+    -k(68)*n(idx_C2)  &
+    -k(268)*n(idx_C)  &
+    -k(76)*n(idx_OH)  &
+    -k(64)*n(idx_CH2)
+pdj(10) =  &
+    +k(204)*n(idx_H)  &
+    -k(75)*n(idx_OH)  &
+    +k(66)*n(idx_CH2)  &
+    +k(273)*n(idx_H)  &
+    -k(76)*n(idx_OH)  &
+    +k(69)*n(idx_H2)  &
+    +k(61)*n(idx_CH)  &
+    +k(184)*n(idx_Hk)
+pdj(11) =  &
+    +k(268)*n(idx_C)  &
+    +k(63)*n(idx_CH2)  &
+    +k(198)*n(idx_C)  &
+    +k(267)*n(idx_C)  &
+    +k(68)*n(idx_C2)  &
+    +k(67)*n(idx_C2)  &
+    +k(59)*n(idx_CH)  &
+    +k(64)*n(idx_CH2)  &
+    +k(188)*n(idx_Ck)
+pdj(12) =  &
+    -k(60)*n(idx_CH)  &
+    +k(66)*n(idx_CH2)  &
+    -k(59)*n(idx_CH)  &
+    -k(61)*n(idx_CH)
+pdj(13) =  &
+    -k(63)*n(idx_CH2)  &
+    -k(64)*n(idx_CH2)  &
+    -k(65)*n(idx_CH2)  &
+    -k(66)*n(idx_CH2)
+pdj(14) =  &
+    -k(67)*n(idx_C2)  &
+    -k(68)*n(idx_C2)
+pdj(15) =  &
+    +k(65)*n(idx_CH2)
+pdj(17) =  &
+    +k(76)*n(idx_OH)  &
+    +k(75)*n(idx_OH)  &
+    +2.d0*k(205)*n(idx_O)  &
+    +2.d0*k(275)*n(idx_O)
+pdj(18) =  &
+    -k(44)*n(idx_Hj)
+pdj(19) =  &
+    -k(45)*n(idx_HEj)
+pdj(20) =  &
+    -k(101)*n(idx_H2j)
+pdj(21) =  &
+    -k(269)*n(idx_Cj)  &
+    -k(202)*n(idx_Cj)  &
+    -k(201)*n(idx_Cj)  &
+    -k(270)*n(idx_Cj)
+pdj(22) =  &
+    +k(44)*n(idx_Hj)  &
+    +k(248)  &
+    +k(45)*n(idx_HEj)  &
+    +k(42)*n(idx_E)  &
+    +k(210)
+pdj(23) =  &
+    +k(97)*n(idx_CH3j)
+pdj(24) =  &
+    +k(98)*n(idx_CH3j)  &
+    +k(60)*n(idx_CH)  &
+    +k(95)*n(idx_CH2j)
+pdj(25) =  &
+    -k(102)*n(idx_H3j)  &
+    -k(103)*n(idx_H3j)
+pdj(26) =  &
+    -k(92)*n(idx_CHj)
+pdj(27) =  &
+    -k(95)*n(idx_CH2j)
+pdj(28) =  &
+    +k(269)*n(idx_Cj)  &
+    +k(202)*n(idx_Cj)  &
+    +k(92)*n(idx_CHj)  &
+    +k(270)*n(idx_Cj)  &
+    +k(201)*n(idx_Cj)
+pdj(29) =  &
+    -k(98)*n(idx_CH3j)  &
+    -k(97)*n(idx_CH3j)
+pdj(30) =  &
+    +k(102)*n(idx_H3j)  &
+    +k(101)*n(idx_H2j)
+pdj(31) =  &
+    +k(103)*n(idx_H3j)
+elseif(j==10) then
+pdj(1) =  &
+    +k(185)*n(idx_Hk)  &
+    +k(218)
+pdj(2) =  &
+    -k(185)*n(idx_Hk)
+pdj(5) =  &
+    +k(106)*n(idx_Cj)  &
+    -k(70)*n(idx_H)  &
+    -k(274)*n(idx_H)  &
+    +k(73)*n(idx_C)  &
+    +k(141)*n(idx_Hj)  &
+    +k(143)*n(idx_HEj)  &
+    +k(259)  &
+    +k(217)  &
+    +k(75)*n(idx_O)  &
+    +k(72)*n(idx_H2)  &
+    -k(71)*n(idx_H)  &
+    +k(142)*n(idx_HEj)  &
+    -k(51)*n(idx_H)  &
+    +k(107)*n(idx_Cj)  &
+    +k(76)*n(idx_O)  &
+    -k(206)*n(idx_H)  &
+    +k(140)*n(idx_Hj)  &
+    +2.d0*k(51)*n(idx_H)  &
+    +k(74)*n(idx_C)
+pdj(6) =  &
+    +k(142)*n(idx_HEj)  &
+    +k(143)*n(idx_HEj)
+pdj(7) =  &
+    +k(70)*n(idx_H)  &
+    -k(72)*n(idx_H2)  &
+    +k(105)*n(idx_H3j)  &
+    +k(104)*n(idx_H3j)  &
+    +k(71)*n(idx_H)
+pdj(8) =  &
+    -k(73)*n(idx_C)  &
+    -k(74)*n(idx_C)
+pdj(9) =  &
+    -k(75)*n(idx_O)  &
+    +2.d0*k(77)*n(idx_OH)  &
+    +k(259)  &
+    +k(217)  &
+    +k(71)*n(idx_H)  &
+    +k(70)*n(idx_H)  &
+    -k(76)*n(idx_O)  &
+    +k(51)*n(idx_H)
+pdj(10) =  &
+    -k(143)*n(idx_HEj)  &
+    -k(51)*n(idx_H)  &
+    -4.d0*k(77)*n(idx_OH)  &
+    -k(206)*n(idx_H)  &
+    -k(140)*n(idx_Hj)  &
+    -k(75)*n(idx_O)  &
+    -k(259)  &
+    -k(71)*n(idx_H)  &
+    -k(70)*n(idx_H)  &
+    -k(141)*n(idx_Hj)  &
+    -k(218)  &
+    -k(274)*n(idx_H)  &
+    -k(185)*n(idx_Hk)  &
+    -k(76)*n(idx_O)  &
+    -k(217)  &
+    -k(142)*n(idx_HEj)  &
+    -k(104)*n(idx_H3j)  &
+    -k(74)*n(idx_C)  &
+    -k(107)*n(idx_Cj)  &
+    -k(106)*n(idx_Cj)  &
+    -k(72)*n(idx_H2)  &
+    -k(105)*n(idx_H3j)  &
+    -k(73)*n(idx_C)
+pdj(11) =  &
+    +k(73)*n(idx_C)  &
+    +k(74)*n(idx_C)
+pdj(16) =  &
+    +k(206)*n(idx_H)  &
+    +2.d0*k(77)*n(idx_OH)  &
+    +k(72)*n(idx_H2)  &
+    +k(185)*n(idx_Hk)  &
+    +k(274)*n(idx_H)
+pdj(17) =  &
+    +k(76)*n(idx_O)  &
+    +k(75)*n(idx_O)
+pdj(18) =  &
+    -k(140)*n(idx_Hj)  &
+    -k(141)*n(idx_Hj)
+pdj(19) =  &
+    -k(142)*n(idx_HEj)  &
+    -k(143)*n(idx_HEj)
+pdj(21) =  &
+    -k(106)*n(idx_Cj)  &
+    -k(107)*n(idx_Cj)
+pdj(22) =  &
+    +k(142)*n(idx_HEj)  &
+    +k(143)*n(idx_HEj)
+pdj(25) =  &
+    -k(104)*n(idx_H3j)  &
+    -k(105)*n(idx_H3j)
+pdj(28) =  &
+    +k(106)*n(idx_Cj)  &
+    +k(107)*n(idx_Cj)
+pdj(30) =  &
+    +k(141)*n(idx_Hj)  &
+    +k(140)*n(idx_Hj)  &
+    +k(218)
+pdj(31) =  &
+    +k(104)*n(idx_H3j)  &
+    +k(105)*n(idx_H3j)
+elseif(j==11) then
+pdj(1) =  &
+    +k(250)
+pdj(5) =  &
+    -k(83)*n(idx_H)
+pdj(6) =  &
+    +k(156)*n(idx_HEj)  &
+    +k(155)*n(idx_HEj)
+pdj(7) =  &
+    +k(122)*n(idx_H3j)  &
+    +k(123)*n(idx_H3j)  &
+    +k(124)*n(idx_H3j)  &
+    +k(125)*n(idx_H3j)
+pdj(8) =  &
+    +k(83)*n(idx_H)  &
+    +k(224)  &
+    +k(156)*n(idx_HEj)  &
+    +k(249)
+pdj(9) =  &
+    +k(224)  &
+    +k(249)  &
+    +k(155)*n(idx_HEj)
+pdj(10) =  &
+    +k(83)*n(idx_H)
+pdj(11) =  &
+    -k(250)  &
+    -k(224)  &
+    -k(125)*n(idx_H3j)  &
+    -k(122)*n(idx_H3j)  &
+    -k(124)*n(idx_H3j)  &
+    -k(54)*n(idx_HOCj)  &
+    -k(83)*n(idx_H)  &
+    -k(123)*n(idx_H3j)  &
+    -k(156)*n(idx_HEj)  &
+    +k(54)*n(idx_HOCj)  &
+    -k(53)*n(idx_HOCj)  &
+    +k(53)*n(idx_HOCj)  &
+    -k(155)*n(idx_HEj)  &
+    -k(249)
+pdj(19) =  &
+    -k(155)*n(idx_HEj)  &
+    -k(156)*n(idx_HEj)
+pdj(21) =  &
+    +k(155)*n(idx_HEj)
+pdj(22) =  &
+    +k(156)*n(idx_HEj)
+pdj(23) =  &
+    -k(53)*n(idx_HOCj)  &
+    +k(124)*n(idx_H3j)  &
+    +k(125)*n(idx_H3j)  &
+    -k(54)*n(idx_HOCj)
+pdj(24) =  &
+    +k(53)*n(idx_HOCj)  &
+    +k(54)*n(idx_HOCj)  &
+    +k(122)*n(idx_H3j)  &
+    +k(123)*n(idx_H3j)
+pdj(25) =  &
+    -k(124)*n(idx_H3j)  &
+    -k(125)*n(idx_H3j)  &
+    -k(122)*n(idx_H3j)  &
+    -k(123)*n(idx_H3j)
+pdj(28) =  &
+    +k(250)
+elseif(j==12) then
+pdj(1) =  &
+    +k(215)  &
+    +k(60)*n(idx_O)
+pdj(5) =  &
+    +k(256)  &
+    +k(214)  &
+    -k(56)*n(idx_H)  &
+    +k(130)*n(idx_Hj)  &
+    +k(59)*n(idx_O)  &
+    +k(58)*n(idx_C)  &
+    +k(57)*n(idx_H2)  &
+    +k(129)*n(idx_Hj)
+pdj(7) =  &
+    -k(57)*n(idx_H2)  &
+    +k(56)*n(idx_H)
+pdj(8) =  &
+    +k(61)*n(idx_O)  &
+    +k(214)  &
+    +k(256)  &
+    +k(56)*n(idx_H)  &
+    -k(58)*n(idx_C)
+pdj(9) =  &
+    -k(60)*n(idx_O)  &
+    -k(59)*n(idx_O)  &
+    -k(61)*n(idx_O)
+pdj(10) =  &
+    +k(61)*n(idx_O)
+pdj(11) =  &
+    +k(59)*n(idx_O)
+pdj(12) =  &
+    -k(129)*n(idx_Hj)  &
+    -k(60)*n(idx_O)  &
+    -k(214)  &
+    -k(215)  &
+    -k(130)*n(idx_Hj)  &
+    -k(59)*n(idx_O)  &
+    -k(61)*n(idx_O)  &
+    -k(56)*n(idx_H)  &
+    -k(57)*n(idx_H2)  &
+    -k(256)  &
+    -k(58)*n(idx_C)
+pdj(13) =  &
+    +k(57)*n(idx_H2)
+pdj(14) =  &
+    +k(58)*n(idx_C)
+pdj(18) =  &
+    -k(129)*n(idx_Hj)  &
+    -k(130)*n(idx_Hj)
+pdj(24) =  &
+    +k(60)*n(idx_O)
+pdj(26) =  &
+    +k(130)*n(idx_Hj)  &
+    +k(215)  &
+    +k(129)*n(idx_Hj)
+elseif(j==13) then
+pdj(1) =  &
+    +k(260)  &
+    +k(232)
+pdj(5) =  &
+    +k(133)*n(idx_Hj)  &
+    +k(231)  &
+    +k(137)*n(idx_HEj)  &
+    +k(138)*n(idx_HEj)  &
+    -k(62)*n(idx_H)  &
+    +k(65)*n(idx_O)  &
+    +2.d0*k(63)*n(idx_O)  &
+    +k(134)*n(idx_Hj)
+pdj(6) =  &
+    +k(138)*n(idx_HEj)  &
+    +k(135)*n(idx_HEj)  &
+    +k(137)*n(idx_HEj)  &
+    +k(136)*n(idx_HEj)
+pdj(7) =  &
+    +k(131)*n(idx_Hj)  &
+    +k(64)*n(idx_O)  &
+    +k(136)*n(idx_HEj)  &
+    +k(132)*n(idx_Hj)  &
+    +k(62)*n(idx_H)  &
+    +k(135)*n(idx_HEj)
+pdj(9) =  &
+    -k(66)*n(idx_O)  &
+    -k(63)*n(idx_O)  &
+    -k(65)*n(idx_O)  &
+    -k(64)*n(idx_O)
+pdj(10) =  &
+    +k(66)*n(idx_O)
+pdj(11) =  &
+    +k(64)*n(idx_O)  &
+    +k(63)*n(idx_O)
+pdj(12) =  &
+    +k(231)  &
+    +k(66)*n(idx_O)  &
+    +k(62)*n(idx_H)
+pdj(13) =  &
+    -k(66)*n(idx_O)  &
+    -k(137)*n(idx_HEj)  &
+    -k(136)*n(idx_HEj)  &
+    -k(64)*n(idx_O)  &
+    -k(134)*n(idx_Hj)  &
+    -k(231)  &
+    -k(132)*n(idx_Hj)  &
+    -k(260)  &
+    -k(62)*n(idx_H)  &
+    -k(135)*n(idx_HEj)  &
+    -k(232)  &
+    -k(65)*n(idx_O)  &
+    -k(63)*n(idx_O)  &
+    -k(133)*n(idx_Hj)  &
+    -k(131)*n(idx_Hj)  &
+    -k(138)*n(idx_HEj)
+pdj(15) =  &
+    +k(65)*n(idx_O)
+pdj(18) =  &
+    -k(132)*n(idx_Hj)  &
+    -k(133)*n(idx_Hj)  &
+    -k(131)*n(idx_Hj)  &
+    -k(134)*n(idx_Hj)
+pdj(19) =  &
+    -k(138)*n(idx_HEj)  &
+    -k(137)*n(idx_HEj)  &
+    -k(136)*n(idx_HEj)  &
+    -k(135)*n(idx_HEj)
+pdj(21) =  &
+    +k(135)*n(idx_HEj)  &
+    +k(136)*n(idx_HEj)
+pdj(26) =  &
+    +k(138)*n(idx_HEj)  &
+    +k(131)*n(idx_Hj)  &
+    +k(132)*n(idx_Hj)  &
+    +k(137)*n(idx_HEj)
+pdj(27) =  &
+    +k(260)  &
+    +k(133)*n(idx_Hj)  &
+    +k(134)*n(idx_Hj)  &
+    +k(232)
+elseif(j==14) then
+pdj(6) =  &
+    +k(139)*n(idx_HEj)
+pdj(8) =  &
+    +k(139)*n(idx_HEj)  &
+    +2.d0*k(216)  &
+    +2.d0*k(251)  &
+    +k(99)*n(idx_Oj)  &
+    +k(67)*n(idx_O)  &
+    +k(68)*n(idx_O)
+pdj(9) =  &
+    -k(68)*n(idx_O)  &
+    -k(67)*n(idx_O)
+pdj(11) =  &
+    +k(67)*n(idx_O)  &
+    +k(68)*n(idx_O)
+pdj(14) =  &
+    -k(216)  &
+    -k(68)*n(idx_O)  &
+    -k(99)*n(idx_Oj)  &
+    -k(67)*n(idx_O)  &
+    -k(251)  &
+    -k(139)*n(idx_HEj)
+pdj(19) =  &
+    -k(139)*n(idx_HEj)
+pdj(21) =  &
+    +k(139)*n(idx_HEj)
+pdj(22) =  &
+    -k(99)*n(idx_Oj)
+pdj(28) =  &
+    +k(99)*n(idx_Oj)
+elseif(j==15) then
+pdj(1) =  &
+    +k(263)
+pdj(5) =  &
+    +k(262)
+pdj(11) =  &
+    +k(262)
+pdj(15) =  &
+    -k(263)  &
+    -k(262)
+pdj(24) =  &
+    +k(263)
+elseif(j==16) then
+pdj(1) =  &
+    +k(220)
+pdj(5) =  &
+    +k(148)*n(idx_HEj)  &
+    +k(113)*n(idx_Cj)  &
+    +k(149)*n(idx_HEj)  &
+    +k(219)  &
+    +k(261)  &
+    +k(114)*n(idx_Cj)  &
+    +k(145)*n(idx_Hj)  &
+    +k(144)*n(idx_Hj)  &
+    +k(112)*n(idx_Cj)  &
+    -k(78)*n(idx_H)
+pdj(6) =  &
+    +k(148)*n(idx_HEj)  &
+    +k(149)*n(idx_HEj)  &
+    +k(150)*n(idx_HEj)  &
+    +k(146)*n(idx_HEj)  &
+    +k(151)*n(idx_HEj)  &
+    +k(147)*n(idx_HEj)
+pdj(7) =  &
+    +k(111)*n(idx_H3j)  &
+    +k(110)*n(idx_H3j)  &
+    +k(78)*n(idx_H)
+pdj(8) =  &
+    +k(115)*n(idx_Cj)
+pdj(10) =  &
+    +k(219)  &
+    +k(78)*n(idx_H)  &
+    +k(261)  &
+    +k(146)*n(idx_HEj)  &
+    +k(147)*n(idx_HEj)
+pdj(11) =  &
+    +k(128)*n(idx_HCOj)  &
+    +k(127)*n(idx_HCOj)
+pdj(16) =  &
+    -k(151)*n(idx_HEj)  &
+    -k(127)*n(idx_HCOj)  &
+    -k(115)*n(idx_Cj)  &
+    -k(144)*n(idx_Hj)  &
+    -k(110)*n(idx_H3j)  &
+    -k(148)*n(idx_HEj)  &
+    -k(219)  &
+    -k(112)*n(idx_Cj)  &
+    -k(150)*n(idx_HEj)  &
+    -k(220)  &
+    -k(128)*n(idx_HCOj)  &
+    -k(145)*n(idx_Hj)  &
+    -k(146)*n(idx_HEj)  &
+    -k(147)*n(idx_HEj)  &
+    -k(111)*n(idx_H3j)  &
+    -k(149)*n(idx_HEj)  &
+    -k(78)*n(idx_H)  &
+    -k(261)  &
+    -k(114)*n(idx_Cj)  &
+    -k(113)*n(idx_Cj)
+pdj(18) =  &
+    -k(145)*n(idx_Hj)  &
+    -k(144)*n(idx_Hj)  &
+    +k(146)*n(idx_HEj)  &
+    +k(147)*n(idx_HEj)
+pdj(19) =  &
+    -k(151)*n(idx_HEj)  &
+    -k(150)*n(idx_HEj)  &
+    -k(148)*n(idx_HEj)  &
+    -k(146)*n(idx_HEj)  &
+    -k(147)*n(idx_HEj)  &
+    -k(149)*n(idx_HEj)
+pdj(21) =  &
+    -k(112)*n(idx_Cj)  &
+    -k(115)*n(idx_Cj)  &
+    -k(114)*n(idx_Cj)  &
+    -k(113)*n(idx_Cj)
+pdj(23) =  &
+    +k(112)*n(idx_Cj)
+pdj(24) =  &
+    +k(113)*n(idx_Cj)  &
+    -k(127)*n(idx_HCOj)  &
+    +k(114)*n(idx_Cj)  &
+    -k(128)*n(idx_HCOj)
+pdj(25) =  &
+    -k(111)*n(idx_H3j)  &
+    -k(110)*n(idx_H3j)
+pdj(30) =  &
+    +k(148)*n(idx_HEj)  &
+    +k(149)*n(idx_HEj)
+pdj(31) =  &
+    +k(115)*n(idx_Cj)  &
+    +k(150)*n(idx_HEj)  &
+    +k(220)  &
+    +k(151)*n(idx_HEj)  &
+    +k(145)*n(idx_Hj)  &
+    +k(144)*n(idx_Hj)
+pdj(32) =  &
+    +k(111)*n(idx_H3j)  &
+    +k(110)*n(idx_H3j)  &
+    +k(128)*n(idx_HCOj)  &
+    +k(127)*n(idx_HCOj)
+elseif(j==17) then
+pdj(1) =  &
+    +k(221)  &
+    +k(258)
+pdj(5) =  &
+    -k(79)*n(idx_H)  &
+    +k(152)*n(idx_Hj)
+pdj(6) =  &
+    +k(153)*n(idx_HEj)  &
+    +k(154)*n(idx_HEj)
+pdj(7) =  &
+    -k(80)*n(idx_H2)
+pdj(8) =  &
+    -k(81)*n(idx_C)  &
+    -k(82)*n(idx_C)
+pdj(9) =  &
+    +2.d0*k(257)  &
+    +k(79)*n(idx_H)  &
+    +2.d0*k(222)  &
+    +k(81)*n(idx_C)  &
+    +k(117)*n(idx_Cj)  &
+    +k(154)*n(idx_HEj)  &
+    +k(82)*n(idx_C)
+pdj(10) =  &
+    +2.d0*k(80)*n(idx_H2)  &
+    +k(119)*n(idx_CH2j)  &
+    +k(79)*n(idx_H)
+pdj(11) =  &
+    +k(82)*n(idx_C)  &
+    +k(118)*n(idx_Cj)  &
+    +k(81)*n(idx_C)
+pdj(17) =  &
+    -k(118)*n(idx_Cj)  &
+    -k(82)*n(idx_C)  &
+    -k(222)  &
+    -k(79)*n(idx_H)  &
+    -k(153)*n(idx_HEj)  &
+    -k(81)*n(idx_C)  &
+    -k(221)  &
+    -k(152)*n(idx_Hj)  &
+    -k(80)*n(idx_H2)  &
+    -k(117)*n(idx_Cj)  &
+    -k(258)  &
+    -k(257)  &
+    -k(119)*n(idx_CH2j)  &
+    -k(154)*n(idx_HEj)
+pdj(18) =  &
+    -k(152)*n(idx_Hj)
+pdj(19) =  &
+    -k(153)*n(idx_HEj)  &
+    -k(154)*n(idx_HEj)
+pdj(21) =  &
+    -k(118)*n(idx_Cj)  &
+    -k(117)*n(idx_Cj)
+pdj(22) =  &
+    +k(118)*n(idx_Cj)  &
+    +k(154)*n(idx_HEj)
+pdj(24) =  &
+    +k(119)*n(idx_CH2j)
+pdj(27) =  &
+    -k(119)*n(idx_CH2j)
+pdj(28) =  &
+    +k(117)*n(idx_Cj)
+pdj(33) =  &
+    +k(153)*n(idx_HEj)  &
+    +k(152)*n(idx_Hj)  &
+    +k(221)  &
+    +k(258)
+elseif(j==18) then
+pdj(1) =  &
+    -k(3)*n(idx_E)  &
+    -k(2)*n(idx_E)  &
+    +k(28)*n(idx_Hk)
+pdj(2) =  &
+    -k(28)*n(idx_Hk)  &
+    -k(27)*n(idx_Hk)
+pdj(3) =  &
+    -k(158)*n(idx_Ck)
+pdj(4) =  &
+    -k(159)*n(idx_Ok)
+pdj(5) =  &
+    +k(46)*n(idx_C)  &
+    +k(145)*n(idx_H2O)  &
+    +k(158)*n(idx_Ck)  &
+    +k(10)*n(idx_HE)  &
+    +k(152)*n(idx_O2)  &
+    +k(3)*n(idx_E)  &
+    +k(9)*n(idx_HE)  &
+    +k(44)*n(idx_O)  &
+    +k(21)*n(idx_H2)  &
+    -k(19)*n(idx_H)  &
+    +k(140)*n(idx_OH)  &
+    +2.d0*k(27)*n(idx_Hk)  &
+    +k(129)*n(idx_CH)  &
+    +k(141)*n(idx_OH)  &
+    +k(144)*n(idx_H2O)  &
+    +k(130)*n(idx_CH)  &
+    -k(18)*n(idx_H)  &
+    +k(2)*n(idx_E)  &
+    +k(133)*n(idx_CH2)  &
+    +k(159)*n(idx_Ok)  &
+    +k(134)*n(idx_CH2)  &
+    +2.d0*k(192)*n(idx_H2)
+pdj(6) =  &
+    -k(10)*n(idx_HE)  &
+    -k(9)*n(idx_HE)
+pdj(7) =  &
+    -k(193)*n(idx_H2)  &
+    +k(132)*n(idx_CH2)  &
+    +k(131)*n(idx_CH2)  &
+    -k(192)*n(idx_H2)  &
+    -k(21)*n(idx_H2)
+pdj(8) =  &
+    -k(46)*n(idx_C)  &
+    +k(158)*n(idx_Ck)
+pdj(9) =  &
+    +k(159)*n(idx_Ok)  &
+    -k(44)*n(idx_O)
+pdj(10) =  &
+    -k(140)*n(idx_OH)  &
+    -k(141)*n(idx_OH)
+pdj(12) =  &
+    -k(129)*n(idx_CH)  &
+    -k(130)*n(idx_CH)
+pdj(13) =  &
+    -k(131)*n(idx_CH2)  &
+    -k(133)*n(idx_CH2)  &
+    -k(132)*n(idx_CH2)  &
+    -k(134)*n(idx_CH2)
+pdj(16) =  &
+    -k(144)*n(idx_H2O)  &
+    -k(145)*n(idx_H2O)
+pdj(17) =  &
+    -k(152)*n(idx_O2)
+pdj(18) =  &
+    -k(193)*n(idx_H2)  &
+    -k(144)*n(idx_H2O)  &
+    -k(159)*n(idx_Ok)  &
+    -k(130)*n(idx_CH)  &
+    -k(134)*n(idx_CH2)  &
+    -k(27)*n(idx_Hk)  &
+    -k(140)*n(idx_OH)  &
+    -k(2)*n(idx_E)  &
+    -k(19)*n(idx_H)  &
+    -k(145)*n(idx_H2O)  &
+    -k(192)*n(idx_H2)  &
+    -k(132)*n(idx_CH2)  &
+    -k(129)*n(idx_CH)  &
+    -k(158)*n(idx_Ck)  &
+    -k(18)*n(idx_H)  &
+    -k(46)*n(idx_C)  &
+    -k(10)*n(idx_HE)  &
+    -k(131)*n(idx_CH2)  &
+    -k(133)*n(idx_CH2)  &
+    -k(141)*n(idx_OH)  &
+    -k(9)*n(idx_HE)  &
+    -k(152)*n(idx_O2)  &
+    -k(28)*n(idx_Hk)  &
+    -k(3)*n(idx_E)  &
+    -k(44)*n(idx_O)  &
+    +k(192)*n(idx_H2)  &
+    -k(21)*n(idx_H2)
+pdj(19) =  &
+    +k(9)*n(idx_HE)  &
+    +k(10)*n(idx_HE)
+pdj(20) =  &
+    +k(19)*n(idx_H)  &
+    +k(18)*n(idx_H)  &
+    +k(28)*n(idx_Hk)  &
+    +k(21)*n(idx_H2)
+pdj(21) =  &
+    +k(46)*n(idx_C)
+pdj(22) =  &
+    +k(44)*n(idx_O)
+pdj(25) =  &
+    +k(193)*n(idx_H2)
+pdj(26) =  &
+    +k(130)*n(idx_CH)  &
+    +k(132)*n(idx_CH2)  &
+    +k(131)*n(idx_CH2)  &
+    +k(129)*n(idx_CH)
+pdj(27) =  &
+    +k(134)*n(idx_CH2)  &
+    +k(133)*n(idx_CH2)
+pdj(30) =  &
+    +k(140)*n(idx_OH)  &
+    +k(141)*n(idx_OH)
+pdj(31) =  &
+    +k(144)*n(idx_H2O)  &
+    +k(145)*n(idx_H2O)
+pdj(33) =  &
+    +k(152)*n(idx_O2)
+elseif(j==19) then
+pdj(1) =  &
+    -k(7)*n(idx_E)  &
+    -k(6)*n(idx_E)  &
+    +2.d0*k(7)*n(idx_E)  &
+    +k(209)  &
+    -k(5)*n(idx_E)
+pdj(2) =  &
+    -k(160)*n(idx_Hk)
+pdj(5) =  &
+    -k(8)*n(idx_H)  &
+    +k(138)*n(idx_CH2)  &
+    +k(142)*n(idx_OH)  &
+    +k(149)*n(idx_H2O)  &
+    +k(13)*n(idx_H2)  &
+    +k(137)*n(idx_CH2)  &
+    +k(160)*n(idx_Hk)  &
+    +k(148)*n(idx_H2O)  &
+    +2.d0*k(14)*n(idx_H2)  &
+    +k(143)*n(idx_OH)
+pdj(6) =  &
+    +k(138)*n(idx_CH2)  &
+    +k(135)*n(idx_CH2)  &
+    +k(153)*n(idx_O2)  &
+    +k(50)*n(idx_C)  &
+    +k(143)*n(idx_OH)  &
+    +k(147)*n(idx_H2O)  &
+    +k(139)*n(idx_C2)  &
+    +k(156)*n(idx_CO)  &
+    +k(8)*n(idx_H)  &
+    +k(6)*n(idx_E)  &
+    +k(49)*n(idx_C)  &
+    +k(151)*n(idx_H2O)  &
+    +k(160)*n(idx_Hk)  &
+    +k(146)*n(idx_H2O)  &
+    +k(13)*n(idx_H2)  &
+    +k(137)*n(idx_CH2)  &
+    +k(155)*n(idx_CO)  &
+    +k(148)*n(idx_H2O)  &
+    +k(136)*n(idx_CH2)  &
+    +k(150)*n(idx_H2O)  &
+    +k(48)*n(idx_C)  &
+    +k(5)*n(idx_E)  &
+    +k(142)*n(idx_OH)  &
+    +k(149)*n(idx_H2O)  &
+    +k(12)*n(idx_H2)  &
+    +k(154)*n(idx_O2)  &
+    +k(45)*n(idx_O)
+pdj(7) =  &
+    +k(135)*n(idx_CH2)  &
+    -k(13)*n(idx_H2)  &
+    +k(136)*n(idx_CH2)  &
+    -k(12)*n(idx_H2)  &
+    -k(14)*n(idx_H2)
+pdj(8) =  &
+    +k(156)*n(idx_CO)  &
+    -k(49)*n(idx_C)  &
+    -k(48)*n(idx_C)  &
+    +k(139)*n(idx_C2)  &
+    -k(50)*n(idx_C)
+pdj(9) =  &
+    +k(155)*n(idx_CO)  &
+    -k(45)*n(idx_O)  &
+    +k(154)*n(idx_O2)
+pdj(10) =  &
+    -k(143)*n(idx_OH)  &
+    +k(147)*n(idx_H2O)  &
+    +k(146)*n(idx_H2O)  &
+    -k(142)*n(idx_OH)
+pdj(11) =  &
+    -k(155)*n(idx_CO)  &
+    -k(156)*n(idx_CO)
+pdj(13) =  &
+    -k(137)*n(idx_CH2)  &
+    -k(136)*n(idx_CH2)  &
+    -k(138)*n(idx_CH2)  &
+    -k(135)*n(idx_CH2)
+pdj(14) =  &
+    -k(139)*n(idx_C2)
+pdj(16) =  &
+    -k(150)*n(idx_H2O)  &
+    -k(147)*n(idx_H2O)  &
+    -k(149)*n(idx_H2O)  &
+    -k(151)*n(idx_H2O)  &
+    -k(146)*n(idx_H2O)  &
+    -k(148)*n(idx_H2O)
+pdj(17) =  &
+    -k(154)*n(idx_O2)  &
+    -k(153)*n(idx_O2)
+pdj(18) =  &
+    +k(8)*n(idx_H)  &
+    +k(147)*n(idx_H2O)  &
+    +k(13)*n(idx_H2)  &
+    +k(146)*n(idx_H2O)
+pdj(19) =  &
+    -k(8)*n(idx_H)  &
+    -k(136)*n(idx_CH2)  &
+    -k(5)*n(idx_E)  &
+    -k(143)*n(idx_OH)  &
+    -k(160)*n(idx_Hk)  &
+    -k(146)*n(idx_H2O)  &
+    -k(13)*n(idx_H2)  &
+    -k(153)*n(idx_O2)  &
+    -k(6)*n(idx_E)  &
+    -k(49)*n(idx_C)  &
+    -k(148)*n(idx_H2O)  &
+    +k(14)*n(idx_H2)  &
+    -k(142)*n(idx_OH)  &
+    -k(150)*n(idx_H2O)  &
+    -k(209)  &
+    -k(50)*n(idx_C)  &
+    -k(147)*n(idx_H2O)  &
+    -k(138)*n(idx_CH2)  &
+    -k(154)*n(idx_O2)  &
+    -k(45)*n(idx_O)  &
+    -k(155)*n(idx_CO)  &
+    -k(139)*n(idx_C2)  &
+    -k(7)*n(idx_E)  &
+    -k(48)*n(idx_C)  &
+    -k(149)*n(idx_H2O)  &
+    -k(151)*n(idx_H2O)  &
+    -k(135)*n(idx_CH2)  &
+    -k(12)*n(idx_H2)  &
+    -k(137)*n(idx_CH2)  &
+    -k(14)*n(idx_H2)  &
+    -k(156)*n(idx_CO)
+pdj(20) =  &
+    +k(12)*n(idx_H2)
+pdj(21) =  &
+    +k(139)*n(idx_C2)  &
+    +k(48)*n(idx_C)  &
+    +k(49)*n(idx_C)  &
+    +k(155)*n(idx_CO)  &
+    +k(135)*n(idx_CH2)  &
+    +k(50)*n(idx_C)  &
+    +k(136)*n(idx_CH2)
+pdj(22) =  &
+    +k(156)*n(idx_CO)  &
+    +k(154)*n(idx_O2)  &
+    +k(142)*n(idx_OH)  &
+    +k(143)*n(idx_OH)  &
+    +k(45)*n(idx_O)
+pdj(26) =  &
+    +k(138)*n(idx_CH2)  &
+    +k(137)*n(idx_CH2)
+pdj(30) =  &
+    +k(149)*n(idx_H2O)  &
+    +k(148)*n(idx_H2O)
+pdj(31) =  &
+    +k(151)*n(idx_H2O)  &
+    +k(150)*n(idx_H2O)
+pdj(33) =  &
+    +k(153)*n(idx_O2)
+pdj(34) =  &
+    +k(7)*n(idx_E)  &
+    +k(209)
+elseif(j==20) then
+pdj(1) =  &
+    -k(29)*n(idx_E)  &
+    -k(30)*n(idx_E)
+pdj(2) =  &
+    -k(31)*n(idx_Hk)
+pdj(5) =  &
+    +2.d0*k(30)*n(idx_E)  &
+    -k(20)*n(idx_H)  &
+    +k(84)*n(idx_H2)  &
+    +k(101)*n(idx_O)  &
+    +k(31)*n(idx_Hk)  &
+    +k(86)*n(idx_C)  &
+    +2.d0*k(29)*n(idx_E)  &
+    +k(226)
+pdj(7) =  &
+    +k(20)*n(idx_H)  &
+    +k(31)*n(idx_Hk)  &
+    -k(84)*n(idx_H2)
+pdj(8) =  &
+    -k(86)*n(idx_C)
+pdj(9) =  &
+    -k(101)*n(idx_O)
+pdj(18) =  &
+    +k(20)*n(idx_H)  &
+    +k(226)
+pdj(20) =  &
+    -k(86)*n(idx_C)  &
+    -k(20)*n(idx_H)  &
+    -k(29)*n(idx_E)  &
+    -k(30)*n(idx_E)  &
+    -k(84)*n(idx_H2)  &
+    -k(31)*n(idx_Hk)  &
+    -k(226)  &
+    -k(101)*n(idx_O)
+pdj(25) =  &
+    +k(84)*n(idx_H2)
+pdj(26) =  &
+    +k(86)*n(idx_C)
+pdj(30) =  &
+    +k(101)*n(idx_O)
+elseif(j==21) then
+pdj(1) =  &
+    -k(37)*n(idx_E)  &
+    -k(36)*n(idx_E)  &
+    -k(38)*n(idx_E)
+pdj(5) =  &
+    +k(107)*n(idx_OH)  &
+    -k(47)*n(idx_H)  &
+    -k(199)*n(idx_H)  &
+    +k(89)*n(idx_H2)  &
+    +k(106)*n(idx_OH)  &
+    +k(113)*n(idx_H2O)  &
+    +k(112)*n(idx_H2O)  &
+    +k(114)*n(idx_H2O)
+pdj(7) =  &
+    -k(200)*n(idx_H2)  &
+    -k(89)*n(idx_H2)
+pdj(8) =  &
+    +k(47)*n(idx_H)  &
+    +k(38)*n(idx_E)  &
+    +k(37)*n(idx_E)  &
+    +k(36)*n(idx_E)  &
+    +k(115)*n(idx_H2O)
+pdj(9) =  &
+    -k(201)*n(idx_O)  &
+    +k(117)*n(idx_O2)  &
+    -k(202)*n(idx_O)  &
+    -k(270)*n(idx_O)  &
+    -k(269)*n(idx_O)
+pdj(10) =  &
+    -k(107)*n(idx_OH)  &
+    -k(106)*n(idx_OH)
+pdj(11) =  &
+    +k(118)*n(idx_O2)
+pdj(16) =  &
+    -k(114)*n(idx_H2O)  &
+    -k(112)*n(idx_H2O)  &
+    -k(115)*n(idx_H2O)  &
+    -k(113)*n(idx_H2O)
+pdj(17) =  &
+    -k(118)*n(idx_O2)  &
+    -k(117)*n(idx_O2)
+pdj(18) =  &
+    +k(47)*n(idx_H)
+pdj(21) =  &
+    -k(200)*n(idx_H2)  &
+    -k(38)*n(idx_E)  &
+    -k(199)*n(idx_H)  &
+    -k(269)*n(idx_O)  &
+    -k(114)*n(idx_H2O)  &
+    -k(37)*n(idx_E)  &
+    -k(107)*n(idx_OH)  &
+    -k(47)*n(idx_H)  &
+    -k(112)*n(idx_H2O)  &
+    -k(117)*n(idx_O2)  &
+    -k(201)*n(idx_O)  &
+    -k(36)*n(idx_E)  &
+    -k(202)*n(idx_O)  &
+    -k(270)*n(idx_O)  &
+    -k(113)*n(idx_H2O)  &
+    -k(106)*n(idx_OH)  &
+    -k(115)*n(idx_H2O)  &
+    -k(89)*n(idx_H2)  &
+    -k(118)*n(idx_O2)
+pdj(22) =  &
+    +k(118)*n(idx_O2)
+pdj(23) =  &
+    +k(112)*n(idx_H2O)
+pdj(24) =  &
+    +k(113)*n(idx_H2O)  &
+    +k(114)*n(idx_H2O)
+pdj(26) =  &
+    +k(199)*n(idx_H)  &
+    +k(89)*n(idx_H2)
+pdj(27) =  &
+    +k(200)*n(idx_H2)
+pdj(28) =  &
+    +k(201)*n(idx_O)  &
+    +k(269)*n(idx_O)  &
+    +k(270)*n(idx_O)  &
+    +k(107)*n(idx_OH)  &
+    +k(202)*n(idx_O)  &
+    +k(117)*n(idx_O2)  &
+    +k(106)*n(idx_OH)
+pdj(31) =  &
+    +k(115)*n(idx_H2O)
+elseif(j==22) then
+pdj(1) =  &
+    -k(39)*n(idx_E)  &
+    -k(40)*n(idx_E)
+pdj(5) =  &
+    +k(100)*n(idx_H2)  &
+    -k(43)*n(idx_H)
+pdj(7) =  &
+    -k(100)*n(idx_H2)
+pdj(8) =  &
+    +k(99)*n(idx_C2)  &
+    -k(272)*n(idx_C)  &
+    -k(271)*n(idx_C)
+pdj(9) =  &
+    +k(39)*n(idx_E)  &
+    +k(40)*n(idx_E)  &
+    +k(43)*n(idx_H)
+pdj(14) =  &
+    -k(99)*n(idx_C2)
+pdj(18) =  &
+    +k(43)*n(idx_H)
+pdj(22) =  &
+    -k(271)*n(idx_C)  &
+    -k(39)*n(idx_E)  &
+    -k(43)*n(idx_H)  &
+    -k(99)*n(idx_C2)  &
+    -k(100)*n(idx_H2)  &
+    -k(272)*n(idx_C)  &
+    -k(40)*n(idx_E)
+pdj(28) =  &
+    +k(99)*n(idx_C2)  &
+    +k(272)*n(idx_C)  &
+    +k(271)*n(idx_C)
+pdj(30) =  &
+    +k(100)*n(idx_H2)
+elseif(j==23) then
+pdj(1) =  &
+    -k(182)*n(idx_E)
+pdj(5) =  &
+    +k(182)*n(idx_E)
+pdj(7) =  &
+    -k(52)*n(idx_H2)  &
+    +k(52)*n(idx_H2)
+pdj(11) =  &
+    +k(182)*n(idx_E)  &
+    +k(54)*n(idx_CO)  &
+    +k(53)*n(idx_CO)  &
+    -k(53)*n(idx_CO)  &
+    -k(54)*n(idx_CO)
+pdj(23) =  &
+    -k(52)*n(idx_H2)  &
+    -k(182)*n(idx_E)  &
+    -k(53)*n(idx_CO)  &
+    -k(54)*n(idx_CO)
+pdj(24) =  &
+    +k(54)*n(idx_CO)  &
+    +k(52)*n(idx_H2)  &
+    +k(53)*n(idx_CO)
+elseif(j==24) then
+pdj(1) =  &
+    -k(180)*n(idx_E)  &
+    -k(181)*n(idx_E)
+pdj(5) =  &
+    +k(180)*n(idx_E)
+pdj(8) =  &
+    -k(126)*n(idx_C)  &
+    +k(181)*n(idx_E)
+pdj(10) =  &
+    +k(181)*n(idx_E)
+pdj(11) =  &
+    +k(127)*n(idx_H2O)  &
+    +k(126)*n(idx_C)  &
+    +k(180)*n(idx_E)  &
+    +k(128)*n(idx_H2O)
+pdj(16) =  &
+    -k(127)*n(idx_H2O)  &
+    -k(128)*n(idx_H2O)
+pdj(24) =  &
+    -k(180)*n(idx_E)  &
+    -k(127)*n(idx_H2O)  &
+    -k(128)*n(idx_H2O)  &
+    -k(181)*n(idx_E)  &
+    -k(126)*n(idx_C)
+pdj(26) =  &
+    +k(126)*n(idx_C)
+pdj(32) =  &
+    +k(127)*n(idx_H2O)  &
+    +k(128)*n(idx_H2O)
+elseif(j==25) then
+pdj(1) =  &
+    -k(162)*n(idx_E)  &
+    -k(161)*n(idx_E)
+pdj(5) =  &
+    +k(228)  &
+    +k(88)*n(idx_C)  &
+    +k(103)*n(idx_O)  &
+    +3.d0*k(162)*n(idx_E)  &
+    -k(85)*n(idx_H)  &
+    +k(161)*n(idx_E)
+pdj(7) =  &
+    +k(87)*n(idx_C)  &
+    +k(122)*n(idx_CO)  &
+    +k(125)*n(idx_CO)  &
+    +k(124)*n(idx_CO)  &
+    +k(111)*n(idx_H2O)  &
+    +k(123)*n(idx_CO)  &
+    +k(102)*n(idx_O)  &
+    +k(227)  &
+    +k(104)*n(idx_OH)  &
+    +k(105)*n(idx_OH)  &
+    +k(110)*n(idx_H2O)  &
+    +k(161)*n(idx_E)  &
+    +k(85)*n(idx_H)
+pdj(8) =  &
+    -k(88)*n(idx_C)  &
+    -k(87)*n(idx_C)
+pdj(9) =  &
+    -k(102)*n(idx_O)  &
+    -k(103)*n(idx_O)
+pdj(10) =  &
+    -k(104)*n(idx_OH)  &
+    -k(105)*n(idx_OH)
+pdj(11) =  &
+    -k(125)*n(idx_CO)  &
+    -k(124)*n(idx_CO)  &
+    -k(123)*n(idx_CO)  &
+    -k(122)*n(idx_CO)
+pdj(16) =  &
+    -k(111)*n(idx_H2O)  &
+    -k(110)*n(idx_H2O)
+pdj(18) =  &
+    +k(227)
+pdj(20) =  &
+    +k(228)  &
+    +k(85)*n(idx_H)
+pdj(23) =  &
+    +k(125)*n(idx_CO)  &
+    +k(124)*n(idx_CO)
+pdj(24) =  &
+    +k(123)*n(idx_CO)  &
+    +k(122)*n(idx_CO)
+pdj(25) =  &
+    -k(124)*n(idx_CO)  &
+    -k(123)*n(idx_CO)  &
+    -k(122)*n(idx_CO)  &
+    -k(103)*n(idx_O)  &
+    -k(87)*n(idx_C)  &
+    -k(88)*n(idx_C)  &
+    -k(125)*n(idx_CO)  &
+    -k(110)*n(idx_H2O)  &
+    -k(161)*n(idx_E)  &
+    -k(111)*n(idx_H2O)  &
+    -k(162)*n(idx_E)  &
+    -k(228)  &
+    -k(102)*n(idx_O)  &
+    -k(104)*n(idx_OH)  &
+    -k(105)*n(idx_OH)  &
+    -k(227)  &
+    -k(85)*n(idx_H)
+pdj(26) =  &
+    +k(87)*n(idx_C)
+pdj(27) =  &
+    +k(88)*n(idx_C)
+pdj(30) =  &
+    +k(102)*n(idx_O)
+pdj(31) =  &
+    +k(104)*n(idx_OH)  &
+    +k(105)*n(idx_OH)  &
+    +k(103)*n(idx_O)
+pdj(32) =  &
+    +k(110)*n(idx_H2O)  &
+    +k(111)*n(idx_H2O)
+elseif(j==26) then
+pdj(1) =  &
+    -k(163)*n(idx_E)
+pdj(5) =  &
+    -k(90)*n(idx_H)  &
+    +k(92)*n(idx_O)  &
+    +k(91)*n(idx_H2)  &
+    +k(163)*n(idx_E)
+pdj(7) =  &
+    -k(91)*n(idx_H2)  &
+    +k(90)*n(idx_H)
+pdj(8) =  &
+    +k(163)*n(idx_E)  &
+    +k(230)
+pdj(9) =  &
+    -k(92)*n(idx_O)
+pdj(18) =  &
+    +k(230)
+pdj(21) =  &
+    +k(90)*n(idx_H)
+pdj(26) =  &
+    -k(91)*n(idx_H2)  &
+    -k(92)*n(idx_O)  &
+    -k(90)*n(idx_H)  &
+    -k(230)  &
+    -k(163)*n(idx_E)
+pdj(27) =  &
+    +k(91)*n(idx_H2)
+pdj(28) =  &
+    +k(92)*n(idx_O)
+elseif(j==27) then
+pdj(1) =  &
+    -k(164)*n(idx_E)  &
+    -k(165)*n(idx_E)  &
+    -k(166)*n(idx_E)
+pdj(5) =  &
+    +k(233)  &
+    -k(93)*n(idx_H)  &
+    +k(94)*n(idx_H2)  &
+    +2.d0*k(166)*n(idx_E)  &
+    +k(164)*n(idx_E)  &
+    +k(95)*n(idx_O)
+pdj(7) =  &
+    +k(165)*n(idx_E)  &
+    +k(93)*n(idx_H)  &
+    -k(94)*n(idx_H2)
+pdj(8) =  &
+    +k(165)*n(idx_E)  &
+    +k(166)*n(idx_E)
+pdj(9) =  &
+    -k(95)*n(idx_O)
+pdj(10) =  &
+    +k(119)*n(idx_O2)
+pdj(12) =  &
+    +k(164)*n(idx_E)
+pdj(17) =  &
+    -k(119)*n(idx_O2)
+pdj(24) =  &
+    +k(119)*n(idx_O2)  &
+    +k(95)*n(idx_O)
+pdj(26) =  &
+    +k(233)  &
+    +k(93)*n(idx_H)
+pdj(27) =  &
+    -k(95)*n(idx_O)  &
+    -k(164)*n(idx_E)  &
+    -k(166)*n(idx_E)  &
+    -k(93)*n(idx_H)  &
+    -k(233)  &
+    -k(94)*n(idx_H2)  &
+    -k(165)*n(idx_E)  &
+    -k(119)*n(idx_O2)
+pdj(29) =  &
+    +k(94)*n(idx_H2)
+elseif(j==28) then
+pdj(1) =  &
+    -k(179)*n(idx_E)
+pdj(5) =  &
+    -k(157)*n(idx_H)
+pdj(8) =  &
+    +k(179)*n(idx_E)
+pdj(9) =  &
+    +k(179)*n(idx_E)
+pdj(11) =  &
+    +k(157)*n(idx_H)
+pdj(18) =  &
+    +k(157)*n(idx_H)
+pdj(28) =  &
+    -k(179)*n(idx_E)  &
+    -k(157)*n(idx_H)
+elseif(j==29) then
+pdj(1) =  &
+    -k(167)*n(idx_E)  &
+    -k(168)*n(idx_E)  &
+    -k(169)*n(idx_E)
+pdj(5) =  &
+    +k(234)  &
+    -k(96)*n(idx_H)  &
+    +2.d0*k(169)*n(idx_E)  &
+    +k(167)*n(idx_E)
+pdj(7) =  &
+    +k(96)*n(idx_H)  &
+    +k(235)  &
+    +k(168)*n(idx_E)  &
+    +k(97)*n(idx_O)  &
+    +k(98)*n(idx_O)
+pdj(9) =  &
+    -k(97)*n(idx_O)  &
+    -k(98)*n(idx_O)
+pdj(12) =  &
+    +k(168)*n(idx_E)  &
+    +k(169)*n(idx_E)
+pdj(13) =  &
+    +k(167)*n(idx_E)
+pdj(23) =  &
+    +k(97)*n(idx_O)
+pdj(24) =  &
+    +k(98)*n(idx_O)
+pdj(26) =  &
+    +k(235)
+pdj(27) =  &
+    +k(234)  &
+    +k(96)*n(idx_H)
+pdj(29) =  &
+    -k(97)*n(idx_O)  &
+    -k(169)*n(idx_E)  &
+    -k(235)  &
+    -k(167)*n(idx_E)  &
+    -k(98)*n(idx_O)  &
+    -k(234)  &
+    -k(96)*n(idx_H)  &
+    -k(168)*n(idx_E)
+elseif(j==30) then
+pdj(1) =  &
+    -k(170)*n(idx_E)
+pdj(5) =  &
+    +k(108)*n(idx_H2)  &
+    +k(170)*n(idx_E)
+pdj(7) =  &
+    -k(108)*n(idx_H2)
+pdj(9) =  &
+    +k(237)  &
+    +k(170)*n(idx_E)
+pdj(18) =  &
+    +k(237)
+pdj(30) =  &
+    -k(170)*n(idx_E)  &
+    -k(237)  &
+    -k(108)*n(idx_H2)
+pdj(31) =  &
+    +k(108)*n(idx_H2)
+elseif(j==31) then
+pdj(1) =  &
+    -k(171)*n(idx_E)  &
+    -k(173)*n(idx_E)  &
+    -k(172)*n(idx_E)
+pdj(5) =  &
+    +2.d0*k(173)*n(idx_E)  &
+    +k(172)*n(idx_E)  &
+    +k(109)*n(idx_H2)  &
+    +k(241)
+pdj(7) =  &
+    +k(240)  &
+    -k(109)*n(idx_H2)  &
+    +k(171)*n(idx_E)
+pdj(9) =  &
+    +k(173)*n(idx_E)  &
+    +k(238)  &
+    +k(171)*n(idx_E)
+pdj(10) =  &
+    +k(172)*n(idx_E)  &
+    +k(239)
+pdj(18) =  &
+    +k(239)
+pdj(20) =  &
+    +k(238)
+pdj(22) =  &
+    +k(240)
+pdj(30) =  &
+    +k(241)
+pdj(31) =  &
+    -k(109)*n(idx_H2)  &
+    -k(173)*n(idx_E)  &
+    -k(171)*n(idx_E)  &
+    -k(238)  &
+    -k(239)  &
+    -k(241)  &
+    -k(240)  &
+    -k(172)*n(idx_E)
+pdj(32) =  &
+    +k(109)*n(idx_H2)
+elseif(j==32) then
+pdj(1) =  &
+    -k(177)*n(idx_E)  &
+    -k(176)*n(idx_E)  &
+    -k(175)*n(idx_E)  &
+    -k(174)*n(idx_E)
+pdj(5) =  &
+    +k(175)*n(idx_E)  &
+    +2.d0*k(174)*n(idx_E)  &
+    +k(176)*n(idx_E)  &
+    +k(244)
+pdj(7) =  &
+    +k(116)*n(idx_C)  &
+    +k(175)*n(idx_E)  &
+    +k(177)*n(idx_E)  &
+    +k(245)
+pdj(8) =  &
+    -k(116)*n(idx_C)
+pdj(9) =  &
+    +k(175)*n(idx_E)
+pdj(10) =  &
+    +k(174)*n(idx_E)  &
+    +k(177)*n(idx_E)  &
+    +k(243)
+pdj(16) =  &
+    +k(242)  &
+    +k(176)*n(idx_E)
+pdj(18) =  &
+    +k(242)
+pdj(20) =  &
+    +k(243)
+pdj(24) =  &
+    +k(116)*n(idx_C)
+pdj(30) =  &
+    +k(245)
+pdj(31) =  &
+    +k(244)
+pdj(32) =  &
+    -k(116)*n(idx_C)  &
+    -k(244)  &
+    -k(177)*n(idx_E)  &
+    -k(245)  &
+    -k(175)*n(idx_E)  &
+    -k(174)*n(idx_E)  &
+    -k(176)*n(idx_E)  &
+    -k(243)  &
+    -k(242)
+elseif(j==33) then
+pdj(1) =  &
+    -k(178)*n(idx_E)
+pdj(8) =  &
+    -k(121)*n(idx_C)  &
+    -k(120)*n(idx_C)
+pdj(9) =  &
+    +k(120)*n(idx_C)  &
+    +2.d0*k(178)*n(idx_E)
+pdj(17) =  &
+    +k(121)*n(idx_C)
+pdj(21) =  &
+    +k(121)*n(idx_C)
+pdj(28) =  &
+    +k(120)*n(idx_C)
+pdj(33) =  &
+    -k(121)*n(idx_C)  &
+    -k(120)*n(idx_C)  &
+    -k(178)*n(idx_E)
+elseif(j==34) then
+pdj(1) =  &
+    -k(15)*n(idx_E)
+pdj(19) =  &
+    +k(15)*n(idx_E)
+pdj(34) =  &
+    -k(15)*n(idx_E)
+elseif(j==35) then
+elseif(j==36) then
+elseif(j==37) then
+
+elseif(j==38) then
+end if
+
+return
+end subroutine jes
+
+!*************************
+subroutine jex(neq,t,n,ml,mu,pd,npd)
+use krome_commons
+use krome_tabs
+use krome_cooling
+use krome_heating
+use krome_constants
+use krome_subs
+use krome_gadiab
+implicit none
+real*8::n(neq),pd(neq,neq),t,k(nrea),dn0,dn1,dnn,Tgas
+real*8::krome_gamma,nn(neq),nH2dust
+integer::neq,ml,mu,npd
+
+Tgas = n(idx_Tgas)
+npd = neq
+k(:) = coe_tab(n(:))
+pd(:,:) = 0d0
+krome_gamma = gamma_index(n(:))
+
+!d[E_dot]/d[E]
+pd(1,1) =  &
+    -k(42)*n(idx_O)  &
+    -k(6)*n(idx_HEj)  &
+    -k(36)*n(idx_Cj)  &
+    -k(5)*n(idx_HEj)  &
+    -k(181)*n(idx_HCOj)  &
+    -k(168)*n(idx_CH3j)  &
+    -k(39)*n(idx_Oj)  &
+    -k(180)*n(idx_HCOj)  &
+    -k(169)*n(idx_CH3j)  &
+    +2.d0*k(24)*n(idx_Hk)  &
+    +2.d0*k(4)*n(idx_HE)  &
+    -k(1)*n(idx_H)  &
+    -k(166)*n(idx_CH2j)  &
+    -k(16)*n(idx_H)  &
+    -k(182)*n(idx_HOCj)  &
+    -k(4)*n(idx_HE)  &
+    +k(22)*n(idx_H2)  &
+    -k(162)*n(idx_H3j)  &
+    -k(38)*n(idx_Cj)  &
+    -k(178)*n(idx_O2j)  &
+    -k(173)*n(idx_H2Oj)  &
+    -k(179)*n(idx_COj)  &
+    -k(40)*n(idx_Oj)  &
+    -k(167)*n(idx_CH3j)  &
+    +2.d0*k(41)*n(idx_C)  &
+    -k(29)*n(idx_H2j)  &
+    -k(194)*n(idx_C)  &
+    -k(7)*n(idx_HEj)  &
+    -k(163)*n(idx_CHj)  &
+    -k(203)*n(idx_O)  &
+    -k(24)*n(idx_Hk)  &
+    -k(175)*n(idx_H3Oj)  &
+    +2.d0*k(7)*n(idx_HEj)  &
+    -k(176)*n(idx_H3Oj)  &
+    -k(177)*n(idx_H3Oj)  &
+    -k(2)*n(idx_Hj)  &
+    -k(161)*n(idx_H3j)  &
+    -k(22)*n(idx_H2)  &
+    +2.d0*k(42)*n(idx_O)  &
+    -k(37)*n(idx_Cj)  &
+    -k(3)*n(idx_Hj)  &
+    -k(164)*n(idx_CH2j)  &
+    -k(174)*n(idx_H3Oj)  &
+    -k(170)*n(idx_OHj)  &
+    -k(172)*n(idx_H2Oj)  &
+    +2.d0*k(1)*n(idx_H)  &
+    -k(41)*n(idx_C)  &
+    -k(30)*n(idx_H2j)  &
+    -k(171)*n(idx_H2Oj)  &
+    -k(165)*n(idx_CH2j)  &
+    -k(15)*n(idx_HEjj)
+
+!d[H-_dot]/d[E]
+pd(2,1) =  &
+    +k(16)*n(idx_H)  &
+    -k(24)*n(idx_Hk)
+
+!d[C-_dot]/d[E]
+pd(3,1) =  &
+    +k(194)*n(idx_C)
+
+!d[O-_dot]/d[E]
+pd(4,1) =  &
+    +k(203)*n(idx_O)
+
+!d[H_dot]/d[E]
+pd(5,1) =  &
+    +k(180)*n(idx_HCOj)  &
+    +k(163)*n(idx_CHj)  &
+    +k(3)*n(idx_Hj)  &
+    +2.d0*k(173)*n(idx_H2Oj)  &
+    +2.d0*k(29)*n(idx_H2j)  &
+    +2.d0*k(169)*n(idx_CH3j)  &
+    +k(24)*n(idx_Hk)  &
+    +k(167)*n(idx_CH3j)  &
+    -k(1)*n(idx_H)  &
+    -k(16)*n(idx_H)  &
+    +2.d0*k(22)*n(idx_H2)  &
+    +k(182)*n(idx_HOCj)  &
+    +2.d0*k(166)*n(idx_CH2j)  &
+    +k(161)*n(idx_H3j)  &
+    +3.d0*k(162)*n(idx_H3j)  &
+    +k(2)*n(idx_Hj)  &
+    +k(176)*n(idx_H3Oj)  &
+    +2.d0*k(30)*n(idx_H2j)  &
+    +k(172)*n(idx_H2Oj)  &
+    +k(170)*n(idx_OHj)  &
+    +k(175)*n(idx_H3Oj)  &
+    +2.d0*k(174)*n(idx_H3Oj)  &
+    +k(164)*n(idx_CH2j)
+
+!d[HE_dot]/d[E]
+pd(6,1) =  &
+    -k(4)*n(idx_HE)  &
+    +k(6)*n(idx_HEj)  &
+    +k(5)*n(idx_HEj)
+
+!d[H2_dot]/d[E]
+pd(7,1) =  &
+    +k(165)*n(idx_CH2j)  &
+    +k(175)*n(idx_H3Oj)  &
+    +k(168)*n(idx_CH3j)  &
+    +k(171)*n(idx_H2Oj)  &
+    +k(161)*n(idx_H3j)  &
+    +k(177)*n(idx_H3Oj)  &
+    -k(22)*n(idx_H2)
+
+!d[C_dot]/d[E]
+pd(8,1) =  &
+    +k(38)*n(idx_Cj)  &
+    +k(165)*n(idx_CH2j)  &
+    +k(163)*n(idx_CHj)  &
+    +k(179)*n(idx_COj)  &
+    +k(37)*n(idx_Cj)  &
+    +k(181)*n(idx_HCOj)  &
+    +k(166)*n(idx_CH2j)  &
+    -k(194)*n(idx_C)  &
+    -k(41)*n(idx_C)  &
+    +k(36)*n(idx_Cj)
+
+!d[O_dot]/d[E]
+pd(9,1) =  &
+    +k(175)*n(idx_H3Oj)  &
+    -k(42)*n(idx_O)  &
+    -k(203)*n(idx_O)  &
+    +k(179)*n(idx_COj)  &
+    +k(173)*n(idx_H2Oj)  &
+    +k(171)*n(idx_H2Oj)  &
+    +k(170)*n(idx_OHj)  &
+    +k(40)*n(idx_Oj)  &
+    +2.d0*k(178)*n(idx_O2j)  &
+    +k(39)*n(idx_Oj)
+
+!d[OH_dot]/d[E]
+pd(10,1) =  &
+    +k(174)*n(idx_H3Oj)  &
+    +k(177)*n(idx_H3Oj)  &
+    +k(172)*n(idx_H2Oj)  &
+    +k(181)*n(idx_HCOj)
+
+!d[CO_dot]/d[E]
+pd(11,1) =  &
+    +k(182)*n(idx_HOCj)  &
+    +k(180)*n(idx_HCOj)
+
+!d[CH_dot]/d[E]
+pd(12,1) =  &
+    +k(169)*n(idx_CH3j)  &
+    +k(168)*n(idx_CH3j)  &
+    +k(164)*n(idx_CH2j)
+
+!d[CH2_dot]/d[E]
+pd(13,1) =  &
+    +k(167)*n(idx_CH3j)
+
+!d[H2O_dot]/d[E]
+pd(16,1) =  &
+    +k(176)*n(idx_H3Oj)
+
+!d[H+_dot]/d[E]
+pd(18,1) =  &
+    -k(2)*n(idx_Hj)  &
+    -k(3)*n(idx_Hj)  &
+    +k(1)*n(idx_H)
+
+!d[HE+_dot]/d[E]
+pd(19,1) =  &
+    +k(4)*n(idx_HE)  &
+    -k(5)*n(idx_HEj)  &
+    +k(15)*n(idx_HEjj)  &
+    -k(7)*n(idx_HEj)  &
+    -k(6)*n(idx_HEj)
+
+!d[H2+_dot]/d[E]
+pd(20,1) =  &
+    -k(30)*n(idx_H2j)  &
+    -k(29)*n(idx_H2j)
+
+!d[C+_dot]/d[E]
+pd(21,1) =  &
+    -k(36)*n(idx_Cj)  &
+    -k(38)*n(idx_Cj)  &
+    -k(37)*n(idx_Cj)  &
+    +k(41)*n(idx_C)
+
+!d[O+_dot]/d[E]
+pd(22,1) =  &
+    +k(42)*n(idx_O)  &
+    -k(39)*n(idx_Oj)  &
+    -k(40)*n(idx_Oj)
+
+!d[HOC+_dot]/d[E]
+pd(23,1) =  &
+    -k(182)*n(idx_HOCj)
+
+!d[HCO+_dot]/d[E]
+pd(24,1) =  &
+    -k(180)*n(idx_HCOj)  &
+    -k(181)*n(idx_HCOj)
+
+!d[H3+_dot]/d[E]
+pd(25,1) =  &
+    -k(162)*n(idx_H3j)  &
+    -k(161)*n(idx_H3j)
+
+!d[CH+_dot]/d[E]
+pd(26,1) =  &
+    -k(163)*n(idx_CHj)
+
+!d[CH2+_dot]/d[E]
+pd(27,1) =  &
+    -k(166)*n(idx_CH2j)  &
+    -k(164)*n(idx_CH2j)  &
+    -k(165)*n(idx_CH2j)
+
+!d[CO+_dot]/d[E]
+pd(28,1) =  &
+    -k(179)*n(idx_COj)
+
+!d[CH3+_dot]/d[E]
+pd(29,1) =  &
+    -k(167)*n(idx_CH3j)  &
+    -k(168)*n(idx_CH3j)  &
+    -k(169)*n(idx_CH3j)
+
+!d[OH+_dot]/d[E]
+pd(30,1) =  &
+    -k(170)*n(idx_OHj)
+
+!d[H2O+_dot]/d[E]
+pd(31,1) =  &
+    -k(173)*n(idx_H2Oj)  &
+    -k(172)*n(idx_H2Oj)  &
+    -k(171)*n(idx_H2Oj)
+
+!d[H3O+_dot]/d[E]
+pd(32,1) =  &
+    -k(176)*n(idx_H3Oj)  &
+    -k(175)*n(idx_H3Oj)  &
+    -k(177)*n(idx_H3Oj)  &
+    -k(174)*n(idx_H3Oj)
+
+!d[O2+_dot]/d[E]
+pd(33,1) =  &
+    -k(178)*n(idx_O2j)
+
+!d[HE++_dot]/d[E]
+pd(34,1) =  &
+    +k(7)*n(idx_HEj)  &
+    -k(15)*n(idx_HEjj)
+
+!d[E_dot]/d[H-]
+pd(1,2) =  &
+    +k(184)*n(idx_O)  &
+    +k(183)*n(idx_C)  &
+    -k(24)*n(idx_E)  &
+    +k(26)*n(idx_H)  &
+    +k(185)*n(idx_OH)  &
+    +k(28)*n(idx_Hj)  &
+    +k(17)*n(idx_H)  &
+    +k(25)*n(idx_H)  &
+    +2.d0*k(24)*n(idx_E)  &
+    +k(213)
+
+!d[H-_dot]/d[H-]
+pd(2,2) =  &
+    -k(24)*n(idx_E)  &
+    -k(31)*n(idx_H2j)  &
+    -k(28)*n(idx_Hj)  &
+    -k(185)*n(idx_OH)  &
+    -k(27)*n(idx_Hj)  &
+    -k(213)  &
+    -k(17)*n(idx_H)  &
+    -k(184)*n(idx_O)  &
+    -k(183)*n(idx_C)  &
+    -k(25)*n(idx_H)  &
+    -k(160)*n(idx_HEj)  &
+    -k(26)*n(idx_H)
+
+!d[H_dot]/d[H-]
+pd(5,2) =  &
+    +k(31)*n(idx_H2j)  &
+    +2.d0*k(26)*n(idx_H)  &
+    +2.d0*k(27)*n(idx_Hj)  &
+    -k(26)*n(idx_H)  &
+    +2.d0*k(25)*n(idx_H)  &
+    -k(17)*n(idx_H)  &
+    +k(24)*n(idx_E)  &
+    +k(160)*n(idx_HEj)  &
+    -k(25)*n(idx_H)  &
+    +k(213)
+
+!d[HE_dot]/d[H-]
+pd(6,2) =  &
+    +k(160)*n(idx_HEj)
+
+!d[H2_dot]/d[H-]
+pd(7,2) =  &
+    +k(31)*n(idx_H2j)  &
+    +k(17)*n(idx_H)
+
+!d[C_dot]/d[H-]
+pd(8,2) =  &
+    -k(183)*n(idx_C)
+
+!d[O_dot]/d[H-]
+pd(9,2) =  &
+    -k(184)*n(idx_O)
+
+!d[OH_dot]/d[H-]
+pd(10,2) =  &
+    +k(184)*n(idx_O)  &
+    -k(185)*n(idx_OH)
+
+!d[CH_dot]/d[H-]
+pd(12,2) =  &
+    +k(183)*n(idx_C)
+
+!d[H2O_dot]/d[H-]
+pd(16,2) =  &
+    +k(185)*n(idx_OH)
+
+!d[H+_dot]/d[H-]
+pd(18,2) =  &
+    -k(28)*n(idx_Hj)  &
+    -k(27)*n(idx_Hj)
+
+!d[HE+_dot]/d[H-]
+pd(19,2) =  &
+    -k(160)*n(idx_HEj)
+
+!d[H2+_dot]/d[H-]
+pd(20,2) =  &
+    -k(31)*n(idx_H2j)  &
+    +k(28)*n(idx_Hj)
+
+!d[E_dot]/d[C-]
+pd(1,3) =  &
+    +k(187)*n(idx_H2)  &
+    +k(188)*n(idx_O)  &
+    +k(229)  &
+    +k(186)*n(idx_H)
+
+!d[C-_dot]/d[C-]
+pd(3,3) =  &
+    -k(229)  &
+    -k(158)*n(idx_Hj)  &
+    -k(187)*n(idx_H2)  &
+    -k(188)*n(idx_O)  &
+    -k(186)*n(idx_H)
+
+!d[H_dot]/d[C-]
+pd(5,3) =  &
+    -k(186)*n(idx_H)  &
+    +k(158)*n(idx_Hj)
+
+!d[H2_dot]/d[C-]
+pd(7,3) =  &
+    -k(187)*n(idx_H2)
+
+!d[C_dot]/d[C-]
+pd(8,3) =  &
+    +k(158)*n(idx_Hj)  &
+    +k(229)
+
+!d[O_dot]/d[C-]
+pd(9,3) =  &
+    -k(188)*n(idx_O)
+
+!d[CO_dot]/d[C-]
+pd(11,3) =  &
+    +k(188)*n(idx_O)
+
+!d[CH_dot]/d[C-]
+pd(12,3) =  &
+    +k(186)*n(idx_H)
+
+!d[CH2_dot]/d[C-]
+pd(13,3) =  &
+    +k(187)*n(idx_H2)
+
+!d[H+_dot]/d[C-]
+pd(18,3) =  &
+    -k(158)*n(idx_Hj)
+
+!d[E_dot]/d[O-]
+pd(1,4) =  &
+    +k(236)  &
+    +k(189)*n(idx_H)  &
+    +k(191)*n(idx_C)  &
+    +k(190)*n(idx_H2)
+
+!d[O-_dot]/d[O-]
+pd(4,4) =  &
+    -k(191)*n(idx_C)  &
+    -k(236)  &
+    -k(159)*n(idx_Hj)  &
+    -k(189)*n(idx_H)  &
+    -k(190)*n(idx_H2)
+
+!d[H_dot]/d[O-]
+pd(5,4) =  &
+    -k(189)*n(idx_H)  &
+    +k(159)*n(idx_Hj)
+
+!d[H2_dot]/d[O-]
+pd(7,4) =  &
+    -k(190)*n(idx_H2)
+
+!d[C_dot]/d[O-]
+pd(8,4) =  &
+    -k(191)*n(idx_C)
+
+!d[O_dot]/d[O-]
+pd(9,4) =  &
+    +k(236)  &
+    +k(159)*n(idx_Hj)
+
+!d[OH_dot]/d[O-]
+pd(10,4) =  &
+    +k(189)*n(idx_H)
+
+!d[CO_dot]/d[O-]
+pd(11,4) =  &
+    +k(191)*n(idx_C)
+
+!d[H2O_dot]/d[O-]
+pd(16,4) =  &
+    +k(190)*n(idx_H2)
+
+!d[H+_dot]/d[O-]
+pd(18,4) =  &
+    -k(159)*n(idx_Hj)
+
+!d[E_dot]/d[H]
+pd(1,5) =  &
+    +k(246)  &
+    +k(189)*n(idx_Ok)  &
+    +k(26)*n(idx_Hk)  &
+    +k(186)*n(idx_Ck)  &
+    -k(1)*n(idx_E)  &
+    +k(207)  &
+    +k(25)*n(idx_Hk)  &
+    +2.d0*k(1)*n(idx_E)  &
+    -k(16)*n(idx_E)  &
+    +k(17)*n(idx_Hk)
+
+!d[H-_dot]/d[H]
+pd(2,5) =  &
+    -k(26)*n(idx_Hk)  &
+    -k(25)*n(idx_Hk)  &
+    +k(16)*n(idx_E)  &
+    -k(17)*n(idx_Hk)
+
+!d[C-_dot]/d[H]
+pd(3,5) =  &
+    -k(186)*n(idx_Ck)
+
+!d[O-_dot]/d[H]
+pd(4,5) =  &
+    -k(189)*n(idx_Ok)
+
+!d[H_dot]/d[H]
+pd(5,5) =  &
+    -k(199)*n(idx_Cj)  &
+    -k(43)*n(idx_Oj)  &
+    -k(186)*n(idx_Ck)  &
+    -k(274)*n(idx_OH)  &
+    -k(70)*n(idx_OH)  &
+    -k(26)*n(idx_Hk)  &
+    -k(17)*n(idx_Hk)  &
+    -4.d0*k(35)*n(idx_H2)*n(idx_H)  &
+    -k(189)*n(idx_Ok)  &
+    -k(195)*n(idx_C)  &
+    -k(25)*n(idx_Hk)  &
+    -k(83)*n(idx_CO)  &
+    -k(79)*n(idx_O2)  &
+    -k(18)*n(idx_Hj)  &
+    -k(8)*n(idx_HEj)  &
+    -k(206)*n(idx_OH)  &
+    -k(90)*n(idx_CHj)  &
+    -9.d0*k(34)*n(idx_H)*n(idx_H)  &
+    +3.d0*k(34)*n(idx_H)*n(idx_H)  &
+    -k(273)*n(idx_O)  &
+    -k(78)*n(idx_H2O)  &
+    -k(51)*n(idx_OH)  &
+    -k(96)*n(idx_CH3j)  &
+    +2.d0*k(26)*n(idx_Hk)  &
+    -k(1)*n(idx_E)  &
+    -k(85)*n(idx_H3j)  &
+    -k(47)*n(idx_Cj)  &
+    -k(93)*n(idx_CH2j)  &
+    -k(19)*n(idx_Hj)  &
+    -k(62)*n(idx_CH2)  &
+    -k(71)*n(idx_OH)  &
+    -k(207)  &
+    +2.d0*k(25)*n(idx_Hk)  &
+    +3.d0*k(23)*n(idx_H2)  &
+    -k(56)*n(idx_CH)  &
+    -k(23)*n(idx_H2)  &
+    -k(246)  &
+    -k(20)*n(idx_H2j)  &
+    -k(157)*n(idx_COj)  &
+    -k(16)*n(idx_E)  &
+    -k(204)*n(idx_O)  &
+    -4.d0*k(33)*n(idx_H)*n(idx_HE)  &
+    +2.d0*k(51)*n(idx_OH)
+
+!d[HE_dot]/d[H]
+pd(6,5) =  &
+    +2.d0*k(33)*n(idx_H)*n(idx_HE)  &
+    -2.d0*k(33)*n(idx_H)*n(idx_HE)  &
+    +k(8)*n(idx_HEj)
+
+!d[H2_dot]/d[H]
+pd(7,5) =  &
+    +4.d0*k(35)*n(idx_H2)*n(idx_H)  &
+    +k(96)*n(idx_CH3j)  &
+    +k(93)*n(idx_CH2j)  &
+    +k(78)*n(idx_H2O)  &
+    +2.d0*k(33)*n(idx_H)*n(idx_HE)  &
+    +k(70)*n(idx_OH)  &
+    -2.d0*k(35)*n(idx_H2)*n(idx_H)  &
+    +k(20)*n(idx_H2j)  &
+    -k(23)*n(idx_H2)  &
+    +k(56)*n(idx_CH)  &
+    +k(90)*n(idx_CHj)  &
+    +k(71)*n(idx_OH)  &
+    +k(85)*n(idx_H3j)  &
+    +3.d0*k(34)*n(idx_H)*n(idx_H)  &
+    +k(62)*n(idx_CH2)  &
+    +k(17)*n(idx_Hk)
+
+!d[C_dot]/d[H]
+pd(8,5) =  &
+    +k(47)*n(idx_Cj)  &
+    -k(195)*n(idx_C)  &
+    +k(56)*n(idx_CH)  &
+    +k(83)*n(idx_CO)
+
+!d[O_dot]/d[H]
+pd(9,5) =  &
+    -k(273)*n(idx_O)  &
+    +k(43)*n(idx_Oj)  &
+    +k(70)*n(idx_OH)  &
+    +k(71)*n(idx_OH)  &
+    -k(204)*n(idx_O)  &
+    +k(79)*n(idx_O2)  &
+    +k(51)*n(idx_OH)
+
+!d[OH_dot]/d[H]
+pd(10,5) =  &
+    -k(51)*n(idx_OH)  &
+    +k(78)*n(idx_H2O)  &
+    -k(70)*n(idx_OH)  &
+    -k(71)*n(idx_OH)  &
+    +k(83)*n(idx_CO)  &
+    +k(189)*n(idx_Ok)  &
+    -k(206)*n(idx_OH)  &
+    +k(204)*n(idx_O)  &
+    +k(79)*n(idx_O2)  &
+    -k(274)*n(idx_OH)  &
+    +k(273)*n(idx_O)
+
+!d[CO_dot]/d[H]
+pd(11,5) =  &
+    +k(157)*n(idx_COj)  &
+    -k(83)*n(idx_CO)
+
+!d[CH_dot]/d[H]
+pd(12,5) =  &
+    -k(56)*n(idx_CH)  &
+    +k(186)*n(idx_Ck)  &
+    +k(195)*n(idx_C)  &
+    +k(62)*n(idx_CH2)
+
+!d[CH2_dot]/d[H]
+pd(13,5) =  &
+    -k(62)*n(idx_CH2)
+
+!d[H2O_dot]/d[H]
+pd(16,5) =  &
+    +k(274)*n(idx_OH)  &
+    +k(206)*n(idx_OH)  &
+    -k(78)*n(idx_H2O)
+
+!d[O2_dot]/d[H]
+pd(17,5) =  &
+    -k(79)*n(idx_O2)
+
+!d[H+_dot]/d[H]
+pd(18,5) =  &
+    +k(246)  &
+    +k(157)*n(idx_COj)  &
+    +k(207)  &
+    +k(43)*n(idx_Oj)  &
+    -k(18)*n(idx_Hj)  &
+    +k(20)*n(idx_H2j)  &
+    +k(1)*n(idx_E)  &
+    -k(19)*n(idx_Hj)  &
+    +k(8)*n(idx_HEj)  &
+    +k(47)*n(idx_Cj)
+
+!d[HE+_dot]/d[H]
+pd(19,5) =  &
+    -k(8)*n(idx_HEj)
+
+!d[H2+_dot]/d[H]
+pd(20,5) =  &
+    +k(18)*n(idx_Hj)  &
+    -k(20)*n(idx_H2j)  &
+    +k(19)*n(idx_Hj)  &
+    +k(85)*n(idx_H3j)
+
+!d[C+_dot]/d[H]
+pd(21,5) =  &
+    -k(199)*n(idx_Cj)  &
+    -k(47)*n(idx_Cj)  &
+    +k(90)*n(idx_CHj)
+
+!d[O+_dot]/d[H]
+pd(22,5) =  &
+    -k(43)*n(idx_Oj)
+
+!d[H3+_dot]/d[H]
+pd(25,5) =  &
+    -k(85)*n(idx_H3j)
+
+!d[CH+_dot]/d[H]
+pd(26,5) =  &
+    +k(93)*n(idx_CH2j)  &
+    +k(199)*n(idx_Cj)  &
+    -k(90)*n(idx_CHj)
+
+!d[CH2+_dot]/d[H]
+pd(27,5) =  &
+    +k(96)*n(idx_CH3j)  &
+    -k(93)*n(idx_CH2j)
+
+!d[CO+_dot]/d[H]
+pd(28,5) =  &
+    -k(157)*n(idx_COj)
+
+!d[CH3+_dot]/d[H]
+pd(29,5) =  &
+    -k(96)*n(idx_CH3j)
+
+!d[E_dot]/d[HE]
+pd(1,6) =  &
+    +k(247)  &
+    +2.d0*k(4)*n(idx_E)  &
+    +k(208)  &
+    -k(4)*n(idx_E)
+
+!d[H_dot]/d[HE]
+pd(5,6) =  &
+    +k(9)*n(idx_Hj)  &
+    +k(10)*n(idx_Hj)  &
+    +2.d0*k(11)*n(idx_H2)  &
+    -2.d0*k(33)*n(idx_H)*n(idx_H)
+
+!d[HE_dot]/d[HE]
+pd(6,6) =  &
+    -k(10)*n(idx_Hj)  &
+    -k(208)  &
+    +k(33)*n(idx_H)*n(idx_H)  &
+    -k(11)*n(idx_H2)  &
+    -k(33)*n(idx_H)*n(idx_H)  &
+    -k(9)*n(idx_Hj)  &
+    -k(4)*n(idx_E)  &
+    -k(247)  &
+    +k(11)*n(idx_H2)
+
+!d[H2_dot]/d[HE]
+pd(7,6) =  &
+    -k(11)*n(idx_H2)  &
+    +k(33)*n(idx_H)*n(idx_H)
+
+!d[H+_dot]/d[HE]
+pd(18,6) =  &
+    -k(9)*n(idx_Hj)  &
+    -k(10)*n(idx_Hj)
+
+!d[HE+_dot]/d[HE]
+pd(19,6) =  &
+    +k(9)*n(idx_Hj)  &
+    +k(10)*n(idx_Hj)  &
+    +k(4)*n(idx_E)  &
+    +k(208)  &
+    +k(247)
+
+!d[E_dot]/d[H2]
+pd(1,7) =  &
+    -k(22)*n(idx_E)  &
+    +k(190)*n(idx_Ok)  &
+    +k(223)  &
+    +k(22)*n(idx_E)  &
+    +k(254)  &
+    +k(264)  &
+    +k(212)  &
+    +k(187)*n(idx_Ck)
+
+!d[H-_dot]/d[H2]
+pd(2,7) =  &
+    +k(253)
+
+!d[C-_dot]/d[H2]
+pd(3,7) =  &
+    -k(187)*n(idx_Ck)
+
+!d[O-_dot]/d[H2]
+pd(4,7) =  &
+    -k(190)*n(idx_Ok)
+
+!d[H_dot]/d[H2]
+pd(5,7) =  &
+    +k(94)*n(idx_CH2j)  &
+    +2.d0*k(225)  &
+    -k(23)*n(idx_H)  &
+    +k(57)*n(idx_CH)  &
+    +2.d0*k(11)*n(idx_HE)  &
+    +k(223)  &
+    -2.d0*k(35)*n(idx_H)*n(idx_H)  &
+    +2.d0*k(22)*n(idx_E)  &
+    +k(100)*n(idx_Oj)  &
+    +k(108)*n(idx_OHj)  &
+    +k(84)*n(idx_H2j)  &
+    +k(21)*n(idx_Hj)  &
+    +2.d0*k(252)  &
+    +k(89)*n(idx_Cj)  &
+    +k(13)*n(idx_HEj)  &
+    +2.d0*k(14)*n(idx_HEj)  &
+    +2.d0*k(192)*n(idx_Hj)  &
+    +k(69)*n(idx_O)  &
+    +4.d0*k(32)*n(idx_H2)  &
+    +3.d0*k(23)*n(idx_H)  &
+    +k(55)*n(idx_C)  &
+    +k(72)*n(idx_OH)  &
+    +k(109)*n(idx_H2Oj)  &
+    +k(264)  &
+    +k(91)*n(idx_CHj)
+
+!d[HE_dot]/d[H2]
+pd(6,7) =  &
+    +k(12)*n(idx_HEj)  &
+    -k(11)*n(idx_HE)  &
+    +k(13)*n(idx_HEj)  &
+    +k(11)*n(idx_HE)
+
+!d[H2_dot]/d[H2]
+pd(7,7) =  &
+    -k(13)*n(idx_HEj)  &
+    -k(52)*n(idx_HOCj)  &
+    -k(57)*n(idx_CH)  &
+    -k(55)*n(idx_C)  &
+    -k(94)*n(idx_CH2j)  &
+    -k(23)*n(idx_H)  &
+    -k(84)*n(idx_H2j)  &
+    -k(187)*n(idx_Ck)  &
+    -k(35)*n(idx_H)*n(idx_H)  &
+    +2.d0*k(35)*n(idx_H)*n(idx_H)  &
+    -k(196)*n(idx_C)  &
+    -k(89)*n(idx_Cj)  &
+    -k(200)*n(idx_Cj)  &
+    -k(225)  &
+    -k(193)*n(idx_Hj)  &
+    -k(22)*n(idx_E)  &
+    -k(212)  &
+    -k(264)  &
+    -k(192)*n(idx_Hj)  &
+    -k(11)*n(idx_HE)  &
+    -k(253)  &
+    -k(14)*n(idx_HEj)  &
+    -k(252)  &
+    -k(108)*n(idx_OHj)  &
+    -k(80)*n(idx_O2)  &
+    -k(12)*n(idx_HEj)  &
+    -k(69)*n(idx_O)  &
+    -k(109)*n(idx_H2Oj)  &
+    -k(21)*n(idx_Hj)  &
+    +2.d0*k(32)*n(idx_H2)  &
+    -k(72)*n(idx_OH)  &
+    -k(223)  &
+    -k(91)*n(idx_CHj)  &
+    -k(100)*n(idx_Oj)  &
+    -4.d0*k(32)*n(idx_H2)  &
+    +k(52)*n(idx_HOCj)  &
+    -k(190)*n(idx_Ok)  &
+    -k(254)
+
+!d[C_dot]/d[H2]
+pd(8,7) =  &
+    -k(55)*n(idx_C)  &
+    -k(196)*n(idx_C)
+
+!d[O_dot]/d[H2]
+pd(9,7) =  &
+    -k(69)*n(idx_O)
+
+!d[OH_dot]/d[H2]
+pd(10,7) =  &
+    +k(69)*n(idx_O)  &
+    +2.d0*k(80)*n(idx_O2)  &
+    -k(72)*n(idx_OH)
+
+!d[CH_dot]/d[H2]
+pd(12,7) =  &
+    -k(57)*n(idx_CH)  &
+    +k(55)*n(idx_C)
+
+!d[CH2_dot]/d[H2]
+pd(13,7) =  &
+    +k(196)*n(idx_C)  &
+    +k(57)*n(idx_CH)  &
+    +k(187)*n(idx_Ck)
+
+!d[H2O_dot]/d[H2]
+pd(16,7) =  &
+    +k(72)*n(idx_OH)  &
+    +k(190)*n(idx_Ok)
+
+!d[O2_dot]/d[H2]
+pd(17,7) =  &
+    -k(80)*n(idx_O2)
+
+!d[H+_dot]/d[H2]
+pd(18,7) =  &
+    -k(193)*n(idx_Hj)  &
+    -k(21)*n(idx_Hj)  &
+    +k(223)  &
+    +k(192)*n(idx_Hj)  &
+    -k(192)*n(idx_Hj)  &
+    +k(253)  &
+    +k(264)  &
+    +k(13)*n(idx_HEj)
+
+!d[HE+_dot]/d[H2]
+pd(19,7) =  &
+    -k(13)*n(idx_HEj)  &
+    -k(12)*n(idx_HEj)  &
+    +k(14)*n(idx_HEj)  &
+    -k(14)*n(idx_HEj)
+
+!d[H2+_dot]/d[H2]
+pd(20,7) =  &
+    +k(21)*n(idx_Hj)  &
+    -k(84)*n(idx_H2j)  &
+    +k(212)  &
+    +k(254)  &
+    +k(12)*n(idx_HEj)
+
+!d[C+_dot]/d[H2]
+pd(21,7) =  &
+    -k(89)*n(idx_Cj)  &
+    -k(200)*n(idx_Cj)
+
+!d[O+_dot]/d[H2]
+pd(22,7) =  &
+    -k(100)*n(idx_Oj)
+
+!d[HOC+_dot]/d[H2]
+pd(23,7) =  &
+    -k(52)*n(idx_HOCj)
+
+!d[HCO+_dot]/d[H2]
+pd(24,7) =  &
+    +k(52)*n(idx_HOCj)
+
+!d[H3+_dot]/d[H2]
+pd(25,7) =  &
+    +k(84)*n(idx_H2j)  &
+    +k(193)*n(idx_Hj)
+
+!d[CH+_dot]/d[H2]
+pd(26,7) =  &
+    +k(89)*n(idx_Cj)  &
+    -k(91)*n(idx_CHj)
+
+!d[CH2+_dot]/d[H2]
+pd(27,7) =  &
+    -k(94)*n(idx_CH2j)  &
+    +k(200)*n(idx_Cj)  &
+    +k(91)*n(idx_CHj)
+
+!d[CH3+_dot]/d[H2]
+pd(29,7) =  &
+    +k(94)*n(idx_CH2j)
+
+!d[OH+_dot]/d[H2]
+pd(30,7) =  &
+    +k(100)*n(idx_Oj)  &
+    -k(108)*n(idx_OHj)
+
+!d[H2O+_dot]/d[H2]
+pd(31,7) =  &
+    -k(109)*n(idx_H2Oj)  &
+    +k(108)*n(idx_OHj)
+
+!d[H3O+_dot]/d[H2]
+pd(32,7) =  &
+    +k(109)*n(idx_H2Oj)
+
+!d[E_dot]/d[C]
+pd(1,8) =  &
+    +k(255)  &
+    +k(183)*n(idx_Hk)  &
+    +k(191)*n(idx_Ok)  &
+    -k(194)*n(idx_E)  &
+    +2.d0*k(41)*n(idx_E)  &
+    +k(211)  &
+    -k(41)*n(idx_E)
+
+!d[H-_dot]/d[C]
+pd(2,8) =  &
+    -k(183)*n(idx_Hk)
+
+!d[C-_dot]/d[C]
+pd(3,8) =  &
+    +k(194)*n(idx_E)
+
+!d[O-_dot]/d[C]
+pd(4,8) =  &
+    -k(191)*n(idx_Ok)
+
+!d[H_dot]/d[C]
+pd(5,8) =  &
+    +k(74)*n(idx_OH)  &
+    +k(86)*n(idx_H2j)  &
+    +k(58)*n(idx_CH)  &
+    +k(46)*n(idx_Hj)  &
+    +k(73)*n(idx_OH)  &
+    -k(195)*n(idx_H)  &
+    +k(88)*n(idx_H3j)  &
+    +k(55)*n(idx_H2)
+
+!d[HE_dot]/d[C]
+pd(6,8) =  &
+    +k(50)*n(idx_HEj)  &
+    +k(48)*n(idx_HEj)  &
+    +k(49)*n(idx_HEj)
+
+!d[H2_dot]/d[C]
+pd(7,8) =  &
+    -k(55)*n(idx_H2)  &
+    +k(116)*n(idx_H3Oj)  &
+    +k(87)*n(idx_H3j)  &
+    -k(196)*n(idx_H2)
+
+!d[C_dot]/d[C]
+pd(8,8) =  &
+    -k(87)*n(idx_H3j)  &
+    -4.d0*k(266)*n(idx_C)  &
+    -4.d0*k(265)*n(idx_C)  &
+    -4.d0*k(197)*n(idx_C)  &
+    -k(191)*n(idx_Ok)  &
+    -k(194)*n(idx_E)  &
+    -k(196)*n(idx_H2)  &
+    -k(272)*n(idx_Oj)  &
+    -k(271)*n(idx_Oj)  &
+    -k(255)  &
+    -k(116)*n(idx_H3Oj)  &
+    -k(268)*n(idx_O)  &
+    -k(49)*n(idx_HEj)  &
+    -k(88)*n(idx_H3j)  &
+    -k(58)*n(idx_CH)  &
+    -k(46)*n(idx_Hj)  &
+    -k(50)*n(idx_HEj)  &
+    -k(73)*n(idx_OH)  &
+    -k(120)*n(idx_O2j)  &
+    -k(55)*n(idx_H2)  &
+    -k(267)*n(idx_O)  &
+    -k(86)*n(idx_H2j)  &
+    -k(183)*n(idx_Hk)  &
+    -k(48)*n(idx_HEj)  &
+    -k(198)*n(idx_O)  &
+    -k(121)*n(idx_O2j)  &
+    -k(74)*n(idx_OH)  &
+    -k(195)*n(idx_H)  &
+    -k(211)  &
+    -k(126)*n(idx_HCOj)  &
+    -k(82)*n(idx_O2)  &
+    -k(81)*n(idx_O2)  &
+    -k(41)*n(idx_E)
+
+!d[O_dot]/d[C]
+pd(9,8) =  &
+    +k(81)*n(idx_O2)  &
+    -k(268)*n(idx_O)  &
+    -k(267)*n(idx_O)  &
+    +k(120)*n(idx_O2j)  &
+    -k(198)*n(idx_O)  &
+    +k(82)*n(idx_O2)
+
+!d[OH_dot]/d[C]
+pd(10,8) =  &
+    -k(73)*n(idx_OH)  &
+    -k(74)*n(idx_OH)
+
+!d[CO_dot]/d[C]
+pd(11,8) =  &
+    +k(81)*n(idx_O2)  &
+    +k(267)*n(idx_O)  &
+    +k(74)*n(idx_OH)  &
+    +k(73)*n(idx_OH)  &
+    +k(191)*n(idx_Ok)  &
+    +k(198)*n(idx_O)  &
+    +k(126)*n(idx_HCOj)  &
+    +k(268)*n(idx_O)  &
+    +k(82)*n(idx_O2)
+
+!d[CH_dot]/d[C]
+pd(12,8) =  &
+    -k(58)*n(idx_CH)  &
+    +k(183)*n(idx_Hk)  &
+    +k(55)*n(idx_H2)  &
+    +k(195)*n(idx_H)
+
+!d[CH2_dot]/d[C]
+pd(13,8) =  &
+    +k(196)*n(idx_H2)
+
+!d[C2_dot]/d[C]
+pd(14,8) =  &
+    +k(58)*n(idx_CH)  &
+    +2.d0*k(265)*n(idx_C)  &
+    +2.d0*k(197)*n(idx_C)  &
+    +2.d0*k(266)*n(idx_C)
+
+!d[O2_dot]/d[C]
+pd(17,8) =  &
+    +k(121)*n(idx_O2j)  &
+    -k(82)*n(idx_O2)  &
+    -k(81)*n(idx_O2)
+
+!d[H+_dot]/d[C]
+pd(18,8) =  &
+    -k(46)*n(idx_Hj)
+
+!d[HE+_dot]/d[C]
+pd(19,8) =  &
+    -k(48)*n(idx_HEj)  &
+    -k(49)*n(idx_HEj)  &
+    -k(50)*n(idx_HEj)
+
+!d[H2+_dot]/d[C]
+pd(20,8) =  &
+    -k(86)*n(idx_H2j)
+
+!d[C+_dot]/d[C]
+pd(21,8) =  &
+    +k(255)  &
+    +k(50)*n(idx_HEj)  &
+    +k(121)*n(idx_O2j)  &
+    +k(46)*n(idx_Hj)  &
+    +k(48)*n(idx_HEj)  &
+    +k(49)*n(idx_HEj)  &
+    +k(41)*n(idx_E)  &
+    +k(211)
+
+!d[O+_dot]/d[C]
+pd(22,8) =  &
+    -k(271)*n(idx_Oj)  &
+    -k(272)*n(idx_Oj)
+
+!d[HCO+_dot]/d[C]
+pd(24,8) =  &
+    -k(126)*n(idx_HCOj)  &
+    +k(116)*n(idx_H3Oj)
+
+!d[H3+_dot]/d[C]
+pd(25,8) =  &
+    -k(87)*n(idx_H3j)  &
+    -k(88)*n(idx_H3j)
+
+!d[CH+_dot]/d[C]
+pd(26,8) =  &
+    +k(87)*n(idx_H3j)  &
+    +k(126)*n(idx_HCOj)  &
+    +k(86)*n(idx_H2j)
+
+!d[CH2+_dot]/d[C]
+pd(27,8) =  &
+    +k(88)*n(idx_H3j)
+
+!d[CO+_dot]/d[C]
+pd(28,8) =  &
+    +k(120)*n(idx_O2j)  &
+    +k(271)*n(idx_Oj)  &
+    +k(272)*n(idx_Oj)
+
+!d[H3O+_dot]/d[C]
+pd(32,8) =  &
+    -k(116)*n(idx_H3Oj)
+
+!d[O2+_dot]/d[C]
+pd(33,8) =  &
+    -k(120)*n(idx_O2j)  &
+    -k(121)*n(idx_O2j)
+
+!d[E_dot]/d[O]
+pd(1,9) =  &
+    -k(203)*n(idx_E)  &
+    +k(60)*n(idx_CH)  &
+    +2.d0*k(42)*n(idx_E)  &
+    +k(248)  &
+    +k(210)  &
+    -k(42)*n(idx_E)  &
+    +k(184)*n(idx_Hk)  &
+    +k(188)*n(idx_Ck)
+
+!d[H-_dot]/d[O]
+pd(2,9) =  &
+    -k(184)*n(idx_Hk)
+
+!d[C-_dot]/d[O]
+pd(3,9) =  &
+    -k(188)*n(idx_Ck)
+
+!d[O-_dot]/d[O]
+pd(4,9) =  &
+    +k(203)*n(idx_E)
+
+!d[H_dot]/d[O]
+pd(5,9) =  &
+    +2.d0*k(63)*n(idx_CH2)  &
+    +k(44)*n(idx_Hj)  &
+    +k(103)*n(idx_H3j)  &
+    -k(273)*n(idx_H)  &
+    +k(92)*n(idx_CHj)  &
+    -k(204)*n(idx_H)  &
+    +k(95)*n(idx_CH2j)  &
+    +k(101)*n(idx_H2j)  &
+    +k(76)*n(idx_OH)  &
+    +k(69)*n(idx_H2)  &
+    +k(75)*n(idx_OH)  &
+    +k(59)*n(idx_CH)  &
+    +k(65)*n(idx_CH2)
+
+!d[HE_dot]/d[O]
+pd(6,9) =  &
+    +k(45)*n(idx_HEj)
+
+!d[H2_dot]/d[O]
+pd(7,9) =  &
+    +k(102)*n(idx_H3j)  &
+    +k(98)*n(idx_CH3j)  &
+    +k(97)*n(idx_CH3j)  &
+    -k(69)*n(idx_H2)  &
+    +k(64)*n(idx_CH2)
+
+!d[C_dot]/d[O]
+pd(8,9) =  &
+    -k(267)*n(idx_C)  &
+    -k(198)*n(idx_C)  &
+    -k(268)*n(idx_C)  &
+    +k(67)*n(idx_C2)  &
+    +k(68)*n(idx_C2)  &
+    +k(61)*n(idx_CH)
+
+!d[O_dot]/d[O]
+pd(9,9) =  &
+    -k(267)*n(idx_C)  &
+    -k(203)*n(idx_E)  &
+    -k(59)*n(idx_CH)  &
+    -k(273)*n(idx_H)  &
+    -k(202)*n(idx_Cj)  &
+    -k(270)*n(idx_Cj)  &
+    -k(42)*n(idx_E)  &
+    -k(198)*n(idx_C)  &
+    -k(188)*n(idx_Ck)  &
+    -k(45)*n(idx_HEj)  &
+    -k(65)*n(idx_CH2)  &
+    -k(103)*n(idx_H3j)  &
+    -k(184)*n(idx_Hk)  &
+    -k(204)*n(idx_H)  &
+    -k(201)*n(idx_Cj)  &
+    -k(101)*n(idx_H2j)  &
+    -k(92)*n(idx_CHj)  &
+    -k(210)  &
+    -k(102)*n(idx_H3j)  &
+    -k(269)*n(idx_Cj)  &
+    -4.d0*k(275)*n(idx_O)  &
+    -k(67)*n(idx_C2)  &
+    -k(248)  &
+    -k(60)*n(idx_CH)  &
+    -k(66)*n(idx_CH2)  &
+    -k(61)*n(idx_CH)  &
+    -k(75)*n(idx_OH)  &
+    -k(63)*n(idx_CH2)  &
+    -4.d0*k(205)*n(idx_O)  &
+    -k(69)*n(idx_H2)  &
+    -k(95)*n(idx_CH2j)  &
+    -k(98)*n(idx_CH3j)  &
+    -k(44)*n(idx_Hj)  &
+    -k(97)*n(idx_CH3j)  &
+    -k(68)*n(idx_C2)  &
+    -k(268)*n(idx_C)  &
+    -k(76)*n(idx_OH)  &
+    -k(64)*n(idx_CH2)
+
+!d[OH_dot]/d[O]
+pd(10,9) =  &
+    +k(204)*n(idx_H)  &
+    -k(75)*n(idx_OH)  &
+    +k(66)*n(idx_CH2)  &
+    +k(273)*n(idx_H)  &
+    -k(76)*n(idx_OH)  &
+    +k(69)*n(idx_H2)  &
+    +k(61)*n(idx_CH)  &
+    +k(184)*n(idx_Hk)
+
+!d[CO_dot]/d[O]
+pd(11,9) =  &
+    +k(268)*n(idx_C)  &
+    +k(63)*n(idx_CH2)  &
+    +k(198)*n(idx_C)  &
+    +k(267)*n(idx_C)  &
+    +k(68)*n(idx_C2)  &
+    +k(67)*n(idx_C2)  &
+    +k(59)*n(idx_CH)  &
+    +k(64)*n(idx_CH2)  &
+    +k(188)*n(idx_Ck)
+
+!d[CH_dot]/d[O]
+pd(12,9) =  &
+    -k(60)*n(idx_CH)  &
+    +k(66)*n(idx_CH2)  &
+    -k(59)*n(idx_CH)  &
+    -k(61)*n(idx_CH)
+
+!d[CH2_dot]/d[O]
+pd(13,9) =  &
+    -k(63)*n(idx_CH2)  &
+    -k(64)*n(idx_CH2)  &
+    -k(65)*n(idx_CH2)  &
+    -k(66)*n(idx_CH2)
+
+!d[C2_dot]/d[O]
+pd(14,9) =  &
+    -k(67)*n(idx_C2)  &
+    -k(68)*n(idx_C2)
+
+!d[HCO_dot]/d[O]
+pd(15,9) =  &
+    +k(65)*n(idx_CH2)
+
+!d[O2_dot]/d[O]
+pd(17,9) =  &
+    +k(76)*n(idx_OH)  &
+    +k(75)*n(idx_OH)  &
+    +2.d0*k(205)*n(idx_O)  &
+    +2.d0*k(275)*n(idx_O)
+
+!d[H+_dot]/d[O]
+pd(18,9) =  &
+    -k(44)*n(idx_Hj)
+
+!d[HE+_dot]/d[O]
+pd(19,9) =  &
+    -k(45)*n(idx_HEj)
+
+!d[H2+_dot]/d[O]
+pd(20,9) =  &
+    -k(101)*n(idx_H2j)
+
+!d[C+_dot]/d[O]
+pd(21,9) =  &
+    -k(269)*n(idx_Cj)  &
+    -k(202)*n(idx_Cj)  &
+    -k(201)*n(idx_Cj)  &
+    -k(270)*n(idx_Cj)
+
+!d[O+_dot]/d[O]
+pd(22,9) =  &
+    +k(44)*n(idx_Hj)  &
+    +k(248)  &
+    +k(45)*n(idx_HEj)  &
+    +k(42)*n(idx_E)  &
+    +k(210)
+
+!d[HOC+_dot]/d[O]
+pd(23,9) =  &
+    +k(97)*n(idx_CH3j)
+
+!d[HCO+_dot]/d[O]
+pd(24,9) =  &
+    +k(98)*n(idx_CH3j)  &
+    +k(60)*n(idx_CH)  &
+    +k(95)*n(idx_CH2j)
+
+!d[H3+_dot]/d[O]
+pd(25,9) =  &
+    -k(102)*n(idx_H3j)  &
+    -k(103)*n(idx_H3j)
+
+!d[CH+_dot]/d[O]
+pd(26,9) =  &
+    -k(92)*n(idx_CHj)
+
+!d[CH2+_dot]/d[O]
+pd(27,9) =  &
+    -k(95)*n(idx_CH2j)
+
+!d[CO+_dot]/d[O]
+pd(28,9) =  &
+    +k(269)*n(idx_Cj)  &
+    +k(202)*n(idx_Cj)  &
+    +k(92)*n(idx_CHj)  &
+    +k(270)*n(idx_Cj)  &
+    +k(201)*n(idx_Cj)
+
+!d[CH3+_dot]/d[O]
+pd(29,9) =  &
+    -k(98)*n(idx_CH3j)  &
+    -k(97)*n(idx_CH3j)
+
+!d[OH+_dot]/d[O]
+pd(30,9) =  &
+    +k(102)*n(idx_H3j)  &
+    +k(101)*n(idx_H2j)
+
+!d[H2O+_dot]/d[O]
+pd(31,9) =  &
+    +k(103)*n(idx_H3j)
+
+!d[E_dot]/d[OH]
+pd(1,10) =  &
+    +k(185)*n(idx_Hk)  &
+    +k(218)
+
+!d[H-_dot]/d[OH]
+pd(2,10) =  &
+    -k(185)*n(idx_Hk)
+
+!d[H_dot]/d[OH]
+pd(5,10) =  &
+    +k(106)*n(idx_Cj)  &
+    -k(70)*n(idx_H)  &
+    -k(274)*n(idx_H)  &
+    +k(73)*n(idx_C)  &
+    +k(141)*n(idx_Hj)  &
+    +k(143)*n(idx_HEj)  &
+    +k(259)  &
+    +k(217)  &
+    +k(75)*n(idx_O)  &
+    +k(72)*n(idx_H2)  &
+    -k(71)*n(idx_H)  &
+    +k(142)*n(idx_HEj)  &
+    -k(51)*n(idx_H)  &
+    +k(107)*n(idx_Cj)  &
+    +k(76)*n(idx_O)  &
+    -k(206)*n(idx_H)  &
+    +k(140)*n(idx_Hj)  &
+    +2.d0*k(51)*n(idx_H)  &
+    +k(74)*n(idx_C)
+
+!d[HE_dot]/d[OH]
+pd(6,10) =  &
+    +k(142)*n(idx_HEj)  &
+    +k(143)*n(idx_HEj)
+
+!d[H2_dot]/d[OH]
+pd(7,10) =  &
+    +k(70)*n(idx_H)  &
+    -k(72)*n(idx_H2)  &
+    +k(105)*n(idx_H3j)  &
+    +k(104)*n(idx_H3j)  &
+    +k(71)*n(idx_H)
+
+!d[C_dot]/d[OH]
+pd(8,10) =  &
+    -k(73)*n(idx_C)  &
+    -k(74)*n(idx_C)
+
+!d[O_dot]/d[OH]
+pd(9,10) =  &
+    -k(75)*n(idx_O)  &
+    +2.d0*k(77)*n(idx_OH)  &
+    +k(259)  &
+    +k(217)  &
+    +k(71)*n(idx_H)  &
+    +k(70)*n(idx_H)  &
+    -k(76)*n(idx_O)  &
+    +k(51)*n(idx_H)
+
+!d[OH_dot]/d[OH]
+pd(10,10) =  &
+    -k(143)*n(idx_HEj)  &
+    -k(51)*n(idx_H)  &
+    -4.d0*k(77)*n(idx_OH)  &
+    -k(206)*n(idx_H)  &
+    -k(140)*n(idx_Hj)  &
+    -k(75)*n(idx_O)  &
+    -k(259)  &
+    -k(71)*n(idx_H)  &
+    -k(70)*n(idx_H)  &
+    -k(141)*n(idx_Hj)  &
+    -k(218)  &
+    -k(274)*n(idx_H)  &
+    -k(185)*n(idx_Hk)  &
+    -k(76)*n(idx_O)  &
+    -k(217)  &
+    -k(142)*n(idx_HEj)  &
+    -k(104)*n(idx_H3j)  &
+    -k(74)*n(idx_C)  &
+    -k(107)*n(idx_Cj)  &
+    -k(106)*n(idx_Cj)  &
+    -k(72)*n(idx_H2)  &
+    -k(105)*n(idx_H3j)  &
+    -k(73)*n(idx_C)
+
+!d[CO_dot]/d[OH]
+pd(11,10) =  &
+    +k(73)*n(idx_C)  &
+    +k(74)*n(idx_C)
+
+!d[H2O_dot]/d[OH]
+pd(16,10) =  &
+    +k(206)*n(idx_H)  &
+    +2.d0*k(77)*n(idx_OH)  &
+    +k(72)*n(idx_H2)  &
+    +k(185)*n(idx_Hk)  &
+    +k(274)*n(idx_H)
+
+!d[O2_dot]/d[OH]
+pd(17,10) =  &
+    +k(76)*n(idx_O)  &
+    +k(75)*n(idx_O)
+
+!d[H+_dot]/d[OH]
+pd(18,10) =  &
+    -k(140)*n(idx_Hj)  &
+    -k(141)*n(idx_Hj)
+
+!d[HE+_dot]/d[OH]
+pd(19,10) =  &
+    -k(142)*n(idx_HEj)  &
+    -k(143)*n(idx_HEj)
+
+!d[C+_dot]/d[OH]
+pd(21,10) =  &
+    -k(106)*n(idx_Cj)  &
+    -k(107)*n(idx_Cj)
+
+!d[O+_dot]/d[OH]
+pd(22,10) =  &
+    +k(142)*n(idx_HEj)  &
+    +k(143)*n(idx_HEj)
+
+!d[H3+_dot]/d[OH]
+pd(25,10) =  &
+    -k(104)*n(idx_H3j)  &
+    -k(105)*n(idx_H3j)
+
+!d[CO+_dot]/d[OH]
+pd(28,10) =  &
+    +k(106)*n(idx_Cj)  &
+    +k(107)*n(idx_Cj)
+
+!d[OH+_dot]/d[OH]
+pd(30,10) =  &
+    +k(141)*n(idx_Hj)  &
+    +k(140)*n(idx_Hj)  &
+    +k(218)
+
+!d[H2O+_dot]/d[OH]
+pd(31,10) =  &
+    +k(104)*n(idx_H3j)  &
+    +k(105)*n(idx_H3j)
+
+!d[E_dot]/d[CO]
+pd(1,11) =  &
+    +k(250)
+
+!d[H_dot]/d[CO]
+pd(5,11) =  &
+    -k(83)*n(idx_H)
+
+!d[HE_dot]/d[CO]
+pd(6,11) =  &
+    +k(156)*n(idx_HEj)  &
+    +k(155)*n(idx_HEj)
+
+!d[H2_dot]/d[CO]
+pd(7,11) =  &
+    +k(122)*n(idx_H3j)  &
+    +k(123)*n(idx_H3j)  &
+    +k(124)*n(idx_H3j)  &
+    +k(125)*n(idx_H3j)
+
+!d[C_dot]/d[CO]
+pd(8,11) =  &
+    +k(83)*n(idx_H)  &
+    +k(224)  &
+    +k(156)*n(idx_HEj)  &
+    +k(249)
+
+!d[O_dot]/d[CO]
+pd(9,11) =  &
+    +k(224)  &
+    +k(249)  &
+    +k(155)*n(idx_HEj)
+
+!d[OH_dot]/d[CO]
+pd(10,11) =  &
+    +k(83)*n(idx_H)
+
+!d[CO_dot]/d[CO]
+pd(11,11) =  &
+    -k(250)  &
+    -k(224)  &
+    -k(125)*n(idx_H3j)  &
+    -k(122)*n(idx_H3j)  &
+    -k(124)*n(idx_H3j)  &
+    -k(54)*n(idx_HOCj)  &
+    -k(83)*n(idx_H)  &
+    -k(123)*n(idx_H3j)  &
+    -k(156)*n(idx_HEj)  &
+    +k(54)*n(idx_HOCj)  &
+    -k(53)*n(idx_HOCj)  &
+    +k(53)*n(idx_HOCj)  &
+    -k(155)*n(idx_HEj)  &
+    -k(249)
+
+!d[HE+_dot]/d[CO]
+pd(19,11) =  &
+    -k(155)*n(idx_HEj)  &
+    -k(156)*n(idx_HEj)
+
+!d[C+_dot]/d[CO]
+pd(21,11) =  &
+    +k(155)*n(idx_HEj)
+
+!d[O+_dot]/d[CO]
+pd(22,11) =  &
+    +k(156)*n(idx_HEj)
+
+!d[HOC+_dot]/d[CO]
+pd(23,11) =  &
+    -k(53)*n(idx_HOCj)  &
+    +k(124)*n(idx_H3j)  &
+    +k(125)*n(idx_H3j)  &
+    -k(54)*n(idx_HOCj)
+
+!d[HCO+_dot]/d[CO]
+pd(24,11) =  &
+    +k(53)*n(idx_HOCj)  &
+    +k(54)*n(idx_HOCj)  &
+    +k(122)*n(idx_H3j)  &
+    +k(123)*n(idx_H3j)
+
+!d[H3+_dot]/d[CO]
+pd(25,11) =  &
+    -k(124)*n(idx_H3j)  &
+    -k(125)*n(idx_H3j)  &
+    -k(122)*n(idx_H3j)  &
+    -k(123)*n(idx_H3j)
+
+!d[CO+_dot]/d[CO]
+pd(28,11) =  &
+    +k(250)
+
+!d[E_dot]/d[CH]
+pd(1,12) =  &
+    +k(215)  &
+    +k(60)*n(idx_O)
+
+!d[H_dot]/d[CH]
+pd(5,12) =  &
+    +k(256)  &
+    +k(214)  &
+    -k(56)*n(idx_H)  &
+    +k(130)*n(idx_Hj)  &
+    +k(59)*n(idx_O)  &
+    +k(58)*n(idx_C)  &
+    +k(57)*n(idx_H2)  &
+    +k(129)*n(idx_Hj)
+
+!d[H2_dot]/d[CH]
+pd(7,12) =  &
+    -k(57)*n(idx_H2)  &
+    +k(56)*n(idx_H)
+
+!d[C_dot]/d[CH]
+pd(8,12) =  &
+    +k(61)*n(idx_O)  &
+    +k(214)  &
+    +k(256)  &
+    +k(56)*n(idx_H)  &
+    -k(58)*n(idx_C)
+
+!d[O_dot]/d[CH]
+pd(9,12) =  &
+    -k(60)*n(idx_O)  &
+    -k(59)*n(idx_O)  &
+    -k(61)*n(idx_O)
+
+!d[OH_dot]/d[CH]
+pd(10,12) =  &
+    +k(61)*n(idx_O)
+
+!d[CO_dot]/d[CH]
+pd(11,12) =  &
+    +k(59)*n(idx_O)
+
+!d[CH_dot]/d[CH]
+pd(12,12) =  &
+    -k(129)*n(idx_Hj)  &
+    -k(60)*n(idx_O)  &
+    -k(214)  &
+    -k(215)  &
+    -k(130)*n(idx_Hj)  &
+    -k(59)*n(idx_O)  &
+    -k(61)*n(idx_O)  &
+    -k(56)*n(idx_H)  &
+    -k(57)*n(idx_H2)  &
+    -k(256)  &
+    -k(58)*n(idx_C)
+
+!d[CH2_dot]/d[CH]
+pd(13,12) =  &
+    +k(57)*n(idx_H2)
+
+!d[C2_dot]/d[CH]
+pd(14,12) =  &
+    +k(58)*n(idx_C)
+
+!d[H+_dot]/d[CH]
+pd(18,12) =  &
+    -k(129)*n(idx_Hj)  &
+    -k(130)*n(idx_Hj)
+
+!d[HCO+_dot]/d[CH]
+pd(24,12) =  &
+    +k(60)*n(idx_O)
+
+!d[CH+_dot]/d[CH]
+pd(26,12) =  &
+    +k(130)*n(idx_Hj)  &
+    +k(215)  &
+    +k(129)*n(idx_Hj)
+
+!d[E_dot]/d[CH2]
+pd(1,13) =  &
+    +k(260)  &
+    +k(232)
+
+!d[H_dot]/d[CH2]
+pd(5,13) =  &
+    +k(133)*n(idx_Hj)  &
+    +k(231)  &
+    +k(137)*n(idx_HEj)  &
+    +k(138)*n(idx_HEj)  &
+    -k(62)*n(idx_H)  &
+    +k(65)*n(idx_O)  &
+    +2.d0*k(63)*n(idx_O)  &
+    +k(134)*n(idx_Hj)
+
+!d[HE_dot]/d[CH2]
+pd(6,13) =  &
+    +k(138)*n(idx_HEj)  &
+    +k(135)*n(idx_HEj)  &
+    +k(137)*n(idx_HEj)  &
+    +k(136)*n(idx_HEj)
+
+!d[H2_dot]/d[CH2]
+pd(7,13) =  &
+    +k(131)*n(idx_Hj)  &
+    +k(64)*n(idx_O)  &
+    +k(136)*n(idx_HEj)  &
+    +k(132)*n(idx_Hj)  &
+    +k(62)*n(idx_H)  &
+    +k(135)*n(idx_HEj)
+
+!d[O_dot]/d[CH2]
+pd(9,13) =  &
+    -k(66)*n(idx_O)  &
+    -k(63)*n(idx_O)  &
+    -k(65)*n(idx_O)  &
+    -k(64)*n(idx_O)
+
+!d[OH_dot]/d[CH2]
+pd(10,13) =  &
+    +k(66)*n(idx_O)
+
+!d[CO_dot]/d[CH2]
+pd(11,13) =  &
+    +k(64)*n(idx_O)  &
+    +k(63)*n(idx_O)
+
+!d[CH_dot]/d[CH2]
+pd(12,13) =  &
+    +k(231)  &
+    +k(66)*n(idx_O)  &
+    +k(62)*n(idx_H)
+
+!d[CH2_dot]/d[CH2]
+pd(13,13) =  &
+    -k(66)*n(idx_O)  &
+    -k(137)*n(idx_HEj)  &
+    -k(136)*n(idx_HEj)  &
+    -k(64)*n(idx_O)  &
+    -k(134)*n(idx_Hj)  &
+    -k(231)  &
+    -k(132)*n(idx_Hj)  &
+    -k(260)  &
+    -k(62)*n(idx_H)  &
+    -k(135)*n(idx_HEj)  &
+    -k(232)  &
+    -k(65)*n(idx_O)  &
+    -k(63)*n(idx_O)  &
+    -k(133)*n(idx_Hj)  &
+    -k(131)*n(idx_Hj)  &
+    -k(138)*n(idx_HEj)
+
+!d[HCO_dot]/d[CH2]
+pd(15,13) =  &
+    +k(65)*n(idx_O)
+
+!d[H+_dot]/d[CH2]
+pd(18,13) =  &
+    -k(132)*n(idx_Hj)  &
+    -k(133)*n(idx_Hj)  &
+    -k(131)*n(idx_Hj)  &
+    -k(134)*n(idx_Hj)
+
+!d[HE+_dot]/d[CH2]
+pd(19,13) =  &
+    -k(138)*n(idx_HEj)  &
+    -k(137)*n(idx_HEj)  &
+    -k(136)*n(idx_HEj)  &
+    -k(135)*n(idx_HEj)
+
+!d[C+_dot]/d[CH2]
+pd(21,13) =  &
+    +k(135)*n(idx_HEj)  &
+    +k(136)*n(idx_HEj)
+
+!d[CH+_dot]/d[CH2]
+pd(26,13) =  &
+    +k(138)*n(idx_HEj)  &
+    +k(131)*n(idx_Hj)  &
+    +k(132)*n(idx_Hj)  &
+    +k(137)*n(idx_HEj)
+
+!d[CH2+_dot]/d[CH2]
+pd(27,13) =  &
+    +k(260)  &
+    +k(133)*n(idx_Hj)  &
+    +k(134)*n(idx_Hj)  &
+    +k(232)
+
+!d[HE_dot]/d[C2]
+pd(6,14) =  &
+    +k(139)*n(idx_HEj)
+
+!d[C_dot]/d[C2]
+pd(8,14) =  &
+    +k(139)*n(idx_HEj)  &
+    +2.d0*k(216)  &
+    +2.d0*k(251)  &
+    +k(99)*n(idx_Oj)  &
+    +k(67)*n(idx_O)  &
+    +k(68)*n(idx_O)
+
+!d[O_dot]/d[C2]
+pd(9,14) =  &
+    -k(68)*n(idx_O)  &
+    -k(67)*n(idx_O)
+
+!d[CO_dot]/d[C2]
+pd(11,14) =  &
+    +k(67)*n(idx_O)  &
+    +k(68)*n(idx_O)
+
+!d[C2_dot]/d[C2]
+pd(14,14) =  &
+    -k(216)  &
+    -k(68)*n(idx_O)  &
+    -k(99)*n(idx_Oj)  &
+    -k(67)*n(idx_O)  &
+    -k(251)  &
+    -k(139)*n(idx_HEj)
+
+!d[HE+_dot]/d[C2]
+pd(19,14) =  &
+    -k(139)*n(idx_HEj)
+
+!d[C+_dot]/d[C2]
+pd(21,14) =  &
+    +k(139)*n(idx_HEj)
+
+!d[O+_dot]/d[C2]
+pd(22,14) =  &
+    -k(99)*n(idx_Oj)
+
+!d[CO+_dot]/d[C2]
+pd(28,14) =  &
+    +k(99)*n(idx_Oj)
+
+!d[E_dot]/d[HCO]
+pd(1,15) =  &
+    +k(263)
+
+!d[H_dot]/d[HCO]
+pd(5,15) =  &
+    +k(262)
+
+!d[CO_dot]/d[HCO]
+pd(11,15) =  &
+    +k(262)
+
+!d[HCO_dot]/d[HCO]
+pd(15,15) =  &
+    -k(263)  &
+    -k(262)
+
+!d[HCO+_dot]/d[HCO]
+pd(24,15) =  &
+    +k(263)
+
+!d[E_dot]/d[H2O]
+pd(1,16) =  &
+    +k(220)
+
+!d[H_dot]/d[H2O]
+pd(5,16) =  &
+    +k(148)*n(idx_HEj)  &
+    +k(113)*n(idx_Cj)  &
+    +k(149)*n(idx_HEj)  &
+    +k(219)  &
+    +k(261)  &
+    +k(114)*n(idx_Cj)  &
+    +k(145)*n(idx_Hj)  &
+    +k(144)*n(idx_Hj)  &
+    +k(112)*n(idx_Cj)  &
+    -k(78)*n(idx_H)
+
+!d[HE_dot]/d[H2O]
+pd(6,16) =  &
+    +k(148)*n(idx_HEj)  &
+    +k(149)*n(idx_HEj)  &
+    +k(150)*n(idx_HEj)  &
+    +k(146)*n(idx_HEj)  &
+    +k(151)*n(idx_HEj)  &
+    +k(147)*n(idx_HEj)
+
+!d[H2_dot]/d[H2O]
+pd(7,16) =  &
+    +k(111)*n(idx_H3j)  &
+    +k(110)*n(idx_H3j)  &
+    +k(78)*n(idx_H)
+
+!d[C_dot]/d[H2O]
+pd(8,16) =  &
+    +k(115)*n(idx_Cj)
+
+!d[OH_dot]/d[H2O]
+pd(10,16) =  &
+    +k(219)  &
+    +k(78)*n(idx_H)  &
+    +k(261)  &
+    +k(146)*n(idx_HEj)  &
+    +k(147)*n(idx_HEj)
+
+!d[CO_dot]/d[H2O]
+pd(11,16) =  &
+    +k(128)*n(idx_HCOj)  &
+    +k(127)*n(idx_HCOj)
+
+!d[H2O_dot]/d[H2O]
+pd(16,16) =  &
+    -k(151)*n(idx_HEj)  &
+    -k(127)*n(idx_HCOj)  &
+    -k(115)*n(idx_Cj)  &
+    -k(144)*n(idx_Hj)  &
+    -k(110)*n(idx_H3j)  &
+    -k(148)*n(idx_HEj)  &
+    -k(219)  &
+    -k(112)*n(idx_Cj)  &
+    -k(150)*n(idx_HEj)  &
+    -k(220)  &
+    -k(128)*n(idx_HCOj)  &
+    -k(145)*n(idx_Hj)  &
+    -k(146)*n(idx_HEj)  &
+    -k(147)*n(idx_HEj)  &
+    -k(111)*n(idx_H3j)  &
+    -k(149)*n(idx_HEj)  &
+    -k(78)*n(idx_H)  &
+    -k(261)  &
+    -k(114)*n(idx_Cj)  &
+    -k(113)*n(idx_Cj)
+
+!d[H+_dot]/d[H2O]
+pd(18,16) =  &
+    -k(145)*n(idx_Hj)  &
+    -k(144)*n(idx_Hj)  &
+    +k(146)*n(idx_HEj)  &
+    +k(147)*n(idx_HEj)
+
+!d[HE+_dot]/d[H2O]
+pd(19,16) =  &
+    -k(151)*n(idx_HEj)  &
+    -k(150)*n(idx_HEj)  &
+    -k(148)*n(idx_HEj)  &
+    -k(146)*n(idx_HEj)  &
+    -k(147)*n(idx_HEj)  &
+    -k(149)*n(idx_HEj)
+
+!d[C+_dot]/d[H2O]
+pd(21,16) =  &
+    -k(112)*n(idx_Cj)  &
+    -k(115)*n(idx_Cj)  &
+    -k(114)*n(idx_Cj)  &
+    -k(113)*n(idx_Cj)
+
+!d[HOC+_dot]/d[H2O]
+pd(23,16) =  &
+    +k(112)*n(idx_Cj)
+
+!d[HCO+_dot]/d[H2O]
+pd(24,16) =  &
+    +k(113)*n(idx_Cj)  &
+    -k(127)*n(idx_HCOj)  &
+    +k(114)*n(idx_Cj)  &
+    -k(128)*n(idx_HCOj)
+
+!d[H3+_dot]/d[H2O]
+pd(25,16) =  &
+    -k(111)*n(idx_H3j)  &
+    -k(110)*n(idx_H3j)
+
+!d[OH+_dot]/d[H2O]
+pd(30,16) =  &
+    +k(148)*n(idx_HEj)  &
+    +k(149)*n(idx_HEj)
+
+!d[H2O+_dot]/d[H2O]
+pd(31,16) =  &
+    +k(115)*n(idx_Cj)  &
+    +k(150)*n(idx_HEj)  &
+    +k(220)  &
+    +k(151)*n(idx_HEj)  &
+    +k(145)*n(idx_Hj)  &
+    +k(144)*n(idx_Hj)
+
+!d[H3O+_dot]/d[H2O]
+pd(32,16) =  &
+    +k(111)*n(idx_H3j)  &
+    +k(110)*n(idx_H3j)  &
+    +k(128)*n(idx_HCOj)  &
+    +k(127)*n(idx_HCOj)
+
+!d[E_dot]/d[O2]
+pd(1,17) =  &
+    +k(221)  &
+    +k(258)
+
+!d[H_dot]/d[O2]
+pd(5,17) =  &
+    -k(79)*n(idx_H)  &
+    +k(152)*n(idx_Hj)
+
+!d[HE_dot]/d[O2]
+pd(6,17) =  &
+    +k(153)*n(idx_HEj)  &
+    +k(154)*n(idx_HEj)
+
+!d[H2_dot]/d[O2]
+pd(7,17) =  &
+    -k(80)*n(idx_H2)
+
+!d[C_dot]/d[O2]
+pd(8,17) =  &
+    -k(81)*n(idx_C)  &
+    -k(82)*n(idx_C)
+
+!d[O_dot]/d[O2]
+pd(9,17) =  &
+    +2.d0*k(257)  &
+    +k(79)*n(idx_H)  &
+    +2.d0*k(222)  &
+    +k(81)*n(idx_C)  &
+    +k(117)*n(idx_Cj)  &
+    +k(154)*n(idx_HEj)  &
+    +k(82)*n(idx_C)
+
+!d[OH_dot]/d[O2]
+pd(10,17) =  &
+    +2.d0*k(80)*n(idx_H2)  &
+    +k(119)*n(idx_CH2j)  &
+    +k(79)*n(idx_H)
+
+!d[CO_dot]/d[O2]
+pd(11,17) =  &
+    +k(82)*n(idx_C)  &
+    +k(118)*n(idx_Cj)  &
+    +k(81)*n(idx_C)
+
+!d[O2_dot]/d[O2]
+pd(17,17) =  &
+    -k(118)*n(idx_Cj)  &
+    -k(82)*n(idx_C)  &
+    -k(222)  &
+    -k(79)*n(idx_H)  &
+    -k(153)*n(idx_HEj)  &
+    -k(81)*n(idx_C)  &
+    -k(221)  &
+    -k(152)*n(idx_Hj)  &
+    -k(80)*n(idx_H2)  &
+    -k(117)*n(idx_Cj)  &
+    -k(258)  &
+    -k(257)  &
+    -k(119)*n(idx_CH2j)  &
+    -k(154)*n(idx_HEj)
+
+!d[H+_dot]/d[O2]
+pd(18,17) =  &
+    -k(152)*n(idx_Hj)
+
+!d[HE+_dot]/d[O2]
+pd(19,17) =  &
+    -k(153)*n(idx_HEj)  &
+    -k(154)*n(idx_HEj)
+
+!d[C+_dot]/d[O2]
+pd(21,17) =  &
+    -k(118)*n(idx_Cj)  &
+    -k(117)*n(idx_Cj)
+
+!d[O+_dot]/d[O2]
+pd(22,17) =  &
+    +k(118)*n(idx_Cj)  &
+    +k(154)*n(idx_HEj)
+
+!d[HCO+_dot]/d[O2]
+pd(24,17) =  &
+    +k(119)*n(idx_CH2j)
+
+!d[CH2+_dot]/d[O2]
+pd(27,17) =  &
+    -k(119)*n(idx_CH2j)
+
+!d[CO+_dot]/d[O2]
+pd(28,17) =  &
+    +k(117)*n(idx_Cj)
+
+!d[O2+_dot]/d[O2]
+pd(33,17) =  &
+    +k(153)*n(idx_HEj)  &
+    +k(152)*n(idx_Hj)  &
+    +k(221)  &
+    +k(258)
+
+!d[E_dot]/d[H+]
+pd(1,18) =  &
+    -k(3)*n(idx_E)  &
+    -k(2)*n(idx_E)  &
+    +k(28)*n(idx_Hk)
+
+!d[H-_dot]/d[H+]
+pd(2,18) =  &
+    -k(28)*n(idx_Hk)  &
+    -k(27)*n(idx_Hk)
+
+!d[C-_dot]/d[H+]
+pd(3,18) =  &
+    -k(158)*n(idx_Ck)
+
+!d[O-_dot]/d[H+]
+pd(4,18) =  &
+    -k(159)*n(idx_Ok)
+
+!d[H_dot]/d[H+]
+pd(5,18) =  &
+    +k(46)*n(idx_C)  &
+    +k(145)*n(idx_H2O)  &
+    +k(158)*n(idx_Ck)  &
+    +k(10)*n(idx_HE)  &
+    +k(152)*n(idx_O2)  &
+    +k(3)*n(idx_E)  &
+    +k(9)*n(idx_HE)  &
+    +k(44)*n(idx_O)  &
+    +k(21)*n(idx_H2)  &
+    -k(19)*n(idx_H)  &
+    +k(140)*n(idx_OH)  &
+    +2.d0*k(27)*n(idx_Hk)  &
+    +k(129)*n(idx_CH)  &
+    +k(141)*n(idx_OH)  &
+    +k(144)*n(idx_H2O)  &
+    +k(130)*n(idx_CH)  &
+    -k(18)*n(idx_H)  &
+    +k(2)*n(idx_E)  &
+    +k(133)*n(idx_CH2)  &
+    +k(159)*n(idx_Ok)  &
+    +k(134)*n(idx_CH2)  &
+    +2.d0*k(192)*n(idx_H2)
+
+!d[HE_dot]/d[H+]
+pd(6,18) =  &
+    -k(10)*n(idx_HE)  &
+    -k(9)*n(idx_HE)
+
+!d[H2_dot]/d[H+]
+pd(7,18) =  &
+    -k(193)*n(idx_H2)  &
+    +k(132)*n(idx_CH2)  &
+    +k(131)*n(idx_CH2)  &
+    -k(192)*n(idx_H2)  &
+    -k(21)*n(idx_H2)
+
+!d[C_dot]/d[H+]
+pd(8,18) =  &
+    -k(46)*n(idx_C)  &
+    +k(158)*n(idx_Ck)
+
+!d[O_dot]/d[H+]
+pd(9,18) =  &
+    +k(159)*n(idx_Ok)  &
+    -k(44)*n(idx_O)
+
+!d[OH_dot]/d[H+]
+pd(10,18) =  &
+    -k(140)*n(idx_OH)  &
+    -k(141)*n(idx_OH)
+
+!d[CH_dot]/d[H+]
+pd(12,18) =  &
+    -k(129)*n(idx_CH)  &
+    -k(130)*n(idx_CH)
+
+!d[CH2_dot]/d[H+]
+pd(13,18) =  &
+    -k(131)*n(idx_CH2)  &
+    -k(133)*n(idx_CH2)  &
+    -k(132)*n(idx_CH2)  &
+    -k(134)*n(idx_CH2)
+
+!d[H2O_dot]/d[H+]
+pd(16,18) =  &
+    -k(144)*n(idx_H2O)  &
+    -k(145)*n(idx_H2O)
+
+!d[O2_dot]/d[H+]
+pd(17,18) =  &
+    -k(152)*n(idx_O2)
+
+!d[H+_dot]/d[H+]
+pd(18,18) =  &
+    -k(193)*n(idx_H2)  &
+    -k(144)*n(idx_H2O)  &
+    -k(159)*n(idx_Ok)  &
+    -k(130)*n(idx_CH)  &
+    -k(134)*n(idx_CH2)  &
+    -k(27)*n(idx_Hk)  &
+    -k(140)*n(idx_OH)  &
+    -k(2)*n(idx_E)  &
+    -k(19)*n(idx_H)  &
+    -k(145)*n(idx_H2O)  &
+    -k(192)*n(idx_H2)  &
+    -k(132)*n(idx_CH2)  &
+    -k(129)*n(idx_CH)  &
+    -k(158)*n(idx_Ck)  &
+    -k(18)*n(idx_H)  &
+    -k(46)*n(idx_C)  &
+    -k(10)*n(idx_HE)  &
+    -k(131)*n(idx_CH2)  &
+    -k(133)*n(idx_CH2)  &
+    -k(141)*n(idx_OH)  &
+    -k(9)*n(idx_HE)  &
+    -k(152)*n(idx_O2)  &
+    -k(28)*n(idx_Hk)  &
+    -k(3)*n(idx_E)  &
+    -k(44)*n(idx_O)  &
+    +k(192)*n(idx_H2)  &
+    -k(21)*n(idx_H2)
+
+!d[HE+_dot]/d[H+]
+pd(19,18) =  &
+    +k(9)*n(idx_HE)  &
+    +k(10)*n(idx_HE)
+
+!d[H2+_dot]/d[H+]
+pd(20,18) =  &
+    +k(19)*n(idx_H)  &
+    +k(18)*n(idx_H)  &
+    +k(28)*n(idx_Hk)  &
+    +k(21)*n(idx_H2)
+
+!d[C+_dot]/d[H+]
+pd(21,18) =  &
+    +k(46)*n(idx_C)
+
+!d[O+_dot]/d[H+]
+pd(22,18) =  &
+    +k(44)*n(idx_O)
+
+!d[H3+_dot]/d[H+]
+pd(25,18) =  &
+    +k(193)*n(idx_H2)
+
+!d[CH+_dot]/d[H+]
+pd(26,18) =  &
+    +k(130)*n(idx_CH)  &
+    +k(132)*n(idx_CH2)  &
+    +k(131)*n(idx_CH2)  &
+    +k(129)*n(idx_CH)
+
+!d[CH2+_dot]/d[H+]
+pd(27,18) =  &
+    +k(134)*n(idx_CH2)  &
+    +k(133)*n(idx_CH2)
+
+!d[OH+_dot]/d[H+]
+pd(30,18) =  &
+    +k(140)*n(idx_OH)  &
+    +k(141)*n(idx_OH)
+
+!d[H2O+_dot]/d[H+]
+pd(31,18) =  &
+    +k(144)*n(idx_H2O)  &
+    +k(145)*n(idx_H2O)
+
+!d[O2+_dot]/d[H+]
+pd(33,18) =  &
+    +k(152)*n(idx_O2)
+
+!d[E_dot]/d[HE+]
+pd(1,19) =  &
+    -k(7)*n(idx_E)  &
+    -k(6)*n(idx_E)  &
+    +2.d0*k(7)*n(idx_E)  &
+    +k(209)  &
+    -k(5)*n(idx_E)
+
+!d[H-_dot]/d[HE+]
+pd(2,19) =  &
+    -k(160)*n(idx_Hk)
+
+!d[H_dot]/d[HE+]
+pd(5,19) =  &
+    -k(8)*n(idx_H)  &
+    +k(138)*n(idx_CH2)  &
+    +k(142)*n(idx_OH)  &
+    +k(149)*n(idx_H2O)  &
+    +k(13)*n(idx_H2)  &
+    +k(137)*n(idx_CH2)  &
+    +k(160)*n(idx_Hk)  &
+    +k(148)*n(idx_H2O)  &
+    +2.d0*k(14)*n(idx_H2)  &
+    +k(143)*n(idx_OH)
+
+!d[HE_dot]/d[HE+]
+pd(6,19) =  &
+    +k(138)*n(idx_CH2)  &
+    +k(135)*n(idx_CH2)  &
+    +k(153)*n(idx_O2)  &
+    +k(50)*n(idx_C)  &
+    +k(143)*n(idx_OH)  &
+    +k(147)*n(idx_H2O)  &
+    +k(139)*n(idx_C2)  &
+    +k(156)*n(idx_CO)  &
+    +k(8)*n(idx_H)  &
+    +k(6)*n(idx_E)  &
+    +k(49)*n(idx_C)  &
+    +k(151)*n(idx_H2O)  &
+    +k(160)*n(idx_Hk)  &
+    +k(146)*n(idx_H2O)  &
+    +k(13)*n(idx_H2)  &
+    +k(137)*n(idx_CH2)  &
+    +k(155)*n(idx_CO)  &
+    +k(148)*n(idx_H2O)  &
+    +k(136)*n(idx_CH2)  &
+    +k(150)*n(idx_H2O)  &
+    +k(48)*n(idx_C)  &
+    +k(5)*n(idx_E)  &
+    +k(142)*n(idx_OH)  &
+    +k(149)*n(idx_H2O)  &
+    +k(12)*n(idx_H2)  &
+    +k(154)*n(idx_O2)  &
+    +k(45)*n(idx_O)
+
+!d[H2_dot]/d[HE+]
+pd(7,19) =  &
+    +k(135)*n(idx_CH2)  &
+    -k(13)*n(idx_H2)  &
+    +k(136)*n(idx_CH2)  &
+    -k(12)*n(idx_H2)  &
+    -k(14)*n(idx_H2)
+
+!d[C_dot]/d[HE+]
+pd(8,19) =  &
+    +k(156)*n(idx_CO)  &
+    -k(49)*n(idx_C)  &
+    -k(48)*n(idx_C)  &
+    +k(139)*n(idx_C2)  &
+    -k(50)*n(idx_C)
+
+!d[O_dot]/d[HE+]
+pd(9,19) =  &
+    +k(155)*n(idx_CO)  &
+    -k(45)*n(idx_O)  &
+    +k(154)*n(idx_O2)
+
+!d[OH_dot]/d[HE+]
+pd(10,19) =  &
+    -k(143)*n(idx_OH)  &
+    +k(147)*n(idx_H2O)  &
+    +k(146)*n(idx_H2O)  &
+    -k(142)*n(idx_OH)
+
+!d[CO_dot]/d[HE+]
+pd(11,19) =  &
+    -k(155)*n(idx_CO)  &
+    -k(156)*n(idx_CO)
+
+!d[CH2_dot]/d[HE+]
+pd(13,19) =  &
+    -k(137)*n(idx_CH2)  &
+    -k(136)*n(idx_CH2)  &
+    -k(138)*n(idx_CH2)  &
+    -k(135)*n(idx_CH2)
+
+!d[C2_dot]/d[HE+]
+pd(14,19) =  &
+    -k(139)*n(idx_C2)
+
+!d[H2O_dot]/d[HE+]
+pd(16,19) =  &
+    -k(150)*n(idx_H2O)  &
+    -k(147)*n(idx_H2O)  &
+    -k(149)*n(idx_H2O)  &
+    -k(151)*n(idx_H2O)  &
+    -k(146)*n(idx_H2O)  &
+    -k(148)*n(idx_H2O)
+
+!d[O2_dot]/d[HE+]
+pd(17,19) =  &
+    -k(154)*n(idx_O2)  &
+    -k(153)*n(idx_O2)
+
+!d[H+_dot]/d[HE+]
+pd(18,19) =  &
+    +k(8)*n(idx_H)  &
+    +k(147)*n(idx_H2O)  &
+    +k(13)*n(idx_H2)  &
+    +k(146)*n(idx_H2O)
+
+!d[HE+_dot]/d[HE+]
+pd(19,19) =  &
+    -k(8)*n(idx_H)  &
+    -k(136)*n(idx_CH2)  &
+    -k(5)*n(idx_E)  &
+    -k(143)*n(idx_OH)  &
+    -k(160)*n(idx_Hk)  &
+    -k(146)*n(idx_H2O)  &
+    -k(13)*n(idx_H2)  &
+    -k(153)*n(idx_O2)  &
+    -k(6)*n(idx_E)  &
+    -k(49)*n(idx_C)  &
+    -k(148)*n(idx_H2O)  &
+    +k(14)*n(idx_H2)  &
+    -k(142)*n(idx_OH)  &
+    -k(150)*n(idx_H2O)  &
+    -k(209)  &
+    -k(50)*n(idx_C)  &
+    -k(147)*n(idx_H2O)  &
+    -k(138)*n(idx_CH2)  &
+    -k(154)*n(idx_O2)  &
+    -k(45)*n(idx_O)  &
+    -k(155)*n(idx_CO)  &
+    -k(139)*n(idx_C2)  &
+    -k(7)*n(idx_E)  &
+    -k(48)*n(idx_C)  &
+    -k(149)*n(idx_H2O)  &
+    -k(151)*n(idx_H2O)  &
+    -k(135)*n(idx_CH2)  &
+    -k(12)*n(idx_H2)  &
+    -k(137)*n(idx_CH2)  &
+    -k(14)*n(idx_H2)  &
+    -k(156)*n(idx_CO)
+
+!d[H2+_dot]/d[HE+]
+pd(20,19) =  &
+    +k(12)*n(idx_H2)
+
+!d[C+_dot]/d[HE+]
+pd(21,19) =  &
+    +k(139)*n(idx_C2)  &
+    +k(48)*n(idx_C)  &
+    +k(49)*n(idx_C)  &
+    +k(155)*n(idx_CO)  &
+    +k(135)*n(idx_CH2)  &
+    +k(50)*n(idx_C)  &
+    +k(136)*n(idx_CH2)
+
+!d[O+_dot]/d[HE+]
+pd(22,19) =  &
+    +k(156)*n(idx_CO)  &
+    +k(154)*n(idx_O2)  &
+    +k(142)*n(idx_OH)  &
+    +k(143)*n(idx_OH)  &
+    +k(45)*n(idx_O)
+
+!d[CH+_dot]/d[HE+]
+pd(26,19) =  &
+    +k(138)*n(idx_CH2)  &
+    +k(137)*n(idx_CH2)
+
+!d[OH+_dot]/d[HE+]
+pd(30,19) =  &
+    +k(149)*n(idx_H2O)  &
+    +k(148)*n(idx_H2O)
+
+!d[H2O+_dot]/d[HE+]
+pd(31,19) =  &
+    +k(151)*n(idx_H2O)  &
+    +k(150)*n(idx_H2O)
+
+!d[O2+_dot]/d[HE+]
+pd(33,19) =  &
+    +k(153)*n(idx_O2)
+
+!d[HE++_dot]/d[HE+]
+pd(34,19) =  &
+    +k(7)*n(idx_E)  &
+    +k(209)
+
+!d[E_dot]/d[H2+]
+pd(1,20) =  &
+    -k(29)*n(idx_E)  &
+    -k(30)*n(idx_E)
+
+!d[H-_dot]/d[H2+]
+pd(2,20) =  &
+    -k(31)*n(idx_Hk)
+
+!d[H_dot]/d[H2+]
+pd(5,20) =  &
+    +2.d0*k(30)*n(idx_E)  &
+    -k(20)*n(idx_H)  &
+    +k(84)*n(idx_H2)  &
+    +k(101)*n(idx_O)  &
+    +k(31)*n(idx_Hk)  &
+    +k(86)*n(idx_C)  &
+    +2.d0*k(29)*n(idx_E)  &
+    +k(226)
+
+!d[H2_dot]/d[H2+]
+pd(7,20) =  &
+    +k(20)*n(idx_H)  &
+    +k(31)*n(idx_Hk)  &
+    -k(84)*n(idx_H2)
+
+!d[C_dot]/d[H2+]
+pd(8,20) =  &
+    -k(86)*n(idx_C)
+
+!d[O_dot]/d[H2+]
+pd(9,20) =  &
+    -k(101)*n(idx_O)
+
+!d[H+_dot]/d[H2+]
+pd(18,20) =  &
+    +k(20)*n(idx_H)  &
+    +k(226)
+
+!d[H2+_dot]/d[H2+]
+pd(20,20) =  &
+    -k(86)*n(idx_C)  &
+    -k(20)*n(idx_H)  &
+    -k(29)*n(idx_E)  &
+    -k(30)*n(idx_E)  &
+    -k(84)*n(idx_H2)  &
+    -k(31)*n(idx_Hk)  &
+    -k(226)  &
+    -k(101)*n(idx_O)
+
+!d[H3+_dot]/d[H2+]
+pd(25,20) =  &
+    +k(84)*n(idx_H2)
+
+!d[CH+_dot]/d[H2+]
+pd(26,20) =  &
+    +k(86)*n(idx_C)
+
+!d[OH+_dot]/d[H2+]
+pd(30,20) =  &
+    +k(101)*n(idx_O)
+
+!d[E_dot]/d[C+]
+pd(1,21) =  &
+    -k(37)*n(idx_E)  &
+    -k(36)*n(idx_E)  &
+    -k(38)*n(idx_E)
+
+!d[H_dot]/d[C+]
+pd(5,21) =  &
+    +k(107)*n(idx_OH)  &
+    -k(47)*n(idx_H)  &
+    -k(199)*n(idx_H)  &
+    +k(89)*n(idx_H2)  &
+    +k(106)*n(idx_OH)  &
+    +k(113)*n(idx_H2O)  &
+    +k(112)*n(idx_H2O)  &
+    +k(114)*n(idx_H2O)
+
+!d[H2_dot]/d[C+]
+pd(7,21) =  &
+    -k(200)*n(idx_H2)  &
+    -k(89)*n(idx_H2)
+
+!d[C_dot]/d[C+]
+pd(8,21) =  &
+    +k(47)*n(idx_H)  &
+    +k(38)*n(idx_E)  &
+    +k(37)*n(idx_E)  &
+    +k(36)*n(idx_E)  &
+    +k(115)*n(idx_H2O)
+
+!d[O_dot]/d[C+]
+pd(9,21) =  &
+    -k(201)*n(idx_O)  &
+    +k(117)*n(idx_O2)  &
+    -k(202)*n(idx_O)  &
+    -k(270)*n(idx_O)  &
+    -k(269)*n(idx_O)
+
+!d[OH_dot]/d[C+]
+pd(10,21) =  &
+    -k(107)*n(idx_OH)  &
+    -k(106)*n(idx_OH)
+
+!d[CO_dot]/d[C+]
+pd(11,21) =  &
+    +k(118)*n(idx_O2)
+
+!d[H2O_dot]/d[C+]
+pd(16,21) =  &
+    -k(114)*n(idx_H2O)  &
+    -k(112)*n(idx_H2O)  &
+    -k(115)*n(idx_H2O)  &
+    -k(113)*n(idx_H2O)
+
+!d[O2_dot]/d[C+]
+pd(17,21) =  &
+    -k(118)*n(idx_O2)  &
+    -k(117)*n(idx_O2)
+
+!d[H+_dot]/d[C+]
+pd(18,21) =  &
+    +k(47)*n(idx_H)
+
+!d[C+_dot]/d[C+]
+pd(21,21) =  &
+    -k(200)*n(idx_H2)  &
+    -k(38)*n(idx_E)  &
+    -k(199)*n(idx_H)  &
+    -k(269)*n(idx_O)  &
+    -k(114)*n(idx_H2O)  &
+    -k(37)*n(idx_E)  &
+    -k(107)*n(idx_OH)  &
+    -k(47)*n(idx_H)  &
+    -k(112)*n(idx_H2O)  &
+    -k(117)*n(idx_O2)  &
+    -k(201)*n(idx_O)  &
+    -k(36)*n(idx_E)  &
+    -k(202)*n(idx_O)  &
+    -k(270)*n(idx_O)  &
+    -k(113)*n(idx_H2O)  &
+    -k(106)*n(idx_OH)  &
+    -k(115)*n(idx_H2O)  &
+    -k(89)*n(idx_H2)  &
+    -k(118)*n(idx_O2)
+
+!d[O+_dot]/d[C+]
+pd(22,21) =  &
+    +k(118)*n(idx_O2)
+
+!d[HOC+_dot]/d[C+]
+pd(23,21) =  &
+    +k(112)*n(idx_H2O)
+
+!d[HCO+_dot]/d[C+]
+pd(24,21) =  &
+    +k(113)*n(idx_H2O)  &
+    +k(114)*n(idx_H2O)
+
+!d[CH+_dot]/d[C+]
+pd(26,21) =  &
+    +k(199)*n(idx_H)  &
+    +k(89)*n(idx_H2)
+
+!d[CH2+_dot]/d[C+]
+pd(27,21) =  &
+    +k(200)*n(idx_H2)
+
+!d[CO+_dot]/d[C+]
+pd(28,21) =  &
+    +k(201)*n(idx_O)  &
+    +k(269)*n(idx_O)  &
+    +k(270)*n(idx_O)  &
+    +k(107)*n(idx_OH)  &
+    +k(202)*n(idx_O)  &
+    +k(117)*n(idx_O2)  &
+    +k(106)*n(idx_OH)
+
+!d[H2O+_dot]/d[C+]
+pd(31,21) =  &
+    +k(115)*n(idx_H2O)
+
+!d[E_dot]/d[O+]
+pd(1,22) =  &
+    -k(39)*n(idx_E)  &
+    -k(40)*n(idx_E)
+
+!d[H_dot]/d[O+]
+pd(5,22) =  &
+    +k(100)*n(idx_H2)  &
+    -k(43)*n(idx_H)
+
+!d[H2_dot]/d[O+]
+pd(7,22) =  &
+    -k(100)*n(idx_H2)
+
+!d[C_dot]/d[O+]
+pd(8,22) =  &
+    +k(99)*n(idx_C2)  &
+    -k(272)*n(idx_C)  &
+    -k(271)*n(idx_C)
+
+!d[O_dot]/d[O+]
+pd(9,22) =  &
+    +k(39)*n(idx_E)  &
+    +k(40)*n(idx_E)  &
+    +k(43)*n(idx_H)
+
+!d[C2_dot]/d[O+]
+pd(14,22) =  &
+    -k(99)*n(idx_C2)
+
+!d[H+_dot]/d[O+]
+pd(18,22) =  &
+    +k(43)*n(idx_H)
+
+!d[O+_dot]/d[O+]
+pd(22,22) =  &
+    -k(271)*n(idx_C)  &
+    -k(39)*n(idx_E)  &
+    -k(43)*n(idx_H)  &
+    -k(99)*n(idx_C2)  &
+    -k(100)*n(idx_H2)  &
+    -k(272)*n(idx_C)  &
+    -k(40)*n(idx_E)
+
+!d[CO+_dot]/d[O+]
+pd(28,22) =  &
+    +k(99)*n(idx_C2)  &
+    +k(272)*n(idx_C)  &
+    +k(271)*n(idx_C)
+
+!d[OH+_dot]/d[O+]
+pd(30,22) =  &
+    +k(100)*n(idx_H2)
+
+!d[E_dot]/d[HOC+]
+pd(1,23) =  &
+    -k(182)*n(idx_E)
+
+!d[H_dot]/d[HOC+]
+pd(5,23) =  &
+    +k(182)*n(idx_E)
+
+!d[H2_dot]/d[HOC+]
+pd(7,23) =  &
+    -k(52)*n(idx_H2)  &
+    +k(52)*n(idx_H2)
+
+!d[CO_dot]/d[HOC+]
+pd(11,23) =  &
+    +k(182)*n(idx_E)  &
+    +k(54)*n(idx_CO)  &
+    +k(53)*n(idx_CO)  &
+    -k(53)*n(idx_CO)  &
+    -k(54)*n(idx_CO)
+
+!d[HOC+_dot]/d[HOC+]
+pd(23,23) =  &
+    -k(52)*n(idx_H2)  &
+    -k(182)*n(idx_E)  &
+    -k(53)*n(idx_CO)  &
+    -k(54)*n(idx_CO)
+
+!d[HCO+_dot]/d[HOC+]
+pd(24,23) =  &
+    +k(54)*n(idx_CO)  &
+    +k(52)*n(idx_H2)  &
+    +k(53)*n(idx_CO)
+
+!d[E_dot]/d[HCO+]
+pd(1,24) =  &
+    -k(180)*n(idx_E)  &
+    -k(181)*n(idx_E)
+
+!d[H_dot]/d[HCO+]
+pd(5,24) =  &
+    +k(180)*n(idx_E)
+
+!d[C_dot]/d[HCO+]
+pd(8,24) =  &
+    -k(126)*n(idx_C)  &
+    +k(181)*n(idx_E)
+
+!d[OH_dot]/d[HCO+]
+pd(10,24) =  &
+    +k(181)*n(idx_E)
+
+!d[CO_dot]/d[HCO+]
+pd(11,24) =  &
+    +k(127)*n(idx_H2O)  &
+    +k(126)*n(idx_C)  &
+    +k(180)*n(idx_E)  &
+    +k(128)*n(idx_H2O)
+
+!d[H2O_dot]/d[HCO+]
+pd(16,24) =  &
+    -k(127)*n(idx_H2O)  &
+    -k(128)*n(idx_H2O)
+
+!d[HCO+_dot]/d[HCO+]
+pd(24,24) =  &
+    -k(180)*n(idx_E)  &
+    -k(127)*n(idx_H2O)  &
+    -k(128)*n(idx_H2O)  &
+    -k(181)*n(idx_E)  &
+    -k(126)*n(idx_C)
+
+!d[CH+_dot]/d[HCO+]
+pd(26,24) =  &
+    +k(126)*n(idx_C)
+
+!d[H3O+_dot]/d[HCO+]
+pd(32,24) =  &
+    +k(127)*n(idx_H2O)  &
+    +k(128)*n(idx_H2O)
+
+!d[E_dot]/d[H3+]
+pd(1,25) =  &
+    -k(162)*n(idx_E)  &
+    -k(161)*n(idx_E)
+
+!d[H_dot]/d[H3+]
+pd(5,25) =  &
+    +k(228)  &
+    +k(88)*n(idx_C)  &
+    +k(103)*n(idx_O)  &
+    +3.d0*k(162)*n(idx_E)  &
+    -k(85)*n(idx_H)  &
+    +k(161)*n(idx_E)
+
+!d[H2_dot]/d[H3+]
+pd(7,25) =  &
+    +k(87)*n(idx_C)  &
+    +k(122)*n(idx_CO)  &
+    +k(125)*n(idx_CO)  &
+    +k(124)*n(idx_CO)  &
+    +k(111)*n(idx_H2O)  &
+    +k(123)*n(idx_CO)  &
+    +k(102)*n(idx_O)  &
+    +k(227)  &
+    +k(104)*n(idx_OH)  &
+    +k(105)*n(idx_OH)  &
+    +k(110)*n(idx_H2O)  &
+    +k(161)*n(idx_E)  &
+    +k(85)*n(idx_H)
+
+!d[C_dot]/d[H3+]
+pd(8,25) =  &
+    -k(88)*n(idx_C)  &
+    -k(87)*n(idx_C)
+
+!d[O_dot]/d[H3+]
+pd(9,25) =  &
+    -k(102)*n(idx_O)  &
+    -k(103)*n(idx_O)
+
+!d[OH_dot]/d[H3+]
+pd(10,25) =  &
+    -k(104)*n(idx_OH)  &
+    -k(105)*n(idx_OH)
+
+!d[CO_dot]/d[H3+]
+pd(11,25) =  &
+    -k(125)*n(idx_CO)  &
+    -k(124)*n(idx_CO)  &
+    -k(123)*n(idx_CO)  &
+    -k(122)*n(idx_CO)
+
+!d[H2O_dot]/d[H3+]
+pd(16,25) =  &
+    -k(111)*n(idx_H2O)  &
+    -k(110)*n(idx_H2O)
+
+!d[H+_dot]/d[H3+]
+pd(18,25) =  &
+    +k(227)
+
+!d[H2+_dot]/d[H3+]
+pd(20,25) =  &
+    +k(228)  &
+    +k(85)*n(idx_H)
+
+!d[HOC+_dot]/d[H3+]
+pd(23,25) =  &
+    +k(125)*n(idx_CO)  &
+    +k(124)*n(idx_CO)
+
+!d[HCO+_dot]/d[H3+]
+pd(24,25) =  &
+    +k(123)*n(idx_CO)  &
+    +k(122)*n(idx_CO)
+
+!d[H3+_dot]/d[H3+]
+pd(25,25) =  &
+    -k(124)*n(idx_CO)  &
+    -k(123)*n(idx_CO)  &
+    -k(122)*n(idx_CO)  &
+    -k(103)*n(idx_O)  &
+    -k(87)*n(idx_C)  &
+    -k(88)*n(idx_C)  &
+    -k(125)*n(idx_CO)  &
+    -k(110)*n(idx_H2O)  &
+    -k(161)*n(idx_E)  &
+    -k(111)*n(idx_H2O)  &
+    -k(162)*n(idx_E)  &
+    -k(228)  &
+    -k(102)*n(idx_O)  &
+    -k(104)*n(idx_OH)  &
+    -k(105)*n(idx_OH)  &
+    -k(227)  &
+    -k(85)*n(idx_H)
+
+!d[CH+_dot]/d[H3+]
+pd(26,25) =  &
+    +k(87)*n(idx_C)
+
+!d[CH2+_dot]/d[H3+]
+pd(27,25) =  &
+    +k(88)*n(idx_C)
+
+!d[OH+_dot]/d[H3+]
+pd(30,25) =  &
+    +k(102)*n(idx_O)
+
+!d[H2O+_dot]/d[H3+]
+pd(31,25) =  &
+    +k(104)*n(idx_OH)  &
+    +k(105)*n(idx_OH)  &
+    +k(103)*n(idx_O)
+
+!d[H3O+_dot]/d[H3+]
+pd(32,25) =  &
+    +k(110)*n(idx_H2O)  &
+    +k(111)*n(idx_H2O)
+
+!d[E_dot]/d[CH+]
+pd(1,26) =  &
+    -k(163)*n(idx_E)
+
+!d[H_dot]/d[CH+]
+pd(5,26) =  &
+    -k(90)*n(idx_H)  &
+    +k(92)*n(idx_O)  &
+    +k(91)*n(idx_H2)  &
+    +k(163)*n(idx_E)
+
+!d[H2_dot]/d[CH+]
+pd(7,26) =  &
+    -k(91)*n(idx_H2)  &
+    +k(90)*n(idx_H)
+
+!d[C_dot]/d[CH+]
+pd(8,26) =  &
+    +k(163)*n(idx_E)  &
+    +k(230)
+
+!d[O_dot]/d[CH+]
+pd(9,26) =  &
+    -k(92)*n(idx_O)
+
+!d[H+_dot]/d[CH+]
+pd(18,26) =  &
+    +k(230)
+
+!d[C+_dot]/d[CH+]
+pd(21,26) =  &
+    +k(90)*n(idx_H)
+
+!d[CH+_dot]/d[CH+]
+pd(26,26) =  &
+    -k(91)*n(idx_H2)  &
+    -k(92)*n(idx_O)  &
+    -k(90)*n(idx_H)  &
+    -k(230)  &
+    -k(163)*n(idx_E)
+
+!d[CH2+_dot]/d[CH+]
+pd(27,26) =  &
+    +k(91)*n(idx_H2)
+
+!d[CO+_dot]/d[CH+]
+pd(28,26) =  &
+    +k(92)*n(idx_O)
+
+!d[E_dot]/d[CH2+]
+pd(1,27) =  &
+    -k(164)*n(idx_E)  &
+    -k(165)*n(idx_E)  &
+    -k(166)*n(idx_E)
+
+!d[H_dot]/d[CH2+]
+pd(5,27) =  &
+    +k(233)  &
+    -k(93)*n(idx_H)  &
+    +k(94)*n(idx_H2)  &
+    +2.d0*k(166)*n(idx_E)  &
+    +k(164)*n(idx_E)  &
+    +k(95)*n(idx_O)
+
+!d[H2_dot]/d[CH2+]
+pd(7,27) =  &
+    +k(165)*n(idx_E)  &
+    +k(93)*n(idx_H)  &
+    -k(94)*n(idx_H2)
+
+!d[C_dot]/d[CH2+]
+pd(8,27) =  &
+    +k(165)*n(idx_E)  &
+    +k(166)*n(idx_E)
+
+!d[O_dot]/d[CH2+]
+pd(9,27) =  &
+    -k(95)*n(idx_O)
+
+!d[OH_dot]/d[CH2+]
+pd(10,27) =  &
+    +k(119)*n(idx_O2)
+
+!d[CH_dot]/d[CH2+]
+pd(12,27) =  &
+    +k(164)*n(idx_E)
+
+!d[O2_dot]/d[CH2+]
+pd(17,27) =  &
+    -k(119)*n(idx_O2)
+
+!d[HCO+_dot]/d[CH2+]
+pd(24,27) =  &
+    +k(119)*n(idx_O2)  &
+    +k(95)*n(idx_O)
+
+!d[CH+_dot]/d[CH2+]
+pd(26,27) =  &
+    +k(233)  &
+    +k(93)*n(idx_H)
+
+!d[CH2+_dot]/d[CH2+]
+pd(27,27) =  &
+    -k(95)*n(idx_O)  &
+    -k(164)*n(idx_E)  &
+    -k(166)*n(idx_E)  &
+    -k(93)*n(idx_H)  &
+    -k(233)  &
+    -k(94)*n(idx_H2)  &
+    -k(165)*n(idx_E)  &
+    -k(119)*n(idx_O2)
+
+!d[CH3+_dot]/d[CH2+]
+pd(29,27) =  &
+    +k(94)*n(idx_H2)
+
+!d[E_dot]/d[CO+]
+pd(1,28) =  &
+    -k(179)*n(idx_E)
+
+!d[H_dot]/d[CO+]
+pd(5,28) =  &
+    -k(157)*n(idx_H)
+
+!d[C_dot]/d[CO+]
+pd(8,28) =  &
+    +k(179)*n(idx_E)
+
+!d[O_dot]/d[CO+]
+pd(9,28) =  &
+    +k(179)*n(idx_E)
+
+!d[CO_dot]/d[CO+]
+pd(11,28) =  &
+    +k(157)*n(idx_H)
+
+!d[H+_dot]/d[CO+]
+pd(18,28) =  &
+    +k(157)*n(idx_H)
+
+!d[CO+_dot]/d[CO+]
+pd(28,28) =  &
+    -k(179)*n(idx_E)  &
+    -k(157)*n(idx_H)
+
+!d[E_dot]/d[CH3+]
+pd(1,29) =  &
+    -k(167)*n(idx_E)  &
+    -k(168)*n(idx_E)  &
+    -k(169)*n(idx_E)
+
+!d[H_dot]/d[CH3+]
+pd(5,29) =  &
+    +k(234)  &
+    -k(96)*n(idx_H)  &
+    +2.d0*k(169)*n(idx_E)  &
+    +k(167)*n(idx_E)
+
+!d[H2_dot]/d[CH3+]
+pd(7,29) =  &
+    +k(96)*n(idx_H)  &
+    +k(235)  &
+    +k(168)*n(idx_E)  &
+    +k(97)*n(idx_O)  &
+    +k(98)*n(idx_O)
+
+!d[O_dot]/d[CH3+]
+pd(9,29) =  &
+    -k(97)*n(idx_O)  &
+    -k(98)*n(idx_O)
+
+!d[CH_dot]/d[CH3+]
+pd(12,29) =  &
+    +k(168)*n(idx_E)  &
+    +k(169)*n(idx_E)
+
+!d[CH2_dot]/d[CH3+]
+pd(13,29) =  &
+    +k(167)*n(idx_E)
+
+!d[HOC+_dot]/d[CH3+]
+pd(23,29) =  &
+    +k(97)*n(idx_O)
+
+!d[HCO+_dot]/d[CH3+]
+pd(24,29) =  &
+    +k(98)*n(idx_O)
+
+!d[CH+_dot]/d[CH3+]
+pd(26,29) =  &
+    +k(235)
+
+!d[CH2+_dot]/d[CH3+]
+pd(27,29) =  &
+    +k(234)  &
+    +k(96)*n(idx_H)
+
+!d[CH3+_dot]/d[CH3+]
+pd(29,29) =  &
+    -k(97)*n(idx_O)  &
+    -k(169)*n(idx_E)  &
+    -k(235)  &
+    -k(167)*n(idx_E)  &
+    -k(98)*n(idx_O)  &
+    -k(234)  &
+    -k(96)*n(idx_H)  &
+    -k(168)*n(idx_E)
+
+!d[E_dot]/d[OH+]
+pd(1,30) =  &
+    -k(170)*n(idx_E)
+
+!d[H_dot]/d[OH+]
+pd(5,30) =  &
+    +k(108)*n(idx_H2)  &
+    +k(170)*n(idx_E)
+
+!d[H2_dot]/d[OH+]
+pd(7,30) =  &
+    -k(108)*n(idx_H2)
+
+!d[O_dot]/d[OH+]
+pd(9,30) =  &
+    +k(237)  &
+    +k(170)*n(idx_E)
+
+!d[H+_dot]/d[OH+]
+pd(18,30) =  &
+    +k(237)
+
+!d[OH+_dot]/d[OH+]
+pd(30,30) =  &
+    -k(170)*n(idx_E)  &
+    -k(237)  &
+    -k(108)*n(idx_H2)
+
+!d[H2O+_dot]/d[OH+]
+pd(31,30) =  &
+    +k(108)*n(idx_H2)
+
+!d[E_dot]/d[H2O+]
+pd(1,31) =  &
+    -k(171)*n(idx_E)  &
+    -k(173)*n(idx_E)  &
+    -k(172)*n(idx_E)
+
+!d[H_dot]/d[H2O+]
+pd(5,31) =  &
+    +2.d0*k(173)*n(idx_E)  &
+    +k(172)*n(idx_E)  &
+    +k(109)*n(idx_H2)  &
+    +k(241)
+
+!d[H2_dot]/d[H2O+]
+pd(7,31) =  &
+    +k(240)  &
+    -k(109)*n(idx_H2)  &
+    +k(171)*n(idx_E)
+
+!d[O_dot]/d[H2O+]
+pd(9,31) =  &
+    +k(173)*n(idx_E)  &
+    +k(238)  &
+    +k(171)*n(idx_E)
+
+!d[OH_dot]/d[H2O+]
+pd(10,31) =  &
+    +k(172)*n(idx_E)  &
+    +k(239)
+
+!d[H+_dot]/d[H2O+]
+pd(18,31) =  &
+    +k(239)
+
+!d[H2+_dot]/d[H2O+]
+pd(20,31) =  &
+    +k(238)
+
+!d[O+_dot]/d[H2O+]
+pd(22,31) =  &
+    +k(240)
+
+!d[OH+_dot]/d[H2O+]
+pd(30,31) =  &
+    +k(241)
+
+!d[H2O+_dot]/d[H2O+]
+pd(31,31) =  &
+    -k(109)*n(idx_H2)  &
+    -k(173)*n(idx_E)  &
+    -k(171)*n(idx_E)  &
+    -k(238)  &
+    -k(239)  &
+    -k(241)  &
+    -k(240)  &
+    -k(172)*n(idx_E)
+
+!d[H3O+_dot]/d[H2O+]
+pd(32,31) =  &
+    +k(109)*n(idx_H2)
+
+!d[E_dot]/d[H3O+]
+pd(1,32) =  &
+    -k(177)*n(idx_E)  &
+    -k(176)*n(idx_E)  &
+    -k(175)*n(idx_E)  &
+    -k(174)*n(idx_E)
+
+!d[H_dot]/d[H3O+]
+pd(5,32) =  &
+    +k(175)*n(idx_E)  &
+    +2.d0*k(174)*n(idx_E)  &
+    +k(176)*n(idx_E)  &
+    +k(244)
+
+!d[H2_dot]/d[H3O+]
+pd(7,32) =  &
+    +k(116)*n(idx_C)  &
+    +k(175)*n(idx_E)  &
+    +k(177)*n(idx_E)  &
+    +k(245)
+
+!d[C_dot]/d[H3O+]
+pd(8,32) =  &
+    -k(116)*n(idx_C)
+
+!d[O_dot]/d[H3O+]
+pd(9,32) =  &
+    +k(175)*n(idx_E)
+
+!d[OH_dot]/d[H3O+]
+pd(10,32) =  &
+    +k(174)*n(idx_E)  &
+    +k(177)*n(idx_E)  &
+    +k(243)
+
+!d[H2O_dot]/d[H3O+]
+pd(16,32) =  &
+    +k(242)  &
+    +k(176)*n(idx_E)
+
+!d[H+_dot]/d[H3O+]
+pd(18,32) =  &
+    +k(242)
+
+!d[H2+_dot]/d[H3O+]
+pd(20,32) =  &
+    +k(243)
+
+!d[HCO+_dot]/d[H3O+]
+pd(24,32) =  &
+    +k(116)*n(idx_C)
+
+!d[OH+_dot]/d[H3O+]
+pd(30,32) =  &
+    +k(245)
+
+!d[H2O+_dot]/d[H3O+]
+pd(31,32) =  &
+    +k(244)
+
+!d[H3O+_dot]/d[H3O+]
+pd(32,32) =  &
+    -k(116)*n(idx_C)  &
+    -k(244)  &
+    -k(177)*n(idx_E)  &
+    -k(245)  &
+    -k(175)*n(idx_E)  &
+    -k(174)*n(idx_E)  &
+    -k(176)*n(idx_E)  &
+    -k(243)  &
+    -k(242)
+
+!d[E_dot]/d[O2+]
+pd(1,33) =  &
+    -k(178)*n(idx_E)
+
+!d[C_dot]/d[O2+]
+pd(8,33) =  &
+    -k(121)*n(idx_C)  &
+    -k(120)*n(idx_C)
+
+!d[O_dot]/d[O2+]
+pd(9,33) =  &
+    +k(120)*n(idx_C)  &
+    +2.d0*k(178)*n(idx_E)
+
+!d[O2_dot]/d[O2+]
+pd(17,33) =  &
+    +k(121)*n(idx_C)
+
+!d[C+_dot]/d[O2+]
+pd(21,33) =  &
+    +k(121)*n(idx_C)
+
+!d[CO+_dot]/d[O2+]
+pd(28,33) =  &
+    +k(120)*n(idx_C)
+
+!d[O2+_dot]/d[O2+]
+pd(33,33) =  &
+    -k(121)*n(idx_C)  &
+    -k(120)*n(idx_C)  &
+    -k(178)*n(idx_E)
+
+!d[E_dot]/d[HE++]
+pd(1,34) =  &
+    -k(15)*n(idx_E)
+
+!d[HE+_dot]/d[HE++]
+pd(19,34) =  &
+    +k(15)*n(idx_E)
+
+!d[HE++_dot]/d[HE++]
+pd(34,34) =  &
+    -k(15)*n(idx_E)
+
+end subroutine jex
+
+end module krome_ode
+
+!############### MODULE ##############
+module krome_user
+implicit none
+
+! *************************************************************
+!  This file has been generated with:
+!  KROME 14.08.dev on 2018-08-27 09:46:28
+!  Changeset be164d7
+!  see http://kromepackage.org
+!
+!  Written and developed by Tommaso Grassi and Stefano Bovino
+!
+!  Contributors:
+!  J.Boulangier, T.Frostholm, D.Galli, F.A.Gianturco, T.Haugboelle,
+!  A.Lupi, J.Prieto, J.Ramsey, D.R.G.Schleicher, D.Seifried, E.Simoncini,
+!  E.Tognelli
+!  KROME is provided "as it is", without any warranty.
+! *************************************************************
+
+integer,parameter::KROME_idx_E = 1	!E
+integer,parameter::KROME_idx_Hk = 2	!H-
+integer,parameter::KROME_idx_Ck = 3	!C-
+integer,parameter::KROME_idx_Ok = 4	!O-
+integer,parameter::KROME_idx_H = 5	!H
+integer,parameter::KROME_idx_HE = 6	!HE
+integer,parameter::KROME_idx_H2 = 7	!H2
+integer,parameter::KROME_idx_C = 8	!C
+integer,parameter::KROME_idx_O = 9	!O
+integer,parameter::KROME_idx_OH = 10	!OH
+integer,parameter::KROME_idx_CO = 11	!CO
+integer,parameter::KROME_idx_CH = 12	!CH
+integer,parameter::KROME_idx_CH2 = 13	!CH2
+integer,parameter::KROME_idx_C2 = 14	!C2
+integer,parameter::KROME_idx_HCO = 15	!HCO
+integer,parameter::KROME_idx_H2O = 16	!H2O
+integer,parameter::KROME_idx_O2 = 17	!O2
+integer,parameter::KROME_idx_Hj = 18	!H+
+integer,parameter::KROME_idx_HEj = 19	!HE+
+integer,parameter::KROME_idx_H2j = 20	!H2+
+integer,parameter::KROME_idx_Cj = 21	!C+
+integer,parameter::KROME_idx_Oj = 22	!O+
+integer,parameter::KROME_idx_HOCj = 23	!HOC+
+integer,parameter::KROME_idx_HCOj = 24	!HCO+
+integer,parameter::KROME_idx_H3j = 25	!H3+
+integer,parameter::KROME_idx_CHj = 26	!CH+
+integer,parameter::KROME_idx_CH2j = 27	!CH2+
+integer,parameter::KROME_idx_COj = 28	!CO+
+integer,parameter::KROME_idx_CH3j = 29	!CH3+
+integer,parameter::KROME_idx_OHj = 30	!OH+
+integer,parameter::KROME_idx_H2Oj = 31	!H2O+
+integer,parameter::KROME_idx_H3Oj = 32	!H3O+
+integer,parameter::KROME_idx_O2j = 33	!O2+
+integer,parameter::KROME_idx_HEjj = 34	!HE++
+integer,parameter::KROME_idx_CR = 35	!CR
+integer,parameter::KROME_idx_g = 36	!g
+integer,parameter::KROME_idx_Tgas = 37	!Tgas
+integer,parameter::KROME_idx_dummy = 38	!dummy
+
+integer,parameter::krome_idx_cool_h2 = 1
+integer,parameter::krome_idx_cool_h2gp = 2
+integer,parameter::krome_idx_cool_atomic = 3
+integer,parameter::krome_idx_cool_cen = 3
+integer,parameter::krome_idx_cool_hd = 4
+integer,parameter::krome_idx_cool_metal = 5
+integer,parameter::krome_idx_cool_z = 5
+integer,parameter::krome_idx_cool_dh = 6
+integer,parameter::krome_idx_cool_enthalpic = 6
+integer,parameter::krome_idx_cool_dust = 7
+integer,parameter::krome_idx_cool_compton = 8
+integer,parameter::krome_idx_cool_cie = 9
+integer,parameter::krome_idx_cool_cont = 10
+integer,parameter::krome_idx_cool_continuum = 10
+integer,parameter::krome_idx_cool_expansion = 11
+integer,parameter::krome_idx_cool_exp = 11
+integer,parameter::krome_idx_cool_ff = 12
+integer,parameter::krome_idx_cool_bss = 12
+integer,parameter::krome_idx_cool_custom = 13
+integer,parameter::krome_idx_cool_co = 14
+integer,parameter::krome_idx_cool_zcie = 15
+integer,parameter::krome_idx_cool_zcienouv = 16
+integer,parameter::krome_idx_cool_zextend = 17
+integer,parameter::krome_idx_cool_gh = 18
+integer,parameter::krome_ncools = 18
+
+integer,parameter::krome_idx_heat_chem = 1
+integer,parameter::krome_idx_heat_compress = 2
+integer,parameter::krome_idx_heat_compr = 2
+integer,parameter::krome_idx_heat_photo = 3
+integer,parameter::krome_idx_heat_dh = 4
+integer,parameter::krome_idx_heat_enthalpic = 4
+integer,parameter::krome_idx_heat_av = 5
+integer,parameter::krome_idx_heat_photoav = 5
+integer,parameter::krome_idx_heat_cr = 6
+integer,parameter::krome_idx_heat_dust = 7
+integer,parameter::krome_idx_heat_xray = 8
+integer,parameter::krome_idx_heat_viscous = 9
+integer,parameter::krome_idx_heat_visc = 9
+integer,parameter::krome_idx_heat_custom = 10
+integer,parameter::krome_idx_heat_zcie = 11
+integer,parameter::krome_nheats = 11
+
+integer,parameter::krome_nrea=275
+integer,parameter::krome_nmols=34
+integer,parameter::krome_nspec=38
+integer,parameter::krome_natoms=5
+integer,parameter::krome_ndust=0
+integer,parameter::krome_ndustTypes=0
+integer,parameter::krome_nPhotoBins=7
+integer,parameter::krome_nPhotoRates=17
+
+real*8,parameter::krome_boltzmann_eV = 8.617332478d-5 !eV / K
+real*8,parameter::krome_boltzmann_J = 1.380648d-23 !J / K
+real*8,parameter::krome_boltzmann_erg = 1.380648d-16 !erg / K
+real*8,parameter::krome_iboltzmann_eV = 1d0/krome_boltzmann_eV !K / eV
+real*8,parameter::krome_iboltzmann_erg = 1d0/krome_boltzmann_erg !K / erg
+real*8,parameter::krome_planck_eV = 4.135667516d-15 !eV s
+real*8,parameter::krome_planck_J = 6.62606957d-34 !J s
+real*8,parameter::krome_planck_erg = 6.62606957d-27 !erg s
+real*8,parameter::krome_iplanck_eV = 1d0/krome_planck_eV !1 / eV / s
+real*8,parameter::krome_iplanck_J = 1d0/krome_planck_J !1 / J / s
+real*8,parameter::krome_iplanck_erg = 1d0/krome_planck_erg !1 / erg / s
+real*8,parameter::krome_gravity = 6.674d-8 !cm3 / g / s2
+real*8,parameter::krome_e_mass = 9.10938188d-28 !g
+real*8,parameter::krome_p_mass = 1.67262158d-24 !g
+real*8,parameter::krome_n_mass = 1.674920d-24 !g
+real*8,parameter::krome_ip_mass = 1d0/krome_p_mass !1/g
+real*8,parameter::krome_clight = 2.99792458e10 !cm/s
+real*8,parameter::krome_pi = 3.14159265359d0 !#
+real*8,parameter::krome_eV_to_erg = 1.60217646d-12 !eV -> erg
+real*8,parameter::krome_ry_to_eV = 13.60569d0 !rydberg -> eV
+real*8,parameter::krome_ry_to_erg = 2.179872d-11 !rydberg -> erg
+real*8,parameter::krome_seconds_per_year = 365d0*24d0*3600d0 !yr -> s
+real*8,parameter::krome_km_to_cm = 1d5 !km -> cm
+real*8,parameter::krome_cm_to_Mpc = 1.d0/3.08d24 !cm -> Mpc
+real*8,parameter::krome_kvgas_erg = 8.d0*krome_boltzmann_erg/krome_pi/krome_p_mass !
+real*8,parameter::krome_pre_kvgas_sqrt = sqrt(8.d0*krome_boltzmann_erg/krome_pi) !
+real*8,parameter::krome_pre_planck = 2.d0*krome_planck_erg/krome_clight**2 !erg/cm2*s3
+real*8,parameter::krome_exp_planck = krome_planck_erg / krome_boltzmann_erg !s*K
+real*8,parameter::krome_stefboltz_erg = 5.670373d-5 !erg/s/cm2/K4
+real*8,parameter::krome_N_avogadro = 6.0221d23 !#
+real*8,parameter::krome_Rgas_J = 8.3144621d0 !J/K/mol
+real*8,parameter::krome_Rgas_kJ = 8.3144621d-3 !kJ/K/mol
+real*8,parameter::krome_hubble = 0.704d0 !dimensionless
+real*8,parameter::krome_Omega0 = 1.0d0 !dimensionless
+real*8,parameter::krome_Omegab = 0.0456d0 !dimensionless
+real*8,parameter::krome_Hubble0 = 1.d2*krome_hubble*krome_km_to_cm*krome_cm_to_Mpc !1/s
+
+contains
+
+!*******************
+subroutine krome_set_user_crate(argset)
+use krome_commons
+implicit none
+real*8 :: argset
+user_crate = argset
+end subroutine krome_set_user_crate
+
+!*******************
+function krome_get_user_crate()
+use krome_commons
+implicit none
+real*8 :: krome_get_user_crate
+krome_get_user_crate = user_crate
+end function krome_get_user_crate
+
+!*******************
+subroutine krome_set_user_Av(argset)
+use krome_commons
+implicit none
+real*8 :: argset
+user_Av = argset
+end subroutine krome_set_user_Av
+
+!*******************
+function krome_get_user_Av()
+use krome_commons
+implicit none
+real*8 :: krome_get_user_Av
+krome_get_user_Av = user_Av
+end function krome_get_user_Av
+
+!*******************
+subroutine krome_set_user_G0(argset)
+use krome_commons
+implicit none
+real*8 :: argset
+user_G0 = argset
+end subroutine krome_set_user_G0
+
+!*******************
+function krome_get_user_G0()
+use krome_commons
+implicit none
+real*8 :: krome_get_user_G0
+krome_get_user_G0 = user_G0
+end function krome_get_user_G0
+
+!*******************
+subroutine krome_set_user_gamma_CO(argset)
+use krome_commons
+implicit none
+real*8 :: argset
+user_gamma_CO = argset
+end subroutine krome_set_user_gamma_CO
+
+!*******************
+function krome_get_user_gamma_CO()
+use krome_commons
+implicit none
+real*8 :: krome_get_user_gamma_CO
+krome_get_user_gamma_CO = user_gamma_CO
+end function krome_get_user_gamma_CO
+
+!*******************
+subroutine krome_set_user_gamma_H2(argset)
+use krome_commons
+implicit none
+real*8 :: argset
+user_gamma_H2 = argset
+end subroutine krome_set_user_gamma_H2
+
+!*******************
+function krome_get_user_gamma_H2()
+use krome_commons
+implicit none
+real*8 :: krome_get_user_gamma_H2
+krome_get_user_gamma_H2 = user_gamma_H2
+end function krome_get_user_gamma_H2
+
+!************************
+!returns the Tdust averaged over the number density
+! as computed in the tables
+function krome_get_table_Tdust(x,Tgas)
+use krome_commons
+use krome_grfuncs
+implicit none
+real*8 :: Tgas
+real*8 :: x(nmols), krome_get_table_Tdust
+real*8::n(nspec)
+
+n(:) = 0d0
+n(1:nmols) = x(:)
+n(idx_Tgas) = Tgas
+
+krome_get_table_Tdust = get_table_Tdust(n(:))
+
+end function krome_get_table_Tdust
+
+!**********************
+!convert from MOCASSIN abundances to KROME
+! xmoc(i,j): MOCASSIN matrix (note: cm-3, real*4)
+!  i=species, j=ionization level
+! imap: matrix position index map, integer
+! returns KROME abundances (cm-3, real*8)
+function krome_convert_xmoc(xmoc,imap) result(x)
+use krome_commons
+use krome_subs
+use krome_getphys
+implicit none
+real*4,intent(in):: xmoc(:,:)
+real*8::x(nmols),n(nspec)
+integer,intent(in)::imap(:)
+
+x(:) = 0d0
+
+x(idx_H) = xmoc(imap(1), 1)
+x(idx_HE) = xmoc(imap(2), 1)
+x(idx_C) = xmoc(imap(6), 1)
+x(idx_O) = xmoc(imap(8), 1)
+x(idx_Hj) = xmoc(imap(1), 2)
+x(idx_HEj) = xmoc(imap(2), 2)
+x(idx_Cj) = xmoc(imap(6), 2)
+x(idx_Oj) = xmoc(imap(8), 2)
+x(idx_HEjj) = xmoc(imap(2), 3)
+
+n(1:nmols) = x(:)
+n(nmols+1:nspec) = 0d0
+x(idx_e) = get_electrons(n(:))
+
+end function krome_convert_xmoc
+
+!*************************
+!convert from KROME abundances to MOCASSIN
+! x: KROME abuances (cm-3, real*8)
+! imap: matrix position index map, integer
+! xmoc(i,j): MOCASSIN matrix (note: cm-3, real*4)
+!  i=species, j=ionization level
+subroutine krome_return_xmoc(x,imap,xmoc)
+use krome_commons
+implicit none
+real*8,intent(in)::x(nmols)
+real*4,intent(out)::xmoc(:,:)
+integer,intent(in)::imap(:)
+
+xmoc(:,:) = 0d0
+
+xmoc(imap(1), 1) = x(idx_H)
+xmoc(imap(2), 1) = x(idx_HE)
+xmoc(imap(6), 1) = x(idx_C)
+xmoc(imap(8), 1) = x(idx_O)
+xmoc(imap(1), 2) = x(idx_Hj)
+xmoc(imap(2), 2) = x(idx_HEj)
+xmoc(imap(6), 2) = x(idx_Cj)
+xmoc(imap(8), 2) = x(idx_Oj)
+xmoc(imap(2), 3) = x(idx_HEjj)
+
+end subroutine krome_return_xmoc
+
+!**********************
+!convert number density (cm-3) into column
+! density (cm-2) using the specific density
+! column method (see help for option
+! -columnDensityMethod)
+! num is the number density, x(:) is the species
+! array, Tgas is the gas temperature
+! If the method is not JEANS, x(:) and Tgas
+! are dummy variables
+function krome_num2col(num,x,Tgas)
+use krome_subs
+use krome_commons
+use krome_getphys
+implicit none
+real*8 :: x(nmols),krome_num2col
+real*8 :: Tgas,num
+real*8::n(nspec)
+
+n(:) = 0d0
+n(1:nmols) = x(:)
+n(idx_Tgas) = Tgas
+
+krome_num2col = num2col(num,n(:))
+
+end function krome_num2col
+
+!***********************
+!print on screen the current values of all phys variables
+subroutine krome_print_phys_variables()
+use krome_commons
+implicit none
+
+print *, "Tcmb:", phys_Tcmb
+print *, "zredshift:", phys_zredshift
+print *, "orthoParaRatio:", phys_orthoParaRatio
+print *, "metallicity:", phys_metallicity
+print *, "Tfloor:", phys_Tfloor
+
+end subroutine krome_print_phys_variables
+
+!*******************
+subroutine krome_set_Tcmb(arg)
+use krome_commons
+implicit none
+real*8 :: arg
+phys_Tcmb = arg
+end subroutine krome_set_Tcmb
+
+!*******************
+function krome_get_Tcmb()
+use krome_commons
+implicit none
+real*8 :: krome_get_Tcmb
+krome_get_Tcmb = phys_Tcmb
+end function krome_get_Tcmb
+
+!*******************
+subroutine krome_set_zredshift(arg)
+use krome_commons
+implicit none
+real*8 :: arg
+phys_zredshift = arg
+end subroutine krome_set_zredshift
+
+!*******************
+function krome_get_zredshift()
+use krome_commons
+implicit none
+real*8 :: krome_get_zredshift
+krome_get_zredshift = phys_zredshift
+end function krome_get_zredshift
+
+!*******************
+subroutine krome_set_orthoParaRatio(arg)
+use krome_commons
+implicit none
+real*8 :: arg
+phys_orthoParaRatio = arg
+end subroutine krome_set_orthoParaRatio
+
+!*******************
+function krome_get_orthoParaRatio()
+use krome_commons
+implicit none
+real*8 :: krome_get_orthoParaRatio
+krome_get_orthoParaRatio = phys_orthoParaRatio
+end function krome_get_orthoParaRatio
+
+!*******************
+subroutine krome_set_metallicity(arg)
+use krome_commons
+implicit none
+real*8 :: arg
+phys_metallicity = arg
+end subroutine krome_set_metallicity
+
+!*******************
+function krome_get_metallicity()
+use krome_commons
+implicit none
+real*8 :: krome_get_metallicity
+krome_get_metallicity = phys_metallicity
+end function krome_get_metallicity
+
+!*******************
+subroutine krome_set_Tfloor(arg)
+use krome_commons
+implicit none
+real*8 :: arg
+phys_Tfloor = arg
+end subroutine krome_set_Tfloor
+
+!*******************
+function krome_get_Tfloor()
+use krome_commons
+implicit none
+real*8 :: krome_get_Tfloor
+krome_get_Tfloor = phys_Tfloor
+end function krome_get_Tfloor
+
+!*****************************
+!dump the data for restart (UNDER DEVELOPEMENT!)
+!arguments: the species array and the gas temperature
+subroutine krome_store(x,Tgas,dt)
+use krome_commons
+implicit none
+integer::nfile,i
+real*8 :: x(nmols)
+real*8 :: Tgas,dt
+
+nfile = 92
+
+open(nfile,file="krome_dump.dat",status="replace")
+!dump temperature
+write(nfile,*) Tgas
+write(nfile,*) dt
+!dump species
+do i=1,nmols
+write(nfile,*) x(i)
+end do
+close(nfile)
+
+end subroutine krome_store
+
+!*****************************
+!restore the data from a dump (UNDER DEVELOPEMENT!)
+!arguments: the species array and the gas temperature
+subroutine krome_restore(x,Tgas,dt)
+use krome_commons
+implicit none
+integer::nfile,i
+real*8 :: x(nmols)
+real*8 :: Tgas,dt
+
+nfile = 92
+
+open(nfile,file="krome_dump.dat",status="old")
+!restore temperature
+read(nfile,*) Tgas
+read(nfile,*) dt
+!restore species
+do i=1,nmols
+read(nfile,*) x(i)
+end do
+close(nfile)
+
+end subroutine krome_restore
+
+!****************************
+!switch on the thermal calculation
+subroutine krome_thermo_on()
+use krome_commons
+krome_thermo_toggle = 1
+end subroutine krome_thermo_on
+
+!****************************
+!switch off the thermal calculation
+subroutine krome_thermo_off()
+use krome_commons
+krome_thermo_toggle = 0
+end subroutine krome_thermo_off
+
+!************************
+! prepares tables for cross sections and
+! photorates
+subroutine krome_calc_photobins()
+use krome_photo
+call calc_photobins()
+end subroutine krome_calc_photobins
+
+!****************************
+! set the energy per photo bin
+! eV/cm2/sr
+subroutine krome_set_photoBinJ(phbin)
+use krome_commons
+use krome_photo
+implicit none
+real*8 :: phbin(nPhotoBins)
+photoBinJ(:) = phbin(:)
+photoBinJ_org(:) = phbin(:) !for restore
+
+!compute rates
+call calc_photobins()
+
+end subroutine krome_set_photoBinJ
+
+!*************************
+! set the energy (frequency) of the photobin
+! as left-right limits in eV
+subroutine krome_set_photobinE_lr(phbinleft,phbinright,Tgas)
+use krome_commons
+use krome_photo
+implicit none
+real*8 :: phbinleft(nPhotoBins),phbinright(nPhotoBins)
+real*8,optional::Tgas
+real*8::bTgas
+
+!default Tgas for broadening
+bTgas = 1d1
+if(present(Tgas)) then
+bTgas = Tgas
+end if
+
+!$omp parallel
+photoBinEleft(:) = phbinleft(:)
+photoBinEright(:) = phbinright(:)
+photoBinEmid(:) = 0.5d0*(phbinleft(:)+phbinright(:))
+photoBinEdelta(:) = phbinright(:)-phbinleft(:)
+photoBinEidelta(:) = 1d0/photoBinEdelta(:)
+!$omp end parallel
+
+!initialize xsecs table
+call init_photoBins(bTgas)
+
+end subroutine krome_set_photobinE_lr
+
+!*************************
+! set the energy (frequency) of photobins
+! when contiguous. Left and right limits are automatically
+! extracted. Energy in eV
+subroutine krome_set_photobinE_limits(phbinLimits,Tgas)
+use krome_commons
+use krome_photo
+implicit none
+real*8 :: phbinLimits(nPhotoBins+1)
+real*8,optional::Tgas
+real*8::phl(nPhotoBins),phr(nPhotoBins),bTgas
+
+!default Tgas for broadening
+bTgas = 1d1
+if(present(Tgas)) then
+bTgas = Tgas
+end if
+phl(:) = phbinLimits(1:nPhotoBins)
+phr(:) = phbinLimits(2:nPhotoBins+1)
+
+call krome_set_photobinE_lr(phl(:),phr(:),bTgas)
+
+end subroutine krome_set_photobinE_limits
+
+!*******************************
+!set the energy (eV) of the photobin according
+! to MOCASSIN way (position and width array)
+subroutine krome_set_photobinE_moc(binPos,binWidth,Tgas)
+use krome_commons
+use krome_photo
+implicit none
+real*8 :: binPos(nPhotoBins),binWidth(nPhotoBins)
+real*8,optional::Tgas
+real*8::bTgas
+
+bTgas = 1d1
+if(present(Tgas)) then
+bTgas = Tgas
+end if
+
+!$omp parallel
+photoBinEleft(:) = binPos(:)-binWidth(:)/2d0
+photoBinEright(:) = binPos(:)+binWidth(:)/2d0
+photoBinEmid(:) = binPos(:)
+photoBinEdelta(:) = photoBinEright(:)-photoBinEleft(:)
+photoBinEidelta(:) = 1d0/photoBinEdelta(:)
+!$omp end parallel
+
+!initialize xsecs table
+call init_photoBins(bTgas)
+
+end subroutine krome_set_photobinE_moc
+
+!********************************
+! set the energy (eV) of the photobin
+! linearly from lowest to highest energy value
+! in eV
+subroutine krome_set_photobinE_lin(lower,upper,Tgas)
+use krome_commons
+use krome_photo
+implicit none
+real*8 :: lower,upper
+real*8,optional::Tgas
+real*8::dE,bTgas
+integer::i
+
+bTgas = 1d1
+if(present(Tgas)) then
+bTgas = Tgas
+end if
+
+!$omp parallel
+dE = abs(upper-lower)/nPhotoBins
+!$omp end parallel
+do i=1,nPhotoBins
+!$omp parallel
+photoBinEleft(i) = dE*(i-1) + lower
+photoBinEright(i) = dE*i + lower
+photoBinEmid(i) = 0.5d0*(photoBinEleft(i)+photoBinEright(i))
+!$omp end parallel
+end do
+!$omp parallel
+photoBinEdelta(:) = photoBinEright(:)-photoBinEleft(:)
+photoBinEidelta(:) = 1d0/photoBinEdelta(:)
+!$omp end parallel
+
+!initialize xsecs table
+call init_photoBins(bTgas)
+
+end subroutine krome_set_photobinE_lin
+
+!********************************
+! set the energy (eV) of the photobin
+! logarithmically from lowest to highest energy value
+! in eV
+subroutine krome_set_photobinE_log(lower,upper,Tgas)
+use krome_commons
+use krome_photo
+implicit none
+real*8 :: lower,upper
+real*8,optional::Tgas
+real*8::dE,logup,loglow,bTgas
+integer::i
+
+bTgas = 1d1
+if(present(Tgas)) then
+bTgas = Tgas
+end if
+
+if(lower.ge.upper) then
+print *,"ERROR: in  krome_set_photobinE_log lower >= upper limit!"
+stop
+end if
+loglow = log10(lower)
+logup = log10(upper)
+!$omp parallel
+dE = 1d1**(abs(logup-loglow)/nPhotoBins)
+!$omp end parallel
+do i=1,nPhotoBins
+!$omp parallel
+photoBinEleft(i) = 1d1**((i-1)*(logup-loglow)/nPhotoBins + loglow)
+photoBinEright(i) = 1d1**(i*(logup-loglow)/nPhotoBins + loglow)
+photoBinEmid(i) = 0.5d0*(photoBinEleft(i)+photoBinEright(i))
+!$omp end parallel
+end do
+!$omp parallel
+photoBinEdelta(:) = photoBinEright(:)-photoBinEleft(:)
+photoBinEidelta(:) = 1d0/photoBinEdelta(:)
+!$omp end parallel
+
+!initialize xsecs table
+call init_photoBins(bTgas)
+
+end subroutine krome_set_photobinE_log
+
+!*********************************
+!returns an array containing the flux for each photo bin
+! in eV/cm2/sr
+function krome_get_photoBinJ()
+use krome_commons
+real*8 :: krome_get_photoBinJ(nPhotoBins)
+krome_get_photoBinJ(:) = photoBinJ(:)
+end function krome_get_photoBinJ
+
+!*********************************
+!get an array containing all the left positions
+! of the photobins, eV
+function krome_get_photoBinE_left()
+!returns an array of size krome_nPhotoBins with the
+! left energy limits (eV)
+use krome_commons
+real*8 :: krome_get_photoBinE_left(nPhotoBins)
+krome_get_photoBinE_left(:) = photoBinEleft(:)
+end function krome_get_photoBinE_left
+
+!*********************************
+!returns an array of size krome_nPhotoBins with the
+! right energy limits (eV)
+function krome_get_photoBinE_right()
+use krome_commons
+real*8 :: krome_get_photoBinE_right(nPhotoBins)
+krome_get_photoBinE_right(:) = photoBinEright(:)
+end function krome_get_photoBinE_right
+
+!*********************************
+!returns an array of size krome_nPhotoBins with the
+! middle energy values (eV)
+function krome_get_photoBinE_mid()
+use krome_commons
+real*8 :: krome_get_photoBinE_mid(nPhotoBins)
+krome_get_photoBinE_mid(:) = photoBinEmid(:)
+end function krome_get_photoBinE_mid
+
+!*********************************
+!returns an array of size krome_nPhotoBins with the
+! bin span (eV)
+function krome_get_photoBinE_delta()
+use krome_commons
+real*8 :: krome_get_photoBinE_delta(nPhotoBins)
+krome_get_photoBinE_delta(:) = photoBinEdelta(:)
+end function krome_get_photoBinE_delta
+
+!*********************************
+!returns an array of size krome_nPhotoBins with the
+! inverse of the bin span (1/eV)
+function krome_get_photoBinE_idelta()
+use krome_commons
+real*8 :: krome_get_photoBinE_idelta(nPhotoBins)
+krome_get_photoBinE_idelta(:) = photoBinEidelta(:)
+end function krome_get_photoBinE_idelta
+
+!*********************************
+!returns an array of size krome_nPhotoBins with the
+! integrated photo rates (1/s)
+function krome_get_photoBin_rates()
+use krome_commons
+real*8 :: krome_get_photoBin_rates(nPhotoRea)
+krome_get_photoBin_rates(:) = photoBinRates(:)
+end function krome_get_photoBin_rates
+
+!*********************************
+!returns an array of size krome_nPhotoBins containing
+! the cross section (cm2) of the idx-th photoreaction
+function krome_get_xsec(idx)
+use krome_commons
+implicit none
+real*8 :: krome_get_xsec(nPhotoBins)
+integer :: idx
+
+krome_get_xsec(:) = photoBinJTab(idx,:)
+
+end function krome_get_xsec
+
+!*********************************
+!returns an array of size krome_nPhotoBins with the
+! integrated photo heatings (erg/s)
+function krome_get_photoBin_heats()
+use krome_commons
+implicit none
+real*8 :: krome_get_photoBin_heats(nPhotoRea)
+krome_get_photoBin_heats(:) = photoBinHeats(:)
+
+end function krome_get_photoBin_heats
+
+!****************************
+!multiply all photobins by a factor real*8 xscale
+subroutine krome_photoBin_scale(xscale)
+use krome_commons
+use krome_photo
+implicit none
+real*8 :: xscale
+
+photoBinJ(:) = photoBinJ(:) * xscale
+
+!compute rates
+call calc_photobins()
+
+end subroutine krome_photoBin_scale
+
+!****************************
+!multiply all photobins by a real*8 array xscale(:)
+! of size krome_nPhotoBins
+subroutine krome_photoBin_scale_array(xscale)
+use krome_commons
+use krome_photo
+implicit none
+real*8 :: xscale(nPhotoBins)
+
+photoBinJ(:) = photoBinJ(:) * xscale(:)
+
+!compute rates
+call calc_photobins()
+
+end subroutine krome_photoBin_scale_array
+
+!********************************
+!restore the original flux (i.e. undo any rescale).
+! the flux is automatically stored by the functions
+! that set the flux, or by the function
+! krome_photoBin_store()
+subroutine krome_photoBin_restore()
+use krome_commons
+implicit none
+
+photoBinJ(:) = photoBinJ_org(:)
+
+end subroutine krome_photoBin_restore
+
+!**********************
+!store flux to be restored with the subroutine
+! krome_photoBin_restore later
+subroutine krome_photoBin_store()
+use krome_commons
+implicit none
+
+photoBinJ_org(:) = photoBinJ(:)
+
+end subroutine krome_photoBin_store
+
+!*********************
+!load flux radiation from a two-columns file
+! energy/eV, flux/(eV/cm2/sr)
+! Flux is interpolated over the existing binning
+! constant-area method
+subroutine krome_load_photoBin_file_2col(fname, logarithmic)
+use krome_commons
+implicit none
+integer,parameter::imax=int(1e4)
+character(len=*) :: fname
+logical, optional :: logarithmic
+logical :: is_log
+integer::unit,ios,icount,j,i
+real*8::xtmp(imax),ftmp(imax),intA,eL,eR
+real*8::xL,xR,pL,pR,fL,fR,Jflux(nPhotoBins)
+real*8::a,b
+
+if(present(logarithmic)) then
+is_log = logarithmic
+else
+is_log = .false.
+end if
+
+!open file to read
+open(newunit=unit,file=trim(fname),iostat=ios)
+if(ios/=0) then
+print *,"ERROR: problems reading "//trim(fname)
+stop
+end if
+
+!read file line by line and store to temporary
+ftmp(:) = 0d0
+icount = 1
+do
+read(unit,*,iostat=ios) xtmp(icount), ftmp(icount)
+if(ios/=0) exit
+icount = icount + 1
+end do
+close(unit)
+icount = icount - 1
+
+if(is_log) ftmp = log(merge(ftmp,1d-40,ftmp>0d0))
+!loop on photobins for interpolation
+do j=1,nPhotoBins
+intA = 0d0
+!photobin limits
+eL = photoBinEleft(j)
+eR = photoBinEright(j)
+!loop on flux bins
+do i=1,icount-1
+!flux bin limits
+xL = xtmp(i)
+xR = xtmp(i+1)
+!if outside the bin skip
+if((xR<eL).or.(xL>eR)) cycle
+!get the interval limit (consider partial overlapping)
+pL = max(xL,eL)
+pR = min(xR,eR)
+if(is_log) then
+  pL = log(max(pL,1d-40))
+  pR = log(max(pR,1d-40))
+  xL = log(max(xL,1d-40))
+  xR = log(max(xR,1d-40))
+end if
+!interpolate to get the flux at the interval limit
+fL = (ftmp(i+1)-ftmp(i))*(pL-xL)/(xR-xL)+ftmp(i)
+fR = (ftmp(i+1)-ftmp(i))*(pR-xL)/(xR-xL)+ftmp(i)
+if(is_log) then
+  fL = exp(fL)
+  fR = exp(fR)
+  pL = exp(pL)
+  pR = exp(pR)
+end if
+
+!compute area of the overlapped area
+intA = intA + (fL+fR)*(pR-pL)/2d0
+end do
+!distribute the flux in the photobin
+Jflux(j) = intA / (eR-eL)
+end do
+
+!initialize intensity according to data
+call krome_set_photoBinJ(Jflux(:))
+
+end subroutine krome_load_photoBin_file_2col
+
+!********************************
+!load the radiation bins from the file fname
+! data should be a 3-column file with
+! energy Left (eV), energy Right (eV)
+! intensity (eV/cm2/sr).
+! This subroutine sets also the bin-size
+subroutine krome_load_photoBin_file(fname) !! !! not yet callable from C
+use krome_commons
+implicit none
+integer::ios,icount
+character(len=*) :: fname
+real*8::tmp_El(nPhotoBins),tmp_Er(nPhotoBins)
+real*8::rout(3),tmp_J(nPhotoBins)
+
+!open file and check for errors
+open(33,file=fname,status="old",iostat=ios)
+if(ios.ne.0) then
+print *,"ERROR: problem opening "//fname//"!"
+print *," (e.g. file not found)"
+stop
+end if
+
+icount = 0 !count valid line
+!loop on file
+do
+read(33,*,iostat=ios) rout(:)
+if(ios==-1) exit !EOF
+if(ios.ne.0) cycle !skip comments
+icount = icount + 1
+if(icount>nPhotoBins) exit !can't load more than nPhotoBins
+tmp_El(icount) = rout(1) !energy L eV
+tmp_Er(icount) = rout(2) !energy R eV
+!check if left interval is before right
+if(tmp_El(icount)>tmp_Er(icount)) then
+print *,"ERROR: in file "//fname//" left"
+print *, " interval larger than right one!"
+print *,tmp_El(icount),tmp_Er(icount)
+stop
+end if
+tmp_J(icount) = rout(3) !intensity eV/cm2/sr
+end do
+close(33)
+
+!file data lines should be the same number of the photobins
+if(icount/=nPhotoBins) then
+print *,"ERROR: the number of data lines in the file"
+print *," "//fname//" should be equal to the number of"
+print *," photobins ",nPhotoBins
+print *,"Found",icount
+stop
+end if
+
+!initialize interval and intensity according to data
+call krome_set_photobinE_lr(tmp_El(:),tmp_Er(:))
+call krome_set_photoBinJ(tmp_J(:))
+
+end subroutine krome_load_photoBin_file
+
+!**********************************
+!this subroutine sets an Hardt+Madau flux in the
+! energy limits lower_in, upper_in (eV, log-spaced)
+subroutine krome_set_photoBin_HMlog(lower_in,upper_in)
+use krome_commons
+use krome_photo
+use krome_subs
+use krome_fit
+implicit none
+real*8::z(59),energy(500),HM(59,500)
+real*8::z_mul,energy_mul,x,lower,upper
+real*8,parameter::limit_lower = 0.1237d0
+real*8,parameter::limit_upper = 4.997d7
+real*8,parameter::limit_redshift = 15.660d0
+real*8,optional::lower_in,upper_in
+integer::i
+
+lower = limit_lower
+upper = limit_upper
+if(present(lower_in)) lower = lower_in
+if(present(upper_in)) upper = upper_in
+
+if(phys_zredshift>limit_redshift) then
+print *,"ERROR: redshift out of range in HM"
+print *,"redshift:",phys_zredshift
+print *,"limit:",limit_redshift
+stop
+end if
+
+if(lower<limit_lower .or. upper>limit_upper) then
+print *,"ERROR: upper or lower limit out of range in HM."
+print *,"lower limit (eV):",limit_lower
+print *,"upper limit (eV):",limit_upper
+stop
+end if
+
+call krome_set_photoBinE_log(lower,upper)
+
+call init_anytab2D("krome_HMflux.dat", z(:), energy(:), &
+    HM(:,:), z_mul, energy_mul)
+
+do i=1,nPhotoBins
+x = log10(photoBinEmid(i)) !log(eV)
+photoBinJ(i) = 1d1**fit_anytab2D(z(:), energy(:), HM(:,:), &
+    z_mul, energy_mul, phys_zredshift, x)
+end do
+
+photoBinJ_org(:) = photoBinJ(:)
+
+call calc_photobins()
+
+end subroutine krome_set_photoBin_HMlog
+
+!**********************************
+!this subroutine ADD an Hardt+Madau flux to the current radiation
+! in the energy limits lower_in, upper_in (eV), It assumes
+! the current binning
+subroutine krome_set_photoBin_HMCustom(lower_in,upper_in,additive)
+use krome_commons
+use krome_photo
+use krome_subs
+use krome_fit
+implicit none
+real*8::z(59),energy(500),HM(59,500)
+real*8::z_mul,energy_mul,x,lower,upper
+real*8::photoTmpJ(nPhotoBins)
+real*8,parameter::limit_lower = 0.1237d0
+real*8,parameter::limit_upper = 4.997d7
+real*8,parameter::limit_redshift = 15.660d0
+logical,optional::additive
+logical::add
+real*8,optional :: lower_in,upper_in
+integer::i
+
+lower = limit_lower
+upper = limit_upper
+if(present(lower_in)) lower = lower_in
+if(present(upper_in)) upper = upper_in
+
+add = .false.
+if(present(additive)) add = additive
+
+if(phys_zredshift>limit_redshift) then
+print *,"ERROR: redshift out of range in HM"
+print *,"redshift:",phys_zredshift
+print *,"limit:",limit_redshift
+stop
+end if
+
+if(lower<limit_lower .or. upper>limit_upper) then
+print *,"ERROR: upper or lower limit out of range in HM."
+print *,"lower limit (eV):",limit_lower
+print *,"upper limit (eV):",limit_upper
+stop
+end if
+
+call init_anytab2D("krome_HMflux.dat", z(:), energy(:), &
+    HM(:,:), z_mul, energy_mul)
+
+do i=1,nPhotoBins
+x = log10(photoBinEmid(i)) !log(eV)
+photoTmpJ(i) = 1d1**fit_anytab2D(z(:), energy(:), HM(:,:), &
+    z_mul, energy_mul, phys_zredshift, x)
+end do
+
+!add flux to already-present flux if optional argument
+if(add) then
+photoBinJ(:) = photoBinJ(:) + photoTmpJ(:)
+else
+photoBinJ(:) = photoTmpJ(:)
+end if
+
+photoBinJ_org(:) = photoBinJ(:)
+
+call calc_photobins()
+
+end subroutine krome_set_photoBin_HMCustom
+
+!**********************************
+!set the flux as a black body with temperature Tbb (K)
+! in the range lower to upper (eV),  linear-spaced
+subroutine krome_set_photoBin_BBlin(lower,upper,Tbb)
+use krome_commons
+use krome_constants
+use krome_photo
+use krome_subs
+use krome_phfuncs
+implicit none
+real*8 :: lower,upper,Tbb
+real*8::x
+integer::i
+
+call krome_set_photoBinE_lin(lower,upper)
+
+!eV/cm2/sr
+do i=1,nPhotoBins
+x = photoBinEmid(i) !eV
+photoBinJ(i) = planckBB(x,Tbb)
+end do
+photoBinJ_org(:) = photoBinJ(:)
+
+call calc_photobins()
+
+end subroutine krome_set_photoBin_BBlin
+
+!**********************************
+!set the flux as a black body with temperature Tbb (K)
+! in the range lower to upper (eV), log-spaced
+subroutine krome_set_photoBin_BBlog(lower,upper,Tbb)
+use krome_commons
+use krome_constants
+use krome_photo
+use krome_subs
+use krome_phfuncs
+implicit none
+real*8 :: lower,upper,Tbb
+real*8::x,xmax,xexp,Jlim
+integer::i
+
+!limit for the black body intensity to check limits
+Jlim = 1d-3
+
+call krome_set_photoBinE_log(lower,upper)
+
+!eV/cm2/sr
+do i=1,nPhotoBins
+x = photoBinEmid(i) !eV
+photoBinJ(i) = planckBB(x,Tbb)
+end do
+photoBinJ_org(:) = photoBinJ(:)
+
+!uncomment this below for additional control
+!!$    !find the maximum using Wien's displacement law
+!!$    xmax = Tbb/2.8977721d-1 * clight * planck_eV !eV
+!!$
+!!$    if(xmax<lower) then
+!!$       print *,"WARNING: maximum of the Planck function"
+!!$       print *," is below the lowest energy bin!"
+!!$       print *,"max (eV)",xmax
+!!$       print *,"lowest (eV)",lower
+!!$       print *,"Tbb (K)",Tbb
+!!$    end if
+!!$
+!!$    if(xmax>upper) then
+!!$       print *,"WARNING: maximum of the Planck function"
+!!$       print *," is above the highest energy bin!"
+!!$       print *,"max (eV)",xmax
+!!$       print *,"highest (eV)",upper
+!!$       print *,"Tbb (K)",Tbb
+!!$    end if
+!!$
+!!$    if(photoBinJ(1)>Jlim) then
+!!$       print *,"WARNING: lower bound of the Planck function"
+!!$       print *," has a flux of (ev/cm2/s/Hz/sr)",photoBinJ(1)
+!!$       print *," which is larger than the limit Jlim",Jlim
+!!$       print *,"Tbb (K)",Tbb
+!!$    end if
+!!$
+!!$    if(photoBinJ(nPhotoBins)>Jlim) then
+!!$       print *,"WARNING: upper bound of the Planck function"
+!!$       print *," has a flux of (ev/cm2/s/Hz/sr)",photoBinJ(nPhotoBins)
+!!$       print *," which is larger than the limit Jlim",Jlim
+!!$       print *,"Tbb (K)",Tbb
+!!$    end if
+
+!compute rates
+call calc_photobins()
+
+end subroutine krome_set_photoBin_BBlog
+
+!*************************************
+!set the BB spectrum and the limits using bisection
+subroutine krome_set_photoBin_BBlog_auto(Tbb)
+use krome_commons
+use krome_subs
+use krome_constants
+use krome_phfuncs
+implicit none
+real*8 :: Tbb
+real*8::xlow,xup,eps,xmax,J0,J1,x0,x1,xm,Jm
+eps = 1d-6
+
+!Rayleigh–Jeans approximation for the minimum energy
+xlow = planck_eV*clight*sqrt(.5d0/Tbb/boltzmann_eV*eps)
+
+!find energy of the Wien maximum (eV)
+xmax = Tbb / 2.8977721d-1 * clight * planck_eV
+
+!bisection to find the maximum
+x0 = xmax
+x1 = 2.9d2*Tbb*boltzmann_eV
+J0 = planckBB(x0,Tbb) - eps
+J1 = planckBB(x1,Tbb) - eps
+if(J0<0d0.or.J1>0d0) then
+print *,"ERROR: problems with auto planck bisection!"
+stop
+end if
+
+do
+xm = 0.5d0*(x0+x1)
+Jm = planckBB(xm,Tbb) - eps
+if(Jm>0d0) x0 = xm
+if(Jm<0d0) x1 = xm
+if(abs(Jm)<eps*1d-3) exit
+end do
+xup = xm
+
+!initialize BB radiation using the values found
+call krome_set_photoBin_BBlog(xlow,xup,Tbb)
+
+end subroutine krome_set_photoBin_BBlog_auto
+
+!*********************************
+!return the ratio between the current flux an Draine's
+function krome_get_ratioFluxDraine()
+use krome_subs
+use krome_phfuncs
+implicit none
+real*8::krome_get_ratioFluxDraine
+
+krome_get_ratioFluxDraine = get_ratioFluxDraine()
+
+end function krome_get_ratioFluxDraine
+
+!**********************************
+!set the flux as Draine's function
+! in the range lower to upper (eV). the spacing is linear
+subroutine krome_set_photoBin_draineLin(lower,upper)
+use krome_commons
+use krome_photo
+use krome_constants
+real*8 :: upper,lower
+real*8::x
+integer::i
+
+call krome_set_photoBinE_lin(lower,upper)
+
+do i=1,nPhotoBins
+x = photoBinEmid(i) !eV
+!eV/cm2/sr
+if(x<13.6d0.and.x>5d0) then
+photoBinJ(i) = (1.658d6*x - 2.152d5*x**2 + 6.919d3*x**3) &
+    * x *planck_eV
+else
+photoBinJ(i) = 0d0
+end if
+end do
+
+photoBinJ_org(:) = photoBinJ(:)
+
+!compute rates
+call calc_photobins()
+
+end subroutine krome_set_photoBin_draineLin
+
+!**************************
+!set the flux as Draine's function
+! in the range lower to upper (eV). log-spaced
+subroutine krome_set_photoBin_draineLog(lower,upper)
+use krome_commons
+use krome_photo
+use krome_constants
+real*8 :: upper,lower
+real*8::x
+integer::i
+
+call krome_set_photoBinE_log(lower,upper)
+
+do i=1,nPhotoBins
+x = photoBinEmid(i) !eV
+!eV/cm2/sr/s/Hz
+if(x<13.6d0.and.x>5d0) then
+photoBinJ(i) = (1.658d6*x - 2.152d5*x**2 + 6.919d3*x**3) &
+    * x *planck_eV
+else
+photoBinJ(i) = 0d0
+end if
+end do
+
+photoBinJ_org(:) = photoBinJ(:)
+
+!compute rates
+call calc_photobins()
+
+end subroutine krome_set_photoBin_draineLog
+
+!**************************
+!set the flux as Draine's function with the current binning
+! Note: you have to set the binning first
+subroutine krome_set_photoBin_draineCustom()
+use krome_commons
+use krome_photo
+use krome_constants
+real*8::xL,xR,f1,f2
+integer::i
+
+!return error if binning is not set
+if(maxval(photoBinEmid)==0d0) then
+print *,"ERROR: not initialized binning in draineCustom!"
+stop
+end if
+
+!loop on bins
+do i=1,nPhotoBins
+!eV/cm2/sr
+if(xR<=13.6d0.and.xL>=5d0) then
+xL = photoBinEleft(i) !eV
+xR = photoBinEright(i) !eV
+elseif(xL<5d0.and.xR>5d0) then
+xL = 5d0 !eV
+xR = photoBinEright(i) !eV
+elseif(xL<13d0.and.xR>13.6d0) then
+xL = photoBinEleft(i) !eV
+xR = 13.6d0 !eV
+else
+xL = 0d0
+xR = 0d0
+end if
+f1 = (1.658d6*xL - 2.152d5*xL**2 + 6.919d3*xL**3) &
+    * planck_eV
+f2 = (1.658d6*xR - 2.152d5*xR**2 + 6.919d3*xR**3) &
+    * planck_eV
+photoBinJ(i) = (f1+f2)*(xR-xL)/2d0
+
+end do
+
+photoBinJ_org(:) = photoBinJ(:)
+
+!compute rates
+call calc_photobins()
+
+end subroutine krome_set_photoBin_draineCustom
+
+!**************************
+!set the flux as power-law (J21-style)
+! in the range lower to upper (eV). linear-spaced
+subroutine krome_set_photoBin_J21lin(lower,upper)
+use krome_commons
+use krome_photo
+real*8 :: upper,lower
+
+call krome_set_photoBinE_lin(lower,upper)
+
+photoBinJ(:) = 6.2415d-10 * (13.6d0/photoBinEmid(:)) !eV/cm2/sr
+photoBinJ_org(:) = photoBinJ(:)
+
+!compute rates
+call calc_photobins()
+
+end subroutine krome_set_photoBin_J21lin
+
+!**************************
+!set the flux as power-law (J21-style)
+! in the range lower to upper (eV). the spacing is logarithmic
+subroutine krome_set_photoBin_J21log(lower,upper)
+use krome_commons
+use krome_photo
+real*8 :: upper,lower
+
+call krome_set_photoBinE_log(lower,upper)
+
+photoBinJ(:) = 6.2415d-10 * (13.6d0/photoBinEmid(:)) !eV/cm2/sr
+photoBinJ_org(:) = photoBinJ(:)
+
+!compute rates
+call calc_photobins()
+
+end subroutine krome_set_photoBin_J21log
+
+!*****************************
+!get the opacity tau corresponding to x(:)
+! chemical composition. The column density
+! is computed using the expression in the
+! num2col(x) function.
+! An array of size krome_nPhotoBins is returned
+function krome_get_opacity(x,Tgas)
+use krome_commons
+use krome_constants
+use krome_photo
+use krome_subs
+use krome_getphys
+implicit none
+real*8 :: x(nmols),krome_get_opacity(nPhotoBins)
+real*8,value :: Tgas
+real*8::tau,n(nspec)
+integer::i,j,idx
+
+n(1:nmols) = x(:)
+n(idx_Tgas) = Tgas
+
+!loop on frequency bins
+do j=1,nPhotoBins
+tau = 0d0
+!loop on species
+do i=1,nPhotoRea
+!calc opacity as column_density * cross_section
+idx = photoPartners(i)
+tau = tau + num2col(x(idx),n(:)) * photoBinJTab(i,j)
+end do
+krome_get_opacity(j) = tau !store
+end do
+
+end function krome_get_opacity
+
+!*****************************
+!get the opacity tau corresponding to the x(:)
+! chemical composition. The column density
+! is computed using the size of the cell (csize)
+! An array of size krome_nPhotoBins is returned.
+function krome_get_opacity_size(x,Tgas,csize)
+use krome_commons
+use krome_constants
+use krome_photo
+use krome_subs
+use krome_dust
+implicit none
+real*8 :: x(nmols),krome_get_opacity_size(nPhotoBins)
+real*8,value :: Tgas,csize
+real*8::n(nspec),energy,tau
+integer::i,j,idx
+
+n(1:nmols) = x(:)
+n(idx_Tgas) = Tgas
+
+!loop on frequency bins
+do j=1,nPhotoBins
+tau = 0d0
+!loop on species
+do i=1,nPhotoRea
+!calc opacity as column_density * cross_section
+!where column_density is density*cell_size
+idx = photoPartners(i)
+tau = tau + x(idx) * photoBinJTab(i,j)
+end do
+
+krome_get_opacity_size(j) = tau * csize !store
+end do
+
+end function krome_get_opacity_size
+
+!*****************************
+!get the opacity tau corresponding to the x(:)
+! chemical composition. The column density
+! is computed using the size of the cell (csize).
+! Dust is included using dust-to-gas mass ratio (d2g).
+! You should load the dust tables with the subroutine
+! krome_load_dust_opacity(fileName).
+! An array of size krome_nPhotoBins is returned.
+function krome_get_opacity_size_d2g(x,Tgas,csize,d2g)
+use krome_commons
+use krome_constants
+use krome_photo
+use krome_subs
+use krome_dust
+use krome_getphys
+implicit none
+real*8 :: x(nmols),krome_get_opacity_size_d2g(nPhotoBins)
+real*8,value :: Tgas,csize,d2g
+real*8::n(nspec),energy,tau,m(nspec),mgas
+integer::i,j,idx
+
+m(:) = get_mass()
+n(1:nmols) = x(:)
+n(idx_Tgas) = Tgas
+mgas = sum(n(1:nmols)*m(1:nmols))
+
+!loop on frequency bins
+do j=1,nPhotoBins
+tau = 0d0
+!loop on species
+do i=1,nPhotoRea
+!calc opacity as column_density * cross_section
+!where column_density is density*cell_size
+idx = photoPartners(i)
+tau = tau + x(idx) * photoBinJTab(i,j)
+end do
+
+!sum dust opacity from interpolated table
+tau = tau + d2g*mgas*opacityDust(j)
+
+krome_get_opacity_size_d2g(j) = tau * csize !store
+end do
+
+end function krome_get_opacity_size_d2g
+
+!*********************
+!scale radiation intensity with opacity assuming a given
+! cell size and gas composition
+!  subroutine krome_opacity_scale_size(csize,n,Tgas)
+!    use krome_commons
+!    implicit none
+!    real*8::csize,n(nmols),xscale(nPhotoBins),Tgas
+!
+!    xscale(:) = krome_get_opacity_size(n(:),Tgas,csize)
+!    xscale(:) = exp(-xscale(:))
+!    call krome_photoBin_scale_array(xscale(:))
+!
+!  end subroutine krome_opacity_scale_size
+
+!*********************
+!scale radiation intensity with opacity assuming a given
+! cell size and gas composition
+subroutine krome_opacity_scale_size(csize,n,Tgas)
+use krome_commons
+implicit none
+real*8::csize,n(nmols),Tgas
+real*8 :: xscale(nPhotoBins)
+
+xscale(:) = krome_get_opacity_size(n(:),Tgas,csize)
+xscale(:) = exp(-xscale(:))
+call krome_photoBin_scale_array(xscale(:))
+end subroutine krome_opacity_scale_size
+
+!*******************************
+!load a frequency-dependent opacity table stored in fname file,
+! column 1 is energy or wavelenght in un units of unitEnergy
+! (default eV), column 2 is opacity in cm2/g.
+! opacity is interpolated over the current photo-binning.
+subroutine krome_load_opacity_table(fname, unitEnergy)
+use krome_commons
+use krome_constants
+use krome_photo
+implicit none
+integer,parameter::ntmp=int(1e5)
+character(len=*)::fname
+character(len=*),optional::unitEnergy
+character*10::eunit
+integer::ios,icount,iR,iL,i,j,fileUnit
+real*8::wl,opac,fL,fR,kk,dE
+real*8::wls(ntmp),opacs(ntmp)
+real*8,allocatable::energy(:),kappa(:)
+
+!read energy unit optional argument
+eunit = "eV" !default is eV
+if(present(unitEnergy)) then
+eunit = trim(unitEnergy)
+end if
+
+call load_opacity_table(fname, eunit)
+
+end subroutine krome_load_opacity_table
+
+! ******************************
+! load absorption data data from file, cm2/g
+subroutine krome_load_average_kabs()
+use krome_photo
+implicit none
+
+call find_Av_load_kabs()
+
+end subroutine krome_load_average_kabs
+
+! *******************************
+! use linear least squares and the current Jflux distribution
+! to return G0 and Av.
+! x(:) are the abundances (use for mean molecular weight)
+! and d2g is dust to gas mass ratio
+subroutine krome_find_G0_Av(G0, Av, x, d2g)
+use krome_commons
+use krome_photo
+implicit none
+real*8,intent(out)::G0, Av
+real*8,intent(in)::d2g, x(nmols)
+real*8::n(nspec)
+
+n(1:nmols) = x(:)
+n(nmols+1:nspec) = 0d0
+
+call estimate_G0_Av(G0, Av, n(:), d2g)
+
+end subroutine krome_find_G0_Av
+
+!*******************************
+!dump the Jflux profile to the file
+! with unit number nfile
+subroutine krome_dump_Jflux(nfile)
+use krome_commons
+implicit none
+integer::i
+integer :: nfile
+
+do i=1,nPhotoBins
+write(nfile,*) photoBinEmid(i),photoBinJ(i)
+end do
+
+end subroutine krome_dump_Jflux
+
+!**********************
+!set the velocity for line broadening, cm/s
+subroutine krome_set_lineBroadeningVturb(vturb)
+use krome_constants
+use krome_commons
+implicit none
+real*8::vturb
+
+broadeningVturb2 = vturb**2
+
+end subroutine krome_set_lineBroadeningVturb
+
+!***************************
+!alias for coe in krome_subs
+! returns the coefficient array of size krome_nrea
+! for a given Tgas
+function krome_get_coef(Tgas,x)
+use krome_commons
+use krome_subs
+use krome_tabs
+real*8 :: krome_get_coef(nrea),x(nmols)
+real*8,value:: Tgas
+real*8::n(nspec)
+n(:) = 0d0
+n(1:nmols) = x(:)
+n(idx_Tgas) = Tgas
+
+call makeStoreOnceRates(n(:))
+
+krome_get_coef(:) = coe(n(:))
+
+end function krome_get_coef
+
+!****************************
+!get the mean molecular weight from
+! mass fractions
+function krome_get_mu_x(xin)
+use krome_commons
+implicit none
+real*8 :: xin(nmols), krome_get_mu_x
+real*8::n(nmols)
+n(:) = krome_x2n(xin(:),1d0)
+krome_get_mu_x = krome_get_mu(n(:))
+end function krome_get_mu_x
+
+!****************************
+!return the adiabatic index from mass fractions
+! and temperature in K
+function krome_get_gamma_x(xin,inTgas)
+use krome_commons
+implicit none
+real*8 :: inTgas
+real*8 :: xin(nmols), krome_get_gamma_x
+real*8::x(nmols),Tgas,rhogas
+
+Tgas = inTgas
+x(:) = krome_x2n(xin(:),1d0)
+krome_get_gamma_x = krome_get_gamma(x(:),Tgas)
+
+end function krome_get_gamma_x
+
+!***************************
+!normalize mass fractions and
+! set charge to zero
+subroutine krome_consistent_x(x)
+use krome_commons
+use krome_constants
+implicit none
+real*8 :: x(nmols)
+real*8::isumx,sumx,xerr,imass(nmols),ee
+
+!1. charge consistency
+imass(:) = krome_get_imass()
+
+x(idx_e) = 0.d0
+
+ee = sum(krome_get_charges()*x(:)*imass(:))
+ee = max(ee*e_mass,0d0)
+x(idx_e) = ee
+
+!2. mass fraction consistency
+sumx = sum(x)
+
+!NOTE: uncomment here if you want some additional control
+!conservation error threshold: rise an error if above xerr
+!xerr = 1d-2
+!if(abs(sum-1d0)>xerr) then
+!   print *,"ERROR: some problem with conservation!"
+!   print *,"|sum(x)-1|=",abs(sum-1d0)
+!   stop
+!end if
+
+isumx = 1d0/sumx
+x(:) = x(:) * isumx
+
+end subroutine krome_consistent_x
+
+!*********************
+!return an array sized krome_nmols containing
+! the mass fractions (#), computed from the number
+! densities (1/cm3) and the total density in g/cm3
+function krome_n2x(n,rhogas)
+use krome_commons
+implicit none
+real*8 :: n(nmols),krome_n2x(nmols)
+real*8,value :: rhogas
+
+krome_n2x(:) = n(:) * krome_get_mass() / rhogas
+
+end function krome_n2x
+
+!********************
+!return an array sized krome_nmols containing
+! the number densities (1/cm3), computed from the mass
+! fractions and the total density in g/cm3
+function krome_x2n(x,rhogas)
+use krome_commons
+implicit none
+real*8 :: x(nmols),krome_x2n(nmols)
+real*8,value :: rhogas
+
+!compute densities from fractions
+krome_x2n(:) = rhogas * x(:) * krome_get_imass()
+
+end function krome_x2n
+
+!******************
+!returns free-fall time using the number density
+! abundances of array x(:)
+function krome_get_free_fall_time(x)
+use krome_commons
+use krome_getphys
+implicit none
+real*8::krome_get_free_fall_time
+real*8::x(:),n(nspec)
+
+n(1:nmols) = x(:)
+n(nmols+1:nspec) = 0d0
+krome_get_free_fall_time = get_free_fall_time(n(:))
+
+end function krome_get_free_fall_time
+
+!******************
+!returns free-fall time using the total mass density
+!  of gas, rhogas (g/cm3)
+function krome_get_free_fall_time_rho(rhogas)
+use krome_getphys
+implicit none
+real*8::krome_get_free_fall_time_rho
+real*8::rhogas
+
+krome_get_free_fall_time_rho = get_free_fall_time_rho(rhogas)
+
+end function krome_get_free_fall_time_rho
+
+!*******************
+!do only cooling and heating
+subroutine krome_thermo(x,Tgas,dt)
+use krome_commons
+use krome_cooling
+use krome_heating
+use krome_subs
+use krome_tabs
+use krome_constants
+use krome_gadiab
+implicit none
+real*8 :: x(nmols)
+real*8 :: Tgas,dt
+real*8::n(nspec),nH2dust,dTgas,k(nrea),krome_gamma
+
+end subroutine krome_thermo
+
+!*************************
+!get heating (erg/cm3/s) for a given species
+! array x(:) and Tgas
+function krome_get_heating(x,inTgas)
+use krome_heating
+use krome_subs
+use krome_commons
+implicit none
+real*8 :: inTgas
+real*8 :: x(nmols), krome_get_heating
+real*8::Tgas,k(nrea),nH2dust,n(nspec)
+n(1:nmols) = x(:)
+Tgas = inTgas
+n(idx_Tgas) = Tgas
+k(:) = coe(n(:))
+nH2dust = 0d0
+krome_get_heating = heating(n(:),Tgas,k(:),nH2dust)
+end function krome_get_heating
+
+!*****************************
+! get an array containing individual heatings (erg/cm3/s)
+! the array has size krome_nheats. see heatcool.gps
+! for index list
+function krome_get_heating_array(x,inTgas)
+use krome_heating
+use krome_subs
+use krome_commons
+implicit none
+real*8::n(nspec),Tgas,k(nrea),nH2dust
+real*8 :: x(nmols),krome_get_heating_array(nheats)
+real*8,value :: inTgas
+
+n(:) = 0d0
+n(1:nmols) = x(:)
+n(idx_Tgas) = inTgas
+!#KROME_Tdust_copy
+k(:) = coe(n(:))
+Tgas = inTgas
+nH2dust = 0d0
+krome_get_heating_array(:) = get_heating_array(n(:),Tgas,k(:),nH2dust)
+
+end function krome_get_heating_array
+
+!************************
+!conserve the total amount of nucleii,
+! alias for conserveLin_x in subs
+subroutine krome_conserveLin_x(x,ref)
+use krome_commons
+use krome_subs
+implicit none
+real*8 :: x(nmols),ref(natoms)
+
+call conserveLin_x(x(:),ref(:))
+
+end subroutine krome_conserveLin_x
+
+!************************
+!conserve the total amount of nucleii,
+! alias for conserveLin_x in subs
+function krome_conserveLinGetRef_x(x)
+use krome_commons
+use krome_subs
+implicit none
+real*8 :: x(nmols),krome_conserveLinGetRef_x(natoms)
+
+krome_conserveLinGetRef_x(:) = &
+    conserveLinGetRef_x(x(:))
+
+end function krome_conserveLinGetRef_x
+
+!*************************
+!force conservation to array x(:)
+!using xi(:) as initial abundances.
+!alias for conserve in krome_subs
+function krome_conserve(x,xi)
+use krome_subs
+implicit none
+real*8 :: x(krome_nmols),xi(krome_nmols),krome_conserve(krome_nmols)
+real*8::n(krome_nspec),ni(krome_nspec)
+
+n(:) = 0d0
+ni(:) = 0d0
+n(1:krome_nmols) = x(1:krome_nmols)
+ni(1:krome_nmols) = xi(1:krome_nmols)
+n(:) = conserve(n(:), ni(:))
+krome_conserve(:) = n(1:krome_nmols)
+
+end function krome_conserve
+
+!***************************
+!get the adiabatic index for x(:) species abundances
+! and Tgas.
+! alias for gamma_index in krome_subs
+function krome_get_gamma(x,Tgas)
+use krome_subs
+use krome_commons
+use krome_gadiab
+real*8 :: Tgas
+real*8 :: x(nmols), krome_get_gamma
+real*8::n(nspec)
+n(:) = 0.d0
+n(1:nmols) = x(:)
+n(idx_Tgas) = Tgas
+krome_get_gamma = gamma_index(n(:))
+end function krome_get_gamma
+
+!***************************
+!get an integer array containing the atomic numbers Z
+! of the spcecies.
+! alias for get_zatoms
+function krome_get_zatoms()
+use krome_subs
+use krome_commons
+use krome_getphys
+implicit none
+integer :: krome_get_zatoms(nmols)
+integer::zatoms(nspec)
+
+zatoms(:) = get_zatoms()
+krome_get_zatoms(:) = zatoms(1:nmols)
+
+end function krome_get_zatoms
+
+!****************************
+!get the mean molecular weight from
+! number density and mass density.
+! alias for get_mu in krome_subs module
+function krome_get_mu(x)
+use krome_commons
+use krome_subs
+use krome_getphys
+implicit none
+real*8 :: x(nmols), krome_get_mu
+real*8::n(1:nspec)
+n(:) = 0d0
+n(1:nmols) = x(:)
+krome_get_mu = get_mu(n(:))
+end function krome_get_mu
+
+!***************************
+!get the names of the reactions as a
+! character*50 array of krome_nrea
+! elements
+!! !! cannot yet be called from C
+function krome_get_rnames()
+use krome_commons
+use krome_subs
+use krome_getphys
+implicit none
+character*50 :: krome_get_rnames(nrea)
+
+krome_get_rnames(:) = get_rnames()
+
+end function krome_get_rnames
+
+!*****************
+!get an array of double containing the masses in g
+! of the species.
+! alias for get_mass in krome_subs
+function krome_get_mass()
+use krome_subs
+use krome_commons
+use krome_getphys
+implicit none
+real*8::tmp(nspec)
+real*8 :: krome_get_mass(nmols)
+tmp(:) = get_mass()
+krome_get_mass = tmp(1:nmols)
+end function krome_get_mass
+
+!*****************
+!get an array of double containing the inverse
+! of the mass (1/g) of the species
+!alias for get_imass in krome_subs
+function krome_get_imass()
+use krome_subs
+use krome_commons
+use krome_getphys
+implicit none
+real*8::tmp(nspec)
+real*8 :: krome_get_imass(nmols)
+tmp(:) = get_imass()
+krome_get_imass = tmp(1:nmols)
+end function krome_get_imass
+
+!***********************
+!get the total number of H nuclei
+function krome_get_Hnuclei(x)
+use krome_commons
+use krome_subs
+use krome_getphys
+real*8::n(nspec)
+real*8 :: krome_get_Hnuclei, x(nmols)
+n(:) = 0d0
+n(1:nmols) = x(:)
+
+krome_get_Hnuclei = get_Hnuclei(n(:))
+
+end function krome_get_Hnuclei
+
+!*****************
+!get an array of size krome_nmols containing the
+! charges of the species.
+! alias for get_charges
+function krome_get_charges()
+use krome_subs
+use krome_commons
+use krome_getphys
+implicit none
+real*8::tmp(nspec)
+real*8 :: krome_get_charges(nmols)
+tmp(:) = get_charges()
+krome_get_charges = tmp(1:nmols)
+end function krome_get_charges
+
+!*****************
+!get an array of character*16 and size krome_nmols
+! containing the names of all the species.
+! alias for get_names
+!!  !! cannot yet be called from C
+function krome_get_names()
+use krome_subs
+use krome_commons
+use krome_getphys
+implicit none
+character*16 :: krome_get_names(nmols)
+character*16::tmp(nspec)
+tmp(:) = get_names()
+krome_get_names = tmp(1:nmols)
+end function krome_get_names
+
+!********************
+!get space-separated header of chemical species
+function krome_get_names_header()
+use krome_commons
+use krome_getphys
+implicit none
+character*122::krome_get_names_header
+character*16::tmp(nspec)
+integer::i
+
+tmp(:) = get_names()
+
+krome_get_names_header = ""
+do i=1,nmols
+krome_get_names_header = trim(krome_get_names_header)//" "//trim(tmp(i))
+end do
+
+end function krome_get_names_header
+
+!********************
+!get space-separated header of coolings
+function krome_get_cooling_names_header()
+use krome_commons
+use krome_getphys
+implicit none
+character*130::krome_get_cooling_names_header
+character*16::tmp(ncools)
+integer::i
+
+tmp(:) = get_cooling_names()
+
+krome_get_cooling_names_header = ""
+do i=1,ncools
+if(trim(tmp(i))=="") cycle
+krome_get_cooling_names_header = trim(krome_get_cooling_names_header)//" "//trim(tmp(i))
+end do
+
+end function krome_get_cooling_names_header
+
+!********************
+!get space-separated header of heatings
+function krome_get_heating_names_header()
+use krome_commons
+use krome_getphys
+implicit none
+character*87::krome_get_heating_names_header
+character*16::tmp(nheats)
+integer::i
+
+tmp(:) = get_heating_names()
+
+krome_get_heating_names_header = ""
+do i=1,nheats
+if(trim(tmp(i))=="") cycle
+krome_get_heating_names_header = trim(krome_get_heating_names_header)//" "//trim(tmp(i))
+end do
+
+end function krome_get_heating_names_header
+
+!*****************
+!get the index of the species with name name.
+! alias for get_index
+!! !! cannot yet be called from C
+function krome_get_index(name)
+use krome_subs
+implicit none
+integer :: krome_get_index
+character*(*) :: name
+krome_get_index = get_index(name)
+end function krome_get_index
+
+!*******************
+!get the total density of the gas in g/cm3
+! giving all the number densities n(:)
+function krome_get_rho(n)
+use krome_commons
+real*8 :: krome_get_rho, n(nmols)
+real*8::m(nmols)
+m(:) = krome_get_mass()
+krome_get_rho = sum(m(:)*n(:))
+end function krome_get_rho
+
+!*************************
+!scale the abundances of the metals contained in n(:)
+! to Z according to Asplund+2009.
+! note that this applies only to neutral atoms.
+subroutine krome_scale_Z(x,Z)
+use krome_commons
+use krome_getphys
+real*8 :: x(nmols)
+real*8 :: Z
+real*8::Htot,n(nspec)
+
+n(1:nmols) = x(:)
+n(nmols+1:nspec) = 0d0
+
+Htot = get_Hnuclei(n(:))
+x(idx_C) = max(Htot * 1d1**(Z+(-3.57)), 1d-40)
+x(idx_O) = max(Htot * 1d1**(Z+(-3.31)), 1d-40)
+
+end subroutine krome_scale_Z
+
+!*************************
+!set the total metallicity
+! in terms of Z/Z_solar
+subroutine krome_set_Z(xarg)
+use krome_commons
+real*8 :: xarg
+
+total_Z = xarg
+
+end subroutine krome_set_Z
+
+!*************************
+!set D is in terms of D_solar (D/D_sol).
+subroutine krome_set_dust_to_gas(xarg)
+use krome_commons
+real*8 :: xarg
+
+dust2gas_ratio = xarg
+
+end subroutine
+
+!*************************
+!set the clumping factor
+subroutine krome_set_clump(xarg)
+use krome_commons
+real*8 :: xarg
+
+clump_factor = xarg
+
+end subroutine krome_set_clump
+
+!***********************
+!get the number of electrons assuming
+! total neutral charge (cations-anions)
+function krome_get_electrons(x)
+use krome_commons
+use krome_subs
+use krome_getphys
+real*8 :: x(nmols), krome_get_electrons
+real*8::n(nspec)
+n(1:nmols) = x(:)
+n(nmols+1:nspec) = 0d0
+krome_get_electrons = get_electrons(n(:))
+end function krome_get_electrons
+
+!**********************
+!print on screen the first nbest highest reaction fluxes
+subroutine krome_print_best_flux(xin,Tgas,nbest)
+use krome_subs
+use krome_commons
+implicit none
+real*8 :: xin(nmols)
+real*8 :: Tgas
+real*8::x(nmols),n(nspec)
+integer :: nbest
+n(1:nmols) = xin(:)
+n(idx_Tgas) = Tgas
+call print_best_flux(n,Tgas,nbest)
+
+end subroutine krome_print_best_flux
+
+!*********************
+!print only the highest fluxes greater than a fraction frac
+! of the maximum flux
+subroutine krome_print_best_flux_frac(xin,Tgas,frac)
+use krome_subs
+use krome_commons
+implicit none
+real*8 :: xin(nmols)
+real*8 :: Tgas,frac
+real*8::n(nspec)
+n(1:nmols) = xin(:)
+n(idx_Tgas) = Tgas
+call print_best_flux_frac(n,Tgas,frac)
+
+end subroutine krome_print_best_flux_frac
+
+!**********************
+!print the highest nbest fluxes for reactions involving
+!a given species using the index idx_find (e.g. krome_idx_H2)
+subroutine krome_print_best_flux_spec(xin,Tgas,nbest,idx_find)
+use krome_subs
+use krome_commons
+implicit none
+real*8 :: xin(nmols)
+real*8 :: Tgas
+real*8::n(nspec)
+integer :: nbest,idx_find
+n(1:nmols) = xin(:)
+n(idx_Tgas) = Tgas
+call print_best_flux_spec(n,Tgas,nbest,idx_find)
+end subroutine krome_print_best_flux_spec
+
+!*******************************
+!get an array of size krome_nrea with
+! the fluxes of all the reactions in cm-3/s
+function krome_get_flux(n,Tgas)
+use krome_commons
+use krome_subs
+real*8 :: krome_get_flux(nrea),n(nmols)
+real*8,value :: Tgas
+real*8::x(nspec)
+x(:) = 0.d0
+x(1:nmols) = n(:)
+x(idx_Tgas) = Tgas
+krome_get_flux(:) = get_flux(x(:), Tgas)
+end function krome_get_flux
+
+!*****************************
+!store the fluxes to the file unit ifile
+! using the chemical composition x(:), and the
+! gas temperature Tgas. xvar is th value of an
+! user-defined independent variable that
+! can be employed for plots.
+! the file columns are as follow
+! rate number, xvar, absolute flux,
+!  flux/maxflux, flux fraction wrt total,
+!  reaction name (*50 string)
+subroutine krome_explore_flux(x,Tgas,ifile,xvar)
+use krome_commons
+use krome_subs
+use krome_getphys
+implicit none
+real*8 :: x(nmols)
+real*8 :: Tgas,xvar
+real*8::flux(nrea),fluxmax,sumflux,n(nspec)
+integer :: ifile
+integer::i
+character*50::rname(nrea)
+
+!get reaction names
+rname(:) = get_rnames()
+n(:) = 0d0
+n(1:nmols) = x(:)
+n(idx_Tgas) = Tgas
+!get fluxes
+flux(:) = get_flux(n(:), Tgas)
+fluxmax = maxval(flux) !maximum flux
+sumflux = sum(flux) !sum of all the fluxes
+!loop on reactions
+do i=1,nrea
+write(ifile,'(I8,5E17.8e3,a3,a50)') i,xvar,Tgas,flux(i),&
+    flux(i)/fluxmax, flux(i)/sumflux," ",rname(i)
+end do
+write(ifile,*)
+
+end subroutine krome_explore_flux
+
+!*********************
+!get nulcear qeff for the reactions
+function krome_get_qeff()
+use krome_commons
+use krome_subs
+use krome_getphys
+implicit none
+real*8 :: krome_get_qeff(nrea)
+
+krome_get_qeff(:) = get_qeff()
+
+end function krome_get_qeff
+
+!************************
+!dump the fluxes to the file unit nfile
+subroutine krome_dump_flux(n,Tgas,nfile)
+use krome_commons
+real*8 :: n(nmols)
+real*8 :: Tgas
+real*8::flux(nrea)
+integer :: nfile
+integer::i
+
+flux(:) = krome_get_flux(n(:),Tgas)
+do i=1,nrea
+write(nfile,'(I8,E17.8e3)') i,flux(i)
+end do
+write(nfile,*)
+
+end subroutine krome_dump_flux
+
+!************************
+!dump all the evaluation of the coefficient rates in
+! the file funit, in the range inTmin, inTmax, using
+! imax points
+subroutine krome_dump_rates(inTmin,inTmax,imax,funit)
+use krome_commons
+use krome_subs
+implicit none
+integer::i,j
+integer :: funit,imax
+real*8 :: inTmin,inTmax
+real*8::Tmin,Tmax,Tgas,k(nrea),n(nspec)
+
+Tmin = log10(inTmin)
+Tmax = log10(inTmax)
+
+n(:) = 1d-40
+do i=1,imax
+Tgas = 1d1**((i-1)*(Tmax-Tmin)/(imax-1)+Tmin)
+n(idx_Tgas) = Tgas
+k(:) = coe(n(:))
+do j=1,nrea
+write(funit,'(E17.8e3,I8,E17.8e3)') Tgas,j,k(j)
+end do
+write(funit,*)
+end do
+
+end subroutine krome_dump_rates
+
+!************************
+!print species informations on screen
+subroutine krome_get_info(x, Tgas)
+use krome_commons
+use krome_subs
+use krome_getphys
+implicit none
+integer::i,charges(nspec)
+real*8 :: x(nmols)
+real*8 :: Tgas
+real*8::masses(nspec)
+character*16::names(nspec)
+
+names(:) = get_names()
+charges(:) = get_charges()
+masses(:) = get_mass()
+
+print '(a4,a10,a11,a5,a11)',"#","Name","m (g)","Chrg","x"
+do i=1,size(x)
+print '(I4,a10,E11.3,I5,E11.3)',i," "//names(i),masses(i),charges(i),x(i)
+end do
+print '(a30,E11.3)'," sum",sum(x)
+
+print '(a14,E11.3)',"Tgas",Tgas
+end subroutine krome_get_info
+
+!*****************************
+subroutine krome_set_mpi_rank(xarg)
+use krome_commons
+implicit none
+integer :: xarg
+krome_mpi_rank=xarg
+end subroutine krome_set_mpi_rank
+
+end module krome_user
+
+!############### MODULE ##############
+module krome_reduction
+contains
+
+!**************************
+function fex_check(n,Tgas)
+use krome_commons
+use krome_tabs
+implicit none
+integer::i
+integer::r1,r2,r3
+real*8::fex_check,n(nspec),k(nrea),rrmax,Tgas
+
+k(:) = coe_tab(n(:))
+rrmax = 0.d0
+n(idx_dummy) = 1.d0
+n(idx_g) = 1.d0
+n(idx_CR) = 1.d0
+do i=1,nrea
+r1 = arr_r1(i)
+r2 = arr_r2(i)
+r3 = arr_r3(i)
+arr_flux(i) = k(i)*n(r1)*n(r2)*n(r3)
+rrmax = max(rrmax, arr_flux(i))
+end do
+fex_check = rrmax
+
+end function fex_check
+
+end module krome_reduction
+
+!############### MODULE ##############
+module krome_main
+
+integer::krome_call_to_fex
+!$omp threadprivate(krome_call_to_fex)
+
+contains
+
+! *************************************************************
+!  This file has been generated with:
+!  KROME 14.08.dev on 2018-08-27 09:46:28
+!  Changeset be164d7
+!  see http://kromepackage.org
+!
+!  Written and developed by Tommaso Grassi and Stefano Bovino
+!
+!  Contributors:
+!  J.Boulangier, T.Frostholm, D.Galli, F.A.Gianturco, T.Haugboelle,
+!  A.Lupi, J.Prieto, J.Ramsey, D.R.G.Schleicher, D.Seifried, E.Simoncini,
+!  E.Tognelli
+!  KROME is provided "as it is", without any warranty.
+! *************************************************************
+
+!********************************
+!KROME main (interface to the solver library)
+
+subroutine krome(x,Tgas,dt  )
+use krome_commons
+use krome_subs
+use krome_ode
+use krome_reduction
+use krome_dust
+use krome_getphys
+use krome_tabs
+implicit none
+real*8 :: Tgas,dt
+real*8 :: x(nmols)
+real*8 :: rhogas
+
+real*8::mass(nspec),n(nspec),tloc,xin
+real*8::rrmax,totmass,n_old(nspec),ni(nspec),invTdust(ndust)
+integer::icount,i,icount_max
+integer:: ierr
+
+!DLSODES variables
+integer,parameter::meth=2 !1=adam, 2=BDF
+integer::neq(1),itol,itask,istate,iopt,lrw,liw,mf
+integer::iwork(560)
+real*8::atol(nspec),rtol(nspec)
+real*8::rwork(3550)
+logical::got_error,equil
+
+!****************************
+!init DLSODES (see DLSODES manual)
+call XSETF(0)!toggle solver verbosity
+got_error = .false.
+neq = nspec !number of eqns
+liw = size(iwork)
+lrw = size(rwork)
+iwork(:) = 0
+rwork(:) = 0d0
+itol = 4 !both tolerances are scalar
+rtol(:) = 1.000000d-04 !relative tolerance
+atol(:) = 1.000000d-20 !absolute tolerance
+icount_max = 100 !maximum number of iterations
+
+itask = 1
+iopt = 0
+
+!MF=
+!  = 222 internal-generated JAC and sparsity
+!  = 121 user-provided JAC and internal generated sparsity
+!  =  22 internal-generated JAC but sparsity user-provided
+!  =  21 user-provided JAC and sparsity
+MF = 222
+!end init DLSODES
+!****************************
+
+ierr = 0 !error flag, zero==OK!
+n(:) = 0d0 !initialize densities
+
+n(1:nmols) = x(:)
+
+n(idx_Tgas) = Tgas !put temperature in the input array
+
+icount = 0 !count solver iterations
+istate = 1 !init solver state
+tloc = 0.d0 !set starting time
+
+!store initial values
+ni(:) = n(:)
+n_global(:) = n(:)
+
+call makeStoreOnceRates(n(:))
+
+n_old(:) = -1d99
+krome_call_to_fex = 0
+do
+icount = icount + 1
+!solve ODE
+CALL DLSODES(fex, NEQ(:), n(:), tloc, dt, &
+    ITOL, RTOL, ATOL, ITASK, ISTATE, IOPT, RWORK, LRW, IWORK, &
+    LIW, JES, MF)
+
+krome_call_to_fex = krome_call_to_fex + IWORK(12)
+!check DLSODES exit status
+if(istate==2) then
+exit !sucsessful integration
+elseif(istate==-1) then
+istate = 1 !exceeded internal max iterations
+elseif(istate==-5 .or. istate==-4) then
+istate = 3 !wrong sparsity recompute
+elseif(istate==-3) then
+n(:) = ni(:)
+istate = 1
+else
+got_error = .true.
+end if
+
+if(got_error.or.icount>icount_max) then
+if (krome_mpi_rank>0) then
+  print *,krome_mpi_rank,"ERROR: wrong solver exit status!"
+  print *,krome_mpi_rank,"istate:",istate
+  print *,krome_mpi_rank,"iter count:",icount
+  print *,krome_mpi_rank,"max iter count:",icount_max
+  print *,krome_mpi_rank,"SEE KROME_ERROR_REPORT file"
+else
+  print *,"ERROR: wrong solver exit status!"
+  print *,"istate:",istate
+  print *,"iter count:",icount
+  print *,"max iter count:",icount_max
+  print *,"SEE KROME_ERROR_REPORT file"
+end if
+call krome_dump(n(:), rwork(:), iwork(:), ni(:))
+stop
+end if
+
+end do
+
+!avoid negative species
+do i=1,nspec
+n(i) = max(n(i),0d0)
+end do
+
+!returns to user array
+x(:) = n(1:nmols)
+
+Tgas = n(idx_Tgas) !get new temperature
+
+end subroutine krome
+
+!*********************************
+!integrates to equilibrium using constant temperature
+subroutine krome_equilibrium(x,Tgas,verbosity)
+use krome_ode
+use krome_subs
+use krome_commons
+use krome_constants
+use krome_getphys
+use krome_tabs
+implicit none
+integer::mf,liw,lrw,itol,meth,iopt,itask,istate,neq(1)
+integer::i,imax
+integer,optional::verbosity
+integer::verbose
+real*8 :: Tgas
+real*8 :: x(nmols)
+real*8 :: rhogas
+real*8::tloc,n(nspec),mass(nspec),ni(nspec)
+real*8::dt,xin
+integer::iwork(560)
+real*8::atol(nspec),rtol(nspec)
+real*8::rwork(3550)
+real*8::ertol,eatol,max_time,t_tot,ntot_tol,err_species
+logical::converged
+
+integer, save :: ncall=0
+integer, parameter :: ncall_print_frequency=20000
+integer :: ncallp
+integer::charges(nspec)
+real*8::masses(nspec)
+character*16::names(nspec)
+
+!set verbosity from argument
+verbose = 1 !default is verbose
+if(present(verbosity)) verbose = verbosity
+
+call XSETF(0)!toggle solver verbosity
+meth = 2
+neq = nspec !number of eqns
+liw = size(iwork)
+lrw = size(rwork)
+iwork(:) = 0
+rwork(:) = 0d0
+itol = 4 !both tolerances are scalar
+rtol(:) = 1d-6 !relative tolerance
+atol(:) = 1d-20 !absolute tolerance
+
+! Switches to decide when equilibrium has been reached
+ertol = 1d-5  ! relative min change in a species
+eatol = 1d-12 ! absolute min change in a species
+max_time=seconds_per_year*5d8 ! max time we will be integrating for
+
+!for DLSODES options see its manual
+iopt = 0
+itask = 1
+istate = 1
+
+mf = 222 !internally evaluated sparsity and jacobian
+tloc = 0d0 !initial time
+
+n(:) = 0d0 !initialize densities
+!copy into array
+n(nmols+1:) = 0d0
+n(1:nmols) = x(:)
+
+n(idx_Tgas) = Tgas
+
+!store previous values
+ni(:) = n(:)
+n_global(:) = ni(:)
+
+call makeStoreOnceRates(n(:))
+
+imax = 1000
+
+dt = seconds_per_year * 1d2
+t_tot = dt
+converged = .false.
+do while (.not. converged)
+do i=1,imax
+!solve ODE
+CALL DLSODES(fcn_tconst, NEQ(:), n(:), tloc, dt, ITOL, RTOL, ATOL,&
+    ITASK, ISTATE, IOPT, RWORK, LRW, IWORK, LIW, jcn_dummy, MF)
+if(istate==2) then
+  exit
+else
+  istate=1
+end if
+end do
+!check errors
+if(istate.ne.2) then
+print *,"ERROR: no equilibrium found!"
+stop
+end if
+
+!avoid negative species
+do i=1,nspec
+n(i) = max(n(i),0d0)
+end do
+
+! check if we have converged by comparing the error in any species with an relative abundance above eatol
+converged = maxval(abs(n(1:nmols) - ni(1:nmols)) / max(n(1:nmols),eatol*sum(n(1:nmols)))) .lt. ertol &
+    .or. t_tot .gt. max_time
+
+! Increase integration time by a reasonable factor
+if(.not. converged) then
+dt = dt * 3.
+t_tot = t_tot + dt
+ni = n
+n_global = n
+endif
+enddo
+!returns to user array
+x(:) = n(1:nmols)
+
+if(t_tot > max_time .and. &
+    maxval(abs(n(1:nmols) - ni(1:nmols)) / max(n(1:nmols),eatol*sum(n(1:nmols)))) > 0.2 .and. verbose>0) then
+print *, 'krome_equilibrium: Did not converge in ', max_time / seconds_per_year, ' years.'
+print *, 'Tgas :', Tgas
+names(:) = get_names()
+charges(:) = get_charges()
+masses(:) = get_mass()
+
+print '(a4,a10,a11,a5,a16)',"#","Name","m (g)","Chrg","  Current / Last"
+do i=1,nmols
+print '(I4,a10,E11.3,I5,2E14.6,E11.3)',i," "//names(i),masses(i),charges(i),n(i),ni(i),abs(n(i) - ni(i)) / max(n(i),eatol*sum(n(1:nmols)))
+end do
+print '(a30,2E14.6)'," sum",sum(n(1:nmols)),sum(ni(1:nmols))
+print *, 'Fractional error :', maxval(abs(n(1:nmols) - ni(1:nmols)) / max(n(1:nmols),eatol*sum(n(1:nmols))))
+print *, 'Absolute and relative floors:', eatol, ertol
+end if
+
+! Print info ever so often
+!$omp critical
+ncall=ncall+1
+ncallp = ncall
+!$omp end critical
+
+if(modulo(ncallp,ncall_print_frequency)==0 .and. verbose>0) then
+print *, 'Found equilibrium for ', ncallp, ' cells.'
+end if
+
+end subroutine krome_equilibrium
+
+!********************
+!dummy jacobian
+subroutine jcn_dummy()
+implicit none
+end subroutine jcn_dummy
+
+!*******************
+!dn/dt where dT/dt=0
+subroutine fcn_tconst(n,tt,x,f)
+use krome_commons
+use krome_ode
+implicit none
+integer::n,ierr
+real*8::x(n),f(n),tt
+call fex(n,tt,x(:),f(:))
+f(idx_Tgas) = 0d0
+end subroutine fcn_tconst
+
+!*******************************
+subroutine krome_dump(n,rwork,iwork,ni)
+use krome_commons
+use krome_subs
+use krome_tabs
+use krome_reduction
+use krome_ode
+use krome_getphys
+integer::fnum,i,iwork(:),idx(nrea),j
+real*8::n(:),rwork(:),rrmax,k(nrea),kmax,rperc,kperc,dn(nspec),tt,ni(:)
+character*16::names(nspec),FMTi,FMTr
+character*50::rnames(nrea),fname,prex
+integer,save::mx_dump=1000 ! max nr of reports before terminating
+fnum = 99
+if (krome_mpi_rank>0) then
+write(fname,'(a,i5.5)') "KROME_ERROR_REPORT_",krome_mpi_rank
+else
+fname = "KROME_ERROR_REPORT"
+endif
+open(fnum,FILE=trim(fname),status="replace")
+tt = 0d0
+names(:) = get_names()
+rnames(:) = get_rnames()
+call fex(nspec,tt,n(:),dn(:))
+
+write(fnum,*) "KROME ERROR REPORT"
+write(fnum,*)
+!SPECIES
+write(fnum,*) "Species abundances"
+write(fnum,*) "**********************"
+write(fnum,'(a5,a20,3a12)') "#","name","qty","dn/dt","ninit"
+write(fnum,*) "**********************"
+do i=1,nspec
+write(fnum,'(I5,a20,3E12.3e3)') i,names(i),n(i),dn(i),ni(i)
+end do
+write(fnum,*) "**********************"
+
+!F90 FRIENDLY RESTART
+write(fnum,*)
+write(fnum,*) "**********************"
+write(fnum,*) "F90-friendly species"
+write(fnum,*) "**********************"
+do i=1,nspec
+write(prex,'(a,i3,a)') "x(",i,") = "
+write(fnum,*) trim(prex),ni(i),"!"//names(i)
+end do
+
+write(fnum,*) "**********************"
+
+!RATE COEFFIECIENTS
+k(:) = coe_tab(n(:))
+idx(:) = idx_sort(k(:))
+kmax = maxval(k)
+write(fnum,*)
+write(fnum,*) "Rate coefficients (sorted) at Tgas",n(idx_Tgas)
+write(fnum,*) "**********************"
+write(fnum,'(a5,2a12,a10)') "#","k","k %","  name"
+write(fnum,*) "**********************"
+do j=1,nrea
+i = idx(j)
+kperc = 0.d0
+if(kmax>0.d0) kperc = k(i)*1d2/kmax
+write(fnum,'(I5,2E12.3e3,a2,a50)') i,k(i),kperc,"  ", rnames(i)
+end do
+write(fnum,*) "**********************"
+write(fnum,*)
+
+!FLUXES
+call load_arrays
+rrmax = fex_check(n(:), n(idx_Tgas))
+idx(:) = idx_sort(arr_flux(:))
+write(fnum,*)
+write(fnum,*) "Reaction magnitude (sorted) [k*n1*n2*n3*...]"
+write(fnum,*) "**********************"
+write(fnum,'(a5,2a12,a10)') "#","flux","flux %","  name"
+write(fnum,*) "**********************"
+do j=1,nrea
+i = idx(j)
+rperc = 0.d0
+if(rrmax>0.d0) rperc = arr_flux(i)*1d2/rrmax
+write(fnum,'(I5,2E12.3e3,a2,a50)') i,arr_flux(i),rperc,"  ",rnames(i)
+end do
+write(fnum,*) "**********************"
+write(fnum,*)
+
+!SOLVER
+FMTr = "(a30,E16.7e3)"
+FMTi = "(a30,I10)"
+write(fnum,*) "Solver-related information:"
+write(fnum,FMTr) "step size last",rwork(11)
+write(fnum,FMTr) "step size attempt",rwork(12)
+write(fnum,FMTr) "time current",rwork(13)
+write(fnum,FMTr) "tol scale factor",rwork(14)
+write(fnum,FMTi) "numeber of steps",iwork(11)
+write(fnum,FMTi) "call to fex",iwork(12)
+write(fnum,FMTi) "call to jex",iwork(13)
+write(fnum,FMTi) "last order used",iwork(14)
+write(fnum,FMTi) "order attempt",iwork(15)
+write(fnum,FMTi) "idx largest error",iwork(16)
+write(fnum,FMTi) "RWORK size required",iwork(17)
+write(fnum,FMTi) "IWORK size required",iwork(18)
+write(fnum,FMTi) "NNZ in Jac",iwork(19)
+write(fnum,FMTi) "extra fex to compute jac",iwork(20)
+write(fnum,FMTi) "number of LU decomp",iwork(21)
+write(fnum,FMTi) "base address in RWORK",iwork(22)
+write(fnum,FMTi) "base address of IAN",iwork(23)
+write(fnum,FMTi) "base address of JAN",iwork(24)
+write(fnum,FMTi) "NNZ in lower LU",iwork(25)
+write(fnum,FMTi) "NNZ in upper LU",iwork(21)
+write(fnum,*) "See DLSODES manual for further details on Optional Outputs"
+write(fnum,*)
+write(fnum,*) "END KROME ERROR REPORT"
+write(fnum,*)
+close(fnum)
+
+mx_dump = mx_dump - 1
+if (mx_dump==0) stop
+
+end subroutine krome_dump
+
+!********************************
+subroutine krome_init()
+use krome_commons
+use krome_tabs
+use krome_subs
+use krome_reduction
+use krome_dust
+use krome_cooling
+use krome_photo
+use krome_fit
+
+!init phys common variables
+!$omp parallel
+phys_Tcmb = 2.73d0
+phys_zredshift = 0d0
+phys_orthoParaRatio = 3d0
+phys_metallicity = 0d0
+phys_Tfloor = 2.73d0
+!$omp end parallel
+
+!init metallicity default
+!assuming solar
+total_Z = 1d0
+
+!default D/D_sol = Z/Z_sol
+!assuming linear scaling
+dust2gas_ratio = total_Z
+
+!default broadening turubulence velocity
+broadeningVturb2 = 0d0
+
+!default clumping factor for
+! H2 formation on dust by Jura/Gnedin
+clump_factor = 1d0
+
+!default for thermo toggle is ON
+!$omp parallel
+krome_thermo_toggle = 1
+!$omp end parallel
+
+!load arrays with ractants/products indexes
+call load_arrays()
+
+!initialize the table for exp(-a/T) function
+call init_exp_table()
+
+call load_parts()
+
+!init photo reactants indexes
+photoPartners(1) = idx_H
+photoPartners(2) = idx_HE
+photoPartners(3) = idx_HEj
+photoPartners(4) = idx_O
+photoPartners(5) = idx_C
+photoPartners(6) = idx_H2
+photoPartners(7) = idx_Hk
+photoPartners(8) = idx_CH
+photoPartners(9) = idx_CH
+photoPartners(10) = idx_C2
+photoPartners(11) = idx_OH
+photoPartners(12) = idx_OH
+photoPartners(13) = idx_H2O
+photoPartners(14) = idx_H2O
+photoPartners(15) = idx_O2
+photoPartners(16) = idx_O2
+photoPartners(17) = idx_H2
+
+!get machine precision
+krome_epsilon = epsilon(0d0)
+
+!load verbatim reactions
+call loadReactionsVerbatim()
+
+end subroutine krome_init
+
+!****************************
+function krome_get_coe(x,Tgas)
+!krome_get_coe: public interface to obtain rate coefficients
+use krome_commons
+use krome_subs
+use krome_tabs
+implicit none
+real*8 :: krome_get_coe(nrea), x(nmols), Tgas
+real*8::n(nspec)
+
+n(:) = 0d0
+n(1:nmols) = x(:)
+n(idx_Tgas) = Tgas
+krome_get_coe(:) = coe_tab(n(:))
+
+end function krome_get_coe
+
+!****************************
+function krome_get_coeT(Tgas)
+!krome_get_coeT: public interface to obtain rate coefficients
+! with argument Tgas only
+use krome_commons
+use krome_subs
+use krome_tabs
+implicit none
+real*8 :: krome_get_coeT(nrea),Tgas
+real*8::n(nspec)
+n(idx_Tgas) = Tgas
+krome_get_coeT(:) = coe_tab(n(:))
+end function krome_get_coeT
+
+end module krome_main

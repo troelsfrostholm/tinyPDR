@@ -1,0 +1,47 @@
+#This file is a script to initialize the species indexes for gnuplot
+
+
+if(!exists("nkrome")) print "ERROR: first set the value of the column-offset nkrome"
+krome_idx_E = 1 + nkrome
+krome_idx_Hk = 2 + nkrome
+krome_idx_Ck = 3 + nkrome
+krome_idx_Ok = 4 + nkrome
+krome_idx_H = 5 + nkrome
+krome_idx_HE = 6 + nkrome
+krome_idx_H2 = 7 + nkrome
+krome_idx_C = 8 + nkrome
+krome_idx_O = 9 + nkrome
+krome_idx_OH = 10 + nkrome
+krome_idx_CO = 11 + nkrome
+krome_idx_CH = 12 + nkrome
+krome_idx_CH2 = 13 + nkrome
+krome_idx_C2 = 14 + nkrome
+krome_idx_HCO = 15 + nkrome
+krome_idx_H2O = 16 + nkrome
+krome_idx_O2 = 17 + nkrome
+krome_idx_CO_total = 18 + nkrome
+krome_idx_H2O_total = 19 + nkrome
+krome_idx_Hj = 20 + nkrome
+krome_idx_HEj = 21 + nkrome
+krome_idx_H2j = 22 + nkrome
+krome_idx_Cj = 23 + nkrome
+krome_idx_Oj = 24 + nkrome
+krome_idx_HOCj = 25 + nkrome
+krome_idx_HCOj = 26 + nkrome
+krome_idx_H3j = 27 + nkrome
+krome_idx_CHj = 28 + nkrome
+krome_idx_CH2j = 29 + nkrome
+krome_idx_COj = 30 + nkrome
+krome_idx_CH3j = 31 + nkrome
+krome_idx_OHj = 32 + nkrome
+krome_idx_H2Oj = 33 + nkrome
+krome_idx_H3Oj = 34 + nkrome
+krome_idx_O2j = 35 + nkrome
+krome_idx_HEjj = 36 + nkrome
+krome_idx_CR = 37 + nkrome
+krome_idx_g = 38 + nkrome
+krome_idx_Tgas = 39 + nkrome
+krome_idx_dummy = 40 + nkrome
+print "All variables set as e.g. krome_idx_H2"
+print "plot 'your_output' u 1:krome_idx_H2"
+print " the offset is nkrome=",nkrome
