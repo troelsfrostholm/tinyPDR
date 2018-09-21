@@ -4,6 +4,7 @@ from numpy import *
 from matplotlib import pyplot as plt
 
 do_plot = True
+grid_in_N = True
 
 datadir = "R14IIfig4/"
 fav = 1e0/4e-22
@@ -41,9 +42,16 @@ x_T = interp(N_T, NN, xx)           # interpolate to find distance axis for temp
 
 # Interpolate to logarithmic grid
 Ngrid = 512
-x_u = logspace(log10(2e2),log10(6e3),num=Ngrid)*pc
-n_u = interp(x_u, xx, nn, right=n[-1])
-T_u = interp(x_u, x_T, T[:,1], left=T[0,1], right=T[-1,1])
+
+if grid_in_N:
+  N_u = logspace(log10(1e19),log10(1e23),num=Ngrid)
+  n_u = interp(N_u, NN, nn, right=n[-1])
+  T_u = interp(N_u, N_T, T[:,1], left=T[0,1], right=T[-1,1])
+  x_u = interp(N_u, NN, xx, left=T[0,1], right=T[-1,1])
+else:
+  x_u = logspace(log10(2e2),log10(6e3),num=Ngrid)*pc
+  n_u = interp(x_u, xx, nn, right=n[-1])
+  T_u = interp(x_u, x_T, T[:,1], left=T[0,1], right=T[-1,1])
 
 # Optionally plot the series
 if do_plot:
