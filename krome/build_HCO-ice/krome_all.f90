@@ -5,7 +5,7 @@ module krome_commons
 
   ! *************************************************************
   !  This file has been generated with:
-  !  KROME 14.08.dev on 2018-08-24 14:18:10
+  !  KROME 14.08.dev on 2018-08-27 13:38:19
   !  Changeset be164d7
   !  see http://kromepackage.org
   !
@@ -57,7 +57,7 @@ module krome_commons
   integer,parameter::idx_g=38
   integer,parameter::idx_Tgas=39
   integer,parameter::idx_dummy=40
-  integer,parameter::nrea=280
+  integer,parameter::nrea=281
   integer,parameter::nmols=36
   integer,parameter::nspec=40
   integer,parameter::natoms=5
@@ -236,82 +236,82 @@ module krome_commons
 
   !xsecs from file variables
   !xsec for C -> C+ + E
-  real*8,allocatable::xsec216_val(:)
-  real*8::xsec216_Emin
-  real*8::xsec216_idE
-  integer::xsec216_n
-
-  !xsec for H2 -> H2+ + E
   real*8,allocatable::xsec217_val(:)
   real*8::xsec217_Emin
   real*8::xsec217_idE
   integer::xsec217_n
 
-  !xsec for H- -> H + E
+  !xsec for H2 -> H2+ + E
   real*8,allocatable::xsec218_val(:)
   real*8::xsec218_Emin
   real*8::xsec218_idE
   integer::xsec218_n
 
-  !xsec for CH -> C + H
+  !xsec for H- -> H + E
   real*8,allocatable::xsec219_val(:)
   real*8::xsec219_Emin
   real*8::xsec219_idE
   integer::xsec219_n
 
-  !xsec for CH -> CH+ + E
+  !xsec for CH -> C + H
   real*8,allocatable::xsec220_val(:)
   real*8::xsec220_Emin
   real*8::xsec220_idE
   integer::xsec220_n
 
-  !xsec for C2 -> C + C
+  !xsec for CH -> CH+ + E
   real*8,allocatable::xsec221_val(:)
   real*8::xsec221_Emin
   real*8::xsec221_idE
   integer::xsec221_n
 
-  !xsec for OH -> O + H
+  !xsec for C2 -> C + C
   real*8,allocatable::xsec222_val(:)
   real*8::xsec222_Emin
   real*8::xsec222_idE
   integer::xsec222_n
 
-  !xsec for OH -> OH+ + E
+  !xsec for OH -> O + H
   real*8,allocatable::xsec223_val(:)
   real*8::xsec223_Emin
   real*8::xsec223_idE
   integer::xsec223_n
 
-  !xsec for H2O -> OH + H
+  !xsec for OH -> OH+ + E
   real*8,allocatable::xsec224_val(:)
   real*8::xsec224_Emin
   real*8::xsec224_idE
   integer::xsec224_n
 
-  !xsec for H2O -> H2O+ + E
+  !xsec for H2O -> OH + H
   real*8,allocatable::xsec225_val(:)
   real*8::xsec225_Emin
   real*8::xsec225_idE
   integer::xsec225_n
 
-  !xsec for O2 -> O2+ + E
+  !xsec for H2O -> H2O+ + E
   real*8,allocatable::xsec226_val(:)
   real*8::xsec226_Emin
   real*8::xsec226_idE
   integer::xsec226_n
 
-  !xsec for O2 -> O + O
+  !xsec for O2 -> O2+ + E
   real*8,allocatable::xsec227_val(:)
   real*8::xsec227_Emin
   real*8::xsec227_idE
   integer::xsec227_n
 
-  !xsec for H2 -> H+ + H + E
+  !xsec for O2 -> O + O
   real*8,allocatable::xsec228_val(:)
   real*8::xsec228_Emin
   real*8::xsec228_idE
   integer::xsec228_n
+
+  !xsec for H2 -> H+ + H + E
+  real*8,allocatable::xsec229_val(:)
+  real*8::xsec229_Emin
+  real*8::xsec229_idE
+  integer::xsec229_n
 
   ! Gibbs free energy data from file variables
 
@@ -1885,7 +1885,7 @@ contains
 
   ! *************************************************************
   !  This file has been generated with:
-  !  KROME 14.08.dev on 2018-08-24 14:18:10
+  !  KROME 14.08.dev on 2018-08-27 13:38:19
   !  Changeset be164d7
   !  see http://kromepackage.org
   !
@@ -2459,7 +2459,7 @@ contains
 
   ! *************************************************************
   !  This file has been generated with:
-  !  KROME 14.08.dev on 2018-08-24 14:18:10
+  !  KROME 14.08.dev on 2018-08-27 13:38:19
   !  Changeset be164d7
   !  see http://kromepackage.org
   !
@@ -3528,272 +3528,275 @@ contains
     k(206) = small + (5.26d-18*T32**(-5.22)&
         *exp(-9d1*invT))
 
+    !H + H -> H2
+    k(207) = small + (2.121d-17*2.0)
+
     !CO -> CO_ice
-    k(207) = small + (krate_stickSi(n(:),idx_CO,tabTdust))
+    k(208) = small + (krate_stickSi(n(:),idx_CO,tabTdust))
 
     !CO_ice -> CO
-    k(208) = small + (krate_evaporation(n(:),idx_CO,tabTdust))
+    k(209) = small + (krate_evaporation(n(:),idx_CO,tabTdust))
 
     !H2O -> H2O_ice
-    k(209) = small + (krate_stickSi(n(:),idx_H2O,tabTdust))
+    k(210) = small + (krate_stickSi(n(:),idx_H2O,tabTdust))
 
     !H2O_ice -> H2O
-    k(210) = small + (krate_evaporation(n(:),idx_H2O,tabTdust))
+    k(211) = small + (krate_evaporation(n(:),idx_H2O,tabTdust))
 
     !CO_ice -> CO
-    k(211) = small + (krate_nonthermal_evaporation(idx_CO,1.78d0&
+    k(212) = small + (krate_nonthermal_evaporation(idx_CO,1.78d0&
         *user_G0, user_Av, user_crate, 1d-3))
 
     !H -> H+ + E
-    k(212) = small + (photoBinRates(1))
+    k(213) = small + (photoBinRates(1))
 
     !HE -> HE+ + E
-    k(213) = small + (photoBinRates(2))
+    k(214) = small + (photoBinRates(2))
 
     !HE+ -> HE++ + E
-    k(214) = small + (photoBinRates(3))
+    k(215) = small + (photoBinRates(3))
 
     !O -> O+ + E
-    k(215) = small + (photoBinRates(4))
+    k(216) = small + (photoBinRates(4))
 
     !C -> C+ + E
-    k(216) = small + (photoBinRates(5))
+    k(217) = small + (photoBinRates(5))
 
     !H2 -> H2+ + E
-    k(217) = small + (photoBinRates(6))
+    k(218) = small + (photoBinRates(6))
 
     !H- -> H + E
-    k(218) = small + (photoBinRates(7))
+    k(219) = small + (photoBinRates(7))
 
     !CH -> C + H
-    k(219) = small + (photoBinRates(8))
+    k(220) = small + (photoBinRates(8))
 
     !CH -> CH+ + E
-    k(220) = small + (photoBinRates(9))
+    k(221) = small + (photoBinRates(9))
 
     !C2 -> C + C
-    k(221) = small + (photoBinRates(10))
+    k(222) = small + (photoBinRates(10))
 
     !OH -> O + H
-    k(222) = small + (photoBinRates(11))
+    k(223) = small + (photoBinRates(11))
 
     !OH -> OH+ + E
-    k(223) = small + (photoBinRates(12))
+    k(224) = small + (photoBinRates(12))
 
     !H2O -> OH + H
-    k(224) = small + (photoBinRates(13))
+    k(225) = small + (photoBinRates(13))
 
     !H2O -> H2O+ + E
-    k(225) = small + (photoBinRates(14))
+    k(226) = small + (photoBinRates(14))
 
     !O2 -> O2+ + E
-    k(226) = small + (photoBinRates(15))
+    k(227) = small + (photoBinRates(15))
 
     !O2 -> O + O
-    k(227) = small + (photoBinRates(16))
+    k(228) = small + (photoBinRates(16))
 
     !H2 -> H+ + H + E
-    k(228) = small + (photoBinRates(17))
+    k(229) = small + (photoBinRates(17))
 
     !CO -> C + O
-    k(229) = small + (user_gamma_CO)
+    k(230) = small + (user_gamma_CO)
 
     !H2 -> H + H
-    k(230) = small + (user_gamma_H2)
+    k(231) = small + (user_gamma_H2)
 
     !H2+ -> H + H+
-    k(231) = small + (user_G0*1.1d-9*exp(-1.9&
+    k(232) = small + (user_G0*1.1d-9*exp(-1.9&
         *user_Av))
 
     !H3+ -> H2 + H+
-    k(232) = small + (user_G0*4.9d-13*exp(-1.8&
+    k(233) = small + (user_G0*4.9d-13*exp(-1.8&
         *user_Av))
 
     !H3+ -> H2+ + H
-    k(233) = small + (user_G0*4.9d-13*exp(-2.3&
+    k(234) = small + (user_G0*4.9d-13*exp(-2.3&
         *user_Av))
 
     !C- -> C + E
-    k(234) = small + (user_G0*2.4d-7*exp(-.9&
+    k(235) = small + (user_G0*2.4d-7*exp(-.9&
         *user_Av))
 
     !CH+ -> C + H+
-    k(235) = small + (user_G0*2.6d-10*exp(-2.5&
+    k(236) = small + (user_G0*2.6d-10*exp(-2.5&
         *user_Av))
 
     !CH2 -> CH + H
-    k(236) = small + (user_G0*7.1d-10*exp(-1.7&
+    k(237) = small + (user_G0*7.1d-10*exp(-1.7&
         *user_Av))
 
     !CH2 -> CH2+ + E
-    k(237) = small + (user_G0*5.9d-10*exp(-2.3&
+    k(238) = small + (user_G0*5.9d-10*exp(-2.3&
         *user_Av))
 
     !CH2+ -> CH+ + H
-    k(238) = small + (user_G0*4.6d-10*exp(-1.7&
+    k(239) = small + (user_G0*4.6d-10*exp(-1.7&
         *user_Av))
 
     !CH3+ -> CH2+ + H
-    k(239) = small + (user_G0*1d-9*exp(-1.7&
-        *user_Av))
-
-    !CH3+ -> CH+ + H2
     k(240) = small + (user_G0*1d-9*exp(-1.7&
         *user_Av))
 
+    !CH3+ -> CH+ + H2
+    k(241) = small + (user_G0*1d-9*exp(-1.7&
+        *user_Av))
+
     !O- -> O + E
-    k(241) = small + (user_G0*2.4d-7*exp(-.5&
+    k(242) = small + (user_G0*2.4d-7*exp(-.5&
         *user_Av))
 
     !OH+ -> O + H+
-    k(242) = small + (user_G0*1d-12*exp(-1.8&
+    k(243) = small + (user_G0*1d-12*exp(-1.8&
         *user_Av))
 
     !H2O+ -> H2+ + O
-    k(243) = small + (user_G0*5.d-11*HnOj)
-
-    !H2O+ -> H+ + OH
     k(244) = small + (user_G0*5.d-11*HnOj)
 
-    !H2O+ -> O+ + H2
+    !H2O+ -> H+ + OH
     k(245) = small + (user_G0*5.d-11*HnOj)
 
+    !H2O+ -> O+ + H2
+    k(246) = small + (user_G0*5.d-11*HnOj)
+
     !H2O+ -> OH+ + H
-    k(246) = small + (user_G0*1.5d-10*HnOj)
+    k(247) = small + (user_G0*1.5d-10*HnOj)
 
     !H3O+ -> H+ + H2O
-    k(247) = small + (user_G0*2.5d-11*HnOj)
-
-    !H3O+ -> H2+ + OH
     k(248) = small + (user_G0*2.5d-11*HnOj)
 
+    !H3O+ -> H2+ + OH
+    k(249) = small + (user_G0*2.5d-11*HnOj)
+
     !H3O+ -> H2O+ + H
-    k(249) = small + (user_G0*7.5d-12*HnOj)
+    k(250) = small + (user_G0*7.5d-12*HnOj)
 
     !H3O+ -> OH+ + H2
-    k(250) = small + (user_G0*2.5d-11*HnOj)
+    k(251) = small + (user_G0*2.5d-11*HnOj)
 
     !H -> H+ + E
-    k(251) = rateEvaluateOnce(251)
-
-    !HE -> HE+ + E
     k(252) = rateEvaluateOnce(252)
 
-    !O -> O+ + E
+    !HE -> HE+ + E
     k(253) = rateEvaluateOnce(253)
 
-    !CO -> C + O
+    !O -> O+ + E
     k(254) = rateEvaluateOnce(254)
 
-    !CO -> CO+ + E
+    !CO -> C + O
     k(255) = rateEvaluateOnce(255)
 
-    !C2 -> C + C
+    !CO -> CO+ + E
     k(256) = rateEvaluateOnce(256)
 
-    !H2 -> H + H
+    !C2 -> C + C
     k(257) = rateEvaluateOnce(257)
 
-    !H2 -> H+ + H-
+    !H2 -> H + H
     k(258) = rateEvaluateOnce(258)
 
-    !H2 -> H2+ + E
+    !H2 -> H+ + H-
     k(259) = rateEvaluateOnce(259)
 
-    !C -> C+ + E
+    !H2 -> H2+ + E
     k(260) = rateEvaluateOnce(260)
 
-    !CH -> C + H
+    !C -> C+ + E
     k(261) = rateEvaluateOnce(261)
 
-    !O2 -> O + O
+    !CH -> C + H
     k(262) = rateEvaluateOnce(262)
 
-    !O2 -> O2+ + E
+    !O2 -> O + O
     k(263) = rateEvaluateOnce(263)
 
-    !OH -> O + H
+    !O2 -> O2+ + E
     k(264) = rateEvaluateOnce(264)
 
-    !CH2 -> CH2+ + E
+    !OH -> O + H
     k(265) = rateEvaluateOnce(265)
 
-    !H2O -> OH + H
+    !CH2 -> CH2+ + E
     k(266) = rateEvaluateOnce(266)
 
-    !HCO -> CO + H
+    !H2O -> OH + H
     k(267) = rateEvaluateOnce(267)
 
-    !HCO -> HCO+ + E
+    !HCO -> CO + H
     k(268) = rateEvaluateOnce(268)
 
-    !H2 -> H + H+ + E
+    !HCO -> HCO+ + E
     k(269) = rateEvaluateOnce(269)
+
+    !H2 -> H + H+ + E
+    k(270) = rateEvaluateOnce(270)
 
     !C + C -> C2
     if(Tgas.LT.5d3) then
-      k(270) = small + (5.99d-33&
+      k(271) = small + (5.99d-33&
           *(Tgas&
           /5d3)**(-1.6)*ntot)
     end if
 
     !C + C -> C2
     if(Tgas.GE.5d3) then
-      k(271) = small + (5.99d-33&
+      k(272) = small + (5.99d-33&
           *(Tgas&
           /5d3)**(-0.64)*exp(5255./Tgas)*ntot)
     end if
 
     !C + O -> CO
     if(Tgas.LT.2d3) then
-      k(272) = small + (6.16d-29&
+      k(273) = small + (6.16d-29&
           *(Tgas&
           /3d2)**(-3.08)*ntot)
     end if
 
     !C + O -> CO
     if(Tgas.GE.2d3) then
-      k(273) = small + (2.14d-29&
+      k(274) = small + (2.14d-29&
           *(Tgas&
           /3d2)**(-3.08)*exp(2114./Tgas)*ntot)
     end if
 
     !C+ + O -> CO+
     if(Tgas.LT.2d3) then
-      k(274) = small + (6.16d-27&
+      k(275) = small + (6.16d-27&
           *(Tgas&
           /3d2)**(-3.08)*ntot)
     end if
 
     !C+ + O -> CO+
     if(Tgas.GE.2d3) then
-      k(275) = small + (2.14d-27&
+      k(276) = small + (2.14d-27&
           *(Tgas&
           /3d2)**(-3.08)*exp(2114./Tgas)*ntot)
     end if
 
     !C + O+ -> CO+
     if(Tgas.LT.2d3) then
-      k(276) = small + (6.16d-27&
+      k(277) = small + (6.16d-27&
           *(Tgas&
           /3d2)**(-3.08)*ntot)
     end if
 
     !C + O+ -> CO+
     if(Tgas.GE.2d3) then
-      k(277) = small + (2.14d-27&
+      k(278) = small + (2.14d-27&
           *(Tgas&
           /3d2)**(-3.08)*exp(2114./Tgas)*ntot)
     end if
 
     !H + O -> OH
-    k(278) = small + (4.33d-32*(T32)**(-1)*ntot)
+    k(279) = small + (4.33d-32*(T32)**(-1)*ntot)
 
     !OH + H -> H2O
-    k(279) = small + (2.56d-31*(T32)**(-2)*ntot)
+    k(280) = small + (2.56d-31*(T32)**(-2)*ntot)
 
     !O + O -> O2
-    k(280) = small + (9.2d-34*(T32)**(-1)*ntot)
+    k(281) = small + (9.2d-34*(T32)**(-1)*ntot)
 
     coe(:) = k(:) !set coefficients to return variable
 
@@ -5140,7 +5143,7 @@ contains
     ! and product index
     use krome_commons
 
-    arr_r1(1:280) = (/5,20,20,6,21,21,21,21,6,6,7,7,7,7,36,5,2,5&
+    arr_r1(1:281) = (/5,20,20,6,21,21,21,21,6,6,7,7,7,7,36,5,2,5&
         ,5,22,7,7,7,2,2,2,2,2,22,22,22,7,5,5,7,23,23,23,24,24,8,9,24&
         ,9,9,8,23,8,8,8,10,25,25,25,8,12,12,12,12,12,12,13,13,13,13&
         ,13,14,14,9,10,10,7,8,8,9,9,10,16,17,17,17,17,11,22,27,8,8,8&
@@ -5149,12 +5152,12 @@ contains
         ,13,13,13,13,13,13,13,13,14,10,10,10,10,16,16,16,16,16,16,16&
         ,16,17,17,17,11,11,30,3,4,21,27,27,28,29,29,29,31,31,31,32,33&
         ,33,33,34,34,34,34,35,30,26,26,25,2,2,2,3,3,3,4,4,4,7,7,8,8,8&
-        ,8,8,23,23,23,23,9,9,9,10,40,40,40,40,40,5,6,21,9,8,7,2,12,12&
-        ,14,10,10,16,16,17,17,7,11,7,22,27,27,3,28,13,13,29,31,31,4&
-        ,32,33,33,33,33,34,34,34,34,5,6,9,11,11,14,7,7,7,8,12,17,17&
+        ,8,8,23,23,23,23,9,9,9,10,5,40,40,40,40,40,5,6,21,9,8,7,2,12&
+        ,12,14,10,10,16,16,17,17,7,11,7,22,27,27,3,28,13,13,29,31,31&
+        ,4,32,33,33,33,33,34,34,34,34,5,6,9,11,11,14,7,7,7,8,12,17,17&
         ,10,13,16,15,15,7,8,8,8,8,23,23,8,8,5,10&
         ,9/)
-    arr_r2(1:280) = (/1,1,1,1,1,1,1,5,20,20,6,21,21,21,1&
+    arr_r2(1:281) = (/1,1,1,1,1,1,1,5,20,20,6,21,21,21,1&
         ,1,5,20,20,5,20,1,5,1,5,5,20,20,1,1,2,7,5,5,5,1,1,1,1,1,1,1,5&
         ,20,21,20,5,21,21,21,5,7,11,11,7,5,7,8,9,9,9,5,9,9,9,9,9,9,7&
         ,5,5,10,10,10,10,10,10,5,5,7,8,8,5,7,5,22,27,27,7,5,7,9,5,7,9&
@@ -5162,17 +5165,14 @@ contains
         ,23,29,35,35,27,27,27,27,8,16,16,20,20,20,20,20,20,21,21,21&
         ,21,21,20,20,21,21,20,20,21,21,21,21,21,21,20,21,21,21,21,5&
         ,20,20,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,8,9,10,5&
-        ,7,9,5,7,8,20,20,1,5,7,8,9,5,7,9,9,1,5,9,5,40,40,40,40,40,40&
+        ,7,9,5,7,8,20,20,1,5,7,8,9,5,7,9,9,1,5,9,5,5,40,40,40,40,40&
         ,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40&
         ,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40&
-        ,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,8,8,9,9,9&
-        ,9,24,24,9,5,9/)
-    arr_r3(1:280) = (/40,40,40,40,40,40,40,40&
+        ,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,8,8,9&
+        ,9,9,9,24,24,9,5,9/)
+    arr_r3(1:281) = (/40,40,40,40,40,40&
         ,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40&
-        ,40,40,40,40,6,5,5,40,40,40,40,40,40,40,40,40,40,40,40,40,40&
-        ,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40&
-        ,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40&
-        ,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40&
+        ,40,40,40,40,40,40,6,5,5,40,40,40,40,40,40,40,40,40,40,40,40&
         ,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40&
         ,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40&
         ,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40&
@@ -5181,48 +5181,52 @@ contains
         ,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40&
         ,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40&
         ,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40&
-        ,40,40,40,40,40,40,40,40,40,40,40/)
-    arr_p1(1:280) = (/20,5&
-        ,5,21,6,6,36,6,21,21,5,6,6,21,21,2,7,22,22,7,22,5,5,5,5,5,5&
-        ,22,5,5,5,7,7,7,7,8,8,8,9,9,23,24,9,24,24,23,8,23,23,23,9,26&
-        ,26,26,12,8,13,14,11,26,10,12,11,11,15,12,11,11,10,9,9,16,5,5&
-        ,5,5,16,7,10,10,11,11,8,27,22,28,28,29,28,23,29,30,28,31,26&
-        ,29,25,26,30,5,5,7,5,7,7,5,5,33,34,7,7,25,26,26,33,26,30,11&
-        ,26,9,17,7,7,7,7,11,11,11,28,28,7,7,5,5,6,6,6,6,23,32,32,24&
-        ,24,5,5,6,6,6,6,6,6,35,35,24,23,8,11,8,9,5,7,5,8,12,8,8,13,12&
-        ,12,9,9,10,9,10,9,5,10,9,8,11,10,11,12,10,16,12,13,11,10,16&
-        ,11,5,27,3,12,13,14,11,28,29,30,30,4,10,17,16,40,40,40,40,40&
-        ,20,21,36,24,23,22,5,8,28,8,9,32,10,33,35,9,20,8,5,5,7,22,8,8&
-        ,12,29,28,29,28,9,9,22,20,24,32,20,22,33,32,20,21,24,8,30,8,5&
-        ,20,22,23,8,9,35,9,29,10,11,26,5,14,14,11,11,30,30,30,30,10&
-        ,16,17/)
-    arr_p2(1:280) = (/1,40,40,1,40,40,1,20,5,5,5,22,5&
-        ,5,40,40,1,40,40,20,5,5,5,1,5,5,5,1,5,5,7,5,6,5,7,40,40,40,40&
-        ,40,1,1,20,5,6,5,20,6,6,6,5,7,11,11,5,7,5,5,5,1,8,7,5,7,5,10&
-        ,8,8,5,7,7,5,11,11,17,17,9,10,9,10,9,9,10,5,7,5,7,5,5,7,5,5,7&
-        ,5,5,7,7,7,8,32,32,32,33,33,33,30,30,5,5,34,34,5,5,5,8,7,9,24&
-        ,10,30,23,26,26,25,25,28,34,34,5,5,28,28,29,29,7,7,5,5,8,5,5&
-        ,6,6,33,33,10,10,32,32,33,33,5,6,6,6,6,20,5,5,6,5,5,5,5,7,5,5&
-        ,7,5,5,7,5,5,5,5,16,7,9,9,5,8,5,1,1,1,1,1,1,1,1,1,5,40,40,40&
-        ,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,1,1,1,1,1,1&
-        ,1,5,1,8,5,1,5,1,1,9,5,9,5,20,20,5,1,20,5,1,5,5,7,1,20,9,10,7&
-        ,5,16,10,5,7,1,1,1,9,1,8,5,2,1,1,5,9,1,5,1,5,5,1,20,40,40,40&
-        ,40,40,40,40,40,40,40,40/)
-    arr_p3(1:280) = (/1,40,40,1,40&
-        ,40,1,40,40,40,6,40,20,5,40,40,40,40,40,40,40,1,5,1,1,1,40,40&
-        ,40,40,40,5,40,40,40,40,40,40,40,40,1,1,40,40,40,40,40,40,40&
-        ,40,5,40,40,40,40,40,40,40,40,40,40,40,5,40,40,40,40,40,40,40&
         ,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40&
         ,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40&
         ,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40&
-        ,40,40,40,40,23,23,28,28,6,40,40,5,5,40,40,20,20,5,5,40,40,40&
-        ,40,9,9,24,40,40,40,40,40,5,40,40,40,5,40,40,5,40,40,40,5,5,7&
-        ,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,20,40,40,40&
+        ,40,40,40,40,40,40,40,40,40,40,40,40,40&
+        ,40/)
+    arr_p1(1:281) = (/20,5,5,21,6,6,36,6,21,21,5,6,6,21&
+        ,21,2,7,22,22,7,22,5,5,5,5,5,5,22,5,5,5,7,7,7,7,8,8,8,9,9,23&
+        ,24,9,24,24,23,8,23,23,23,9,26,26,26,12,8,13,14,11,26,10,12&
+        ,11,11,15,12,11,11,10,9,9,16,5,5,5,5,16,7,10,10,11,11,8,27,22&
+        ,28,28,29,28,23,29,30,28,31,26,29,25,26,30,5,5,7,5,7,7,5,5,33&
+        ,34,7,7,25,26,26,33,26,30,11,26,9,17,7,7,7,7,11,11,11,28,28,7&
+        ,7,5,5,6,6,6,6,23,32,32,24,24,5,5,6,6,6,6,6,6,35,35,24,23,8&
+        ,11,8,9,5,7,5,8,12,8,8,13,12,12,9,9,10,9,10,9,5,10,9,8,11,10&
+        ,11,12,10,16,12,13,11,10,16,11,5,27,3,12,13,14,11,28,29,30,30&
+        ,4,10,17,16,7,40,40,40,40,40,20,21,36,24,23,22,5,8,28,8,9,32&
+        ,10,33,35,9,20,8,5,5,7,22,8,8,12,29,28,29,28,9,9,22,20,24,32&
+        ,20,22,33,32,20,21,24,8,30,8,5,20,22,23,8,9,35,9,29,10,11,26&
+        ,5,14,14,11,11,30,30,30,30,10,16,17/)
+    arr_p2(1:281) = (/1&
+        ,40,40,1,40,40,1,20,5,5,5,22,5,5,40,40,1,40,40,20,5,5,5,1,5,5&
+        ,5,1,5,5,7,5,6,5,7,40,40,40,40,40,1,1,20,5,6,5,20,6,6,6,5,7&
+        ,11,11,5,7,5,5,5,1,8,7,5,7,5,10,8,8,5,7,7,5,11,11,17,17,9,10&
+        ,9,10,9,9,10,5,7,5,7,5,5,7,5,5,7,5,5,7,7,7,8,32,32,32,33,33&
+        ,33,30,30,5,5,34,34,5,5,5,8,7,9,24,10,30,23,26,26,25,25,28,34&
+        ,34,5,5,28,28,29,29,7,7,5,5,8,5,5,6,6,33,33,10,10,32,32,33,33&
+        ,5,6,6,6,6,20,5,5,6,5,5,5,5,7,5,5,7,5,5,7,5,5,5,5,16,7,9,9,5&
+        ,8,5,1,1,1,1,1,1,1,1,1,5,40,40,40,40,40,40,40,40,40,40,40,40&
+        ,40,40,40,40,40,40,40,40,1,1,1,1,1,1,1,5,1,8,5,1,5,1,1,9,5,9&
+        ,5,20,20,5,1,20,5,1,5,5,7,1,20,9,10,7,5,16,10,5,7,1,1,1,9,1,8&
+        ,5,2,1,1,5,9,1,5,1,5,5,1,20,40,40,40,40,40,40,40,40,40,40&
+        ,40/)
+    arr_p3(1:281) = (/1,40,40,1,40,40,1,40,40,40,6,40,20&
+        ,5,40,40,40,40,40,40,40,1,5,1,1,1,40,40,40,40,40,5,40,40,40&
+        ,40,40,40,40,40,1,1,40,40,40,40,40,40,40,40,5,40,40,40,40,40&
+        ,40,40,40,40,40,40,5,40,40,40,40,40,40,40,40,40,40,40,40,40&
         ,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40&
-        ,40,40,40,40,40,40,40,40,40,40,40,40,1,40,40,40,40,40,40,40&
         ,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40&
-        ,40,40,40,40,40,40,40,40,40,40,40,40,40,1,40,40,40,40,40,40&
-        ,40,40,40,40,40/)
+        ,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,23,23&
+        ,28,28,6,40,40,5,5,40,40,20,20,5,5,40,40,40,40,9,9,24,40,40&
+        ,40,40,40,5,40,40,40,5,40,40,5,40,40,40,5,5,7,40,40,40,40,40&
+        ,40,40,40,40,40,40,40,40,40,40,40,20,40,40,40,40,40,40,40,40&
+        ,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40&
+        ,40,40,40,40,40,40,40,40,1,40,40,40,40,40,40,40,40,40,40,40&
+        ,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40&
+        ,40,40,40,40,40,40,40,40,40,1,40,40,40,40,40,40,40,40,40,40&
+        ,40/)
 
   end subroutine load_arrays
 
@@ -5541,19 +5545,19 @@ imass(:) = get_imass()
 !precompute adimensional line broadening
 dshift(:) = 0d0
 
-call load_xsec("swri_C__C+_E.dat", xsec216_val, xsec216_Emin, xsec216_n, xsec216_idE)
-call load_xsec("swri_H2__H2+_E.dat", xsec217_val, xsec217_Emin, xsec217_n, xsec217_idE)
-call load_xsec("swri_H-__H_E.dat", xsec218_val, xsec218_Emin, xsec218_n, xsec218_idE)
-call load_xsec("swri_CH__C_H.dat", xsec219_val, xsec219_Emin, xsec219_n, xsec219_idE)
-call load_xsec("swri_CH__CH+_E.dat", xsec220_val, xsec220_Emin, xsec220_n, xsec220_idE)
-call load_xsec("swri_C2__C_C.dat", xsec221_val, xsec221_Emin, xsec221_n, xsec221_idE)
-call load_xsec("swri_OH__O_H.dat", xsec222_val, xsec222_Emin, xsec222_n, xsec222_idE)
-call load_xsec("swri_OH__OH+_E.dat", xsec223_val, xsec223_Emin, xsec223_n, xsec223_idE)
-call load_xsec("swri_H2O__OH_H.dat", xsec224_val, xsec224_Emin, xsec224_n, xsec224_idE)
-call load_xsec("swri_H2O__H2O+_E.dat", xsec225_val, xsec225_Emin, xsec225_n, xsec225_idE)
-call load_xsec("swri_O2__O2+_E.dat", xsec226_val, xsec226_Emin, xsec226_n, xsec226_idE)
-call load_xsec("swri_O2__O_O.dat", xsec227_val, xsec227_Emin, xsec227_n, xsec227_idE)
-call load_xsec("swri_H2__H+_H_E.dat", xsec228_val, xsec228_Emin, xsec228_n, xsec228_idE)
+call load_xsec("swri_C__C+_E.dat", xsec217_val, xsec217_Emin, xsec217_n, xsec217_idE)
+call load_xsec("swri_H2__H2+_E.dat", xsec218_val, xsec218_Emin, xsec218_n, xsec218_idE)
+call load_xsec("swri_H-__H_E.dat", xsec219_val, xsec219_Emin, xsec219_n, xsec219_idE)
+call load_xsec("swri_CH__C_H.dat", xsec220_val, xsec220_Emin, xsec220_n, xsec220_idE)
+call load_xsec("swri_CH__CH+_E.dat", xsec221_val, xsec221_Emin, xsec221_n, xsec221_idE)
+call load_xsec("swri_C2__C_C.dat", xsec222_val, xsec222_Emin, xsec222_n, xsec222_idE)
+call load_xsec("swri_OH__O_H.dat", xsec223_val, xsec223_Emin, xsec223_n, xsec223_idE)
+call load_xsec("swri_OH__OH+_E.dat", xsec224_val, xsec224_Emin, xsec224_n, xsec224_idE)
+call load_xsec("swri_H2O__OH_H.dat", xsec225_val, xsec225_Emin, xsec225_n, xsec225_idE)
+call load_xsec("swri_H2O__H2O+_E.dat", xsec226_val, xsec226_Emin, xsec226_n, xsec226_idE)
+call load_xsec("swri_O2__O2+_E.dat", xsec227_val, xsec227_Emin, xsec227_n, xsec227_idE)
+call load_xsec("swri_O2__O_O.dat", xsec228_val, xsec228_Emin, xsec228_n, xsec228_idE)
+call load_xsec("swri_H2__H+_H_E.dat", xsec229_val, xsec229_Emin, xsec229_n, xsec229_idE)
 
 !tabulate the xsecs into a bin-based array
 do j=1,nPhotoBins
@@ -5591,91 +5595,91 @@ do j=1,nPhotoBins
 
   !C -> C+ + E
   kk = 0d0
-  if(energy_eV>0.0.and.energy_eV<1.d8) kk = xsec_interp(energyL, energyR, xsec216_val(:), xsec216_Emin,xsec216_idE, dshift(idx_C))
+  if(energy_eV>0.0.and.energy_eV<1.d8) kk = xsec_interp(energyL, energyR, xsec217_val(:), xsec217_Emin,xsec217_idE, dshift(idx_C))
   !$omp parallel
   photoBinJTab(5,j) = kk
   !$omp end parallel
 
   !H2 -> H2+ + E
   kk = 0d0
-  if(energy_eV>0.0.and.energy_eV<1.d8) kk = xsec_interp(energyL, energyR, xsec217_val(:), xsec217_Emin,xsec217_idE, dshift(idx_H2))
+  if(energy_eV>0.0.and.energy_eV<1.d8) kk = xsec_interp(energyL, energyR, xsec218_val(:), xsec218_Emin,xsec218_idE, dshift(idx_H2))
   !$omp parallel
   photoBinJTab(6,j) = kk
   !$omp end parallel
 
   !H- -> H + E
   kk = 0d0
-  if(energy_eV>0.0.and.energy_eV<1.d8) kk = xsec_interp(energyL, energyR, xsec218_val(:), xsec218_Emin,xsec218_idE, dshift(idx_Hk))
+  if(energy_eV>0.0.and.energy_eV<1.d8) kk = xsec_interp(energyL, energyR, xsec219_val(:), xsec219_Emin,xsec219_idE, dshift(idx_Hk))
   !$omp parallel
   photoBinJTab(7,j) = kk
   !$omp end parallel
 
   !CH -> C + H
   kk = 0d0
-  if(energy_eV>0.0.and.energy_eV<1.d8) kk = xsec_interp(energyL, energyR, xsec219_val(:), xsec219_Emin,xsec219_idE, dshift(idx_CH))
+  if(energy_eV>0.0.and.energy_eV<1.d8) kk = xsec_interp(energyL, energyR, xsec220_val(:), xsec220_Emin,xsec220_idE, dshift(idx_CH))
   !$omp parallel
   photoBinJTab(8,j) = kk
   !$omp end parallel
 
   !CH -> CH+ + E
   kk = 0d0
-  if(energy_eV>0.0.and.energy_eV<1.d8) kk = xsec_interp(energyL, energyR, xsec220_val(:), xsec220_Emin,xsec220_idE, dshift(idx_CH))
+  if(energy_eV>0.0.and.energy_eV<1.d8) kk = xsec_interp(energyL, energyR, xsec221_val(:), xsec221_Emin,xsec221_idE, dshift(idx_CH))
   !$omp parallel
   photoBinJTab(9,j) = kk
   !$omp end parallel
 
   !C2 -> C + C
   kk = 0d0
-  if(energy_eV>0.0.and.energy_eV<1.d8) kk = xsec_interp(energyL, energyR, xsec221_val(:), xsec221_Emin,xsec221_idE, dshift(idx_C2))
+  if(energy_eV>0.0.and.energy_eV<1.d8) kk = xsec_interp(energyL, energyR, xsec222_val(:), xsec222_Emin,xsec222_idE, dshift(idx_C2))
   !$omp parallel
   photoBinJTab(10,j) = kk
   !$omp end parallel
 
   !OH -> O + H
   kk = 0d0
-  if(energy_eV>0.0.and.energy_eV<1.d8) kk = xsec_interp(energyL, energyR, xsec222_val(:), xsec222_Emin,xsec222_idE, dshift(idx_OH))
+  if(energy_eV>0.0.and.energy_eV<1.d8) kk = xsec_interp(energyL, energyR, xsec223_val(:), xsec223_Emin,xsec223_idE, dshift(idx_OH))
   !$omp parallel
   photoBinJTab(11,j) = kk
   !$omp end parallel
 
   !OH -> OH+ + E
   kk = 0d0
-  if(energy_eV>0.0.and.energy_eV<1.d8) kk = xsec_interp(energyL, energyR, xsec223_val(:), xsec223_Emin,xsec223_idE, dshift(idx_OH))
+  if(energy_eV>0.0.and.energy_eV<1.d8) kk = xsec_interp(energyL, energyR, xsec224_val(:), xsec224_Emin,xsec224_idE, dshift(idx_OH))
   !$omp parallel
   photoBinJTab(12,j) = kk
   !$omp end parallel
 
   !H2O -> OH + H
   kk = 0d0
-  if(energy_eV>0.0.and.energy_eV<1.d8) kk = xsec_interp(energyL, energyR, xsec224_val(:), xsec224_Emin,xsec224_idE, dshift(idx_H2O))
+  if(energy_eV>0.0.and.energy_eV<1.d8) kk = xsec_interp(energyL, energyR, xsec225_val(:), xsec225_Emin,xsec225_idE, dshift(idx_H2O))
   !$omp parallel
   photoBinJTab(13,j) = kk
   !$omp end parallel
 
   !H2O -> H2O+ + E
   kk = 0d0
-  if(energy_eV>0.0.and.energy_eV<1.d8) kk = xsec_interp(energyL, energyR, xsec225_val(:), xsec225_Emin,xsec225_idE, dshift(idx_H2O))
+  if(energy_eV>0.0.and.energy_eV<1.d8) kk = xsec_interp(energyL, energyR, xsec226_val(:), xsec226_Emin,xsec226_idE, dshift(idx_H2O))
   !$omp parallel
   photoBinJTab(14,j) = kk
   !$omp end parallel
 
   !O2 -> O2+ + E
   kk = 0d0
-  if(energy_eV>0.0.and.energy_eV<1.d8) kk = xsec_interp(energyL, energyR, xsec226_val(:), xsec226_Emin,xsec226_idE, dshift(idx_O2))
+  if(energy_eV>0.0.and.energy_eV<1.d8) kk = xsec_interp(energyL, energyR, xsec227_val(:), xsec227_Emin,xsec227_idE, dshift(idx_O2))
   !$omp parallel
   photoBinJTab(15,j) = kk
   !$omp end parallel
 
   !O2 -> O + O
   kk = 0d0
-  if(energy_eV>0.0.and.energy_eV<1.d8) kk = xsec_interp(energyL, energyR, xsec227_val(:), xsec227_Emin,xsec227_idE, dshift(idx_O2))
+  if(energy_eV>0.0.and.energy_eV<1.d8) kk = xsec_interp(energyL, energyR, xsec228_val(:), xsec228_Emin,xsec228_idE, dshift(idx_O2))
   !$omp parallel
   photoBinJTab(16,j) = kk
   !$omp end parallel
 
   !H2 -> H+ + H + E
   kk = 0d0
-  if(energy_eV>0.0.and.energy_eV<1.d8) kk = xsec_interp(energyL, energyR, xsec228_val(:), xsec228_Emin,xsec228_idE, dshift(idx_H2))
+  if(energy_eV>0.0.and.energy_eV<1.d8) kk = xsec_interp(energyL, energyR, xsec229_val(:), xsec229_Emin,xsec229_idE, dshift(idx_H2))
   !$omp parallel
   photoBinJTab(17,j) = kk
   !$omp end parallel
@@ -6474,79 +6478,79 @@ small = 0d0
 rateEvaluateOnce(:) = 0d0
 
 !H -> H+ + E
-rateEvaluateOnce(251) = small + (4.6d-1&
+rateEvaluateOnce(252) = small + (4.6d-1&
     *user_crate)
 
 !HE -> HE+ + E
-rateEvaluateOnce(252) = small + (5.d-1&
+rateEvaluateOnce(253) = small + (5.d-1&
     *user_crate)
 
 !O -> O+ + E
-rateEvaluateOnce(253) = small + (2.8d0&
+rateEvaluateOnce(254) = small + (2.8d0&
     *user_crate)
 
 !CO -> C + O
-rateEvaluateOnce(254) = small + (5d0&
+rateEvaluateOnce(255) = small + (5d0&
     *user_crate)
 
 !CO -> CO+ + E
-rateEvaluateOnce(255) = small + (3d0&
+rateEvaluateOnce(256) = small + (3d0&
     *user_crate)
 
 !C2 -> C + C
-rateEvaluateOnce(256) = small + (2.37d2&
+rateEvaluateOnce(257) = small + (2.37d2&
     *user_crate)
 
 !H2 -> H + H
-rateEvaluateOnce(257) = small + (1d-1&
+rateEvaluateOnce(258) = small + (1d-1&
     *user_crate)
 
 !H2 -> H+ + H-
-rateEvaluateOnce(258) = small + (3d-4&
+rateEvaluateOnce(259) = small + (3d-4&
     *user_crate)
 
 !H2 -> H2+ + E
-rateEvaluateOnce(259) = small + (9.3d-1&
+rateEvaluateOnce(260) = small + (9.3d-1&
     *user_crate)
 
 !C -> C+ + E
-rateEvaluateOnce(260) = small + (1.02d3&
+rateEvaluateOnce(261) = small + (1.02d3&
     *user_crate)
 
 !CH -> C + H
-rateEvaluateOnce(261) = small + (7.3d2&
+rateEvaluateOnce(262) = small + (7.3d2&
     *user_crate)
 
 !O2 -> O + O
-rateEvaluateOnce(262) = small + (7.5d2&
+rateEvaluateOnce(263) = small + (7.5d2&
     *user_crate)
 
 !O2 -> O2+ + E
-rateEvaluateOnce(263) = small + (1.17d2&
+rateEvaluateOnce(264) = small + (1.17d2&
     *user_crate)
 
 !OH -> O + H
-rateEvaluateOnce(264) = small + (5.1d2&
+rateEvaluateOnce(265) = small + (5.1d2&
     *user_crate)
 
 !CH2 -> CH2+ + E
-rateEvaluateOnce(265) = small + (5d2&
+rateEvaluateOnce(266) = small + (5d2&
     *user_crate)
 
 !H2O -> OH + H
-rateEvaluateOnce(266) = small + (9.7d2&
+rateEvaluateOnce(267) = small + (9.7d2&
     *user_crate)
 
 !HCO -> CO + H
-rateEvaluateOnce(267) = small + (4.21d2&
+rateEvaluateOnce(268) = small + (4.21d2&
     *user_crate)
 
 !HCO -> HCO+ + E
-rateEvaluateOnce(268) = small + (1.17d3&
+rateEvaluateOnce(269) = small + (1.17d3&
     *user_crate)
 
 !H2 -> H + H+ + E
-rateEvaluateOnce(269) = small + (9.3d-1&
+rateEvaluateOnce(270) = small + (9.3d-1&
     *user_crate)
 
 end subroutine makeStoreOnceRates
@@ -6562,7 +6566,7 @@ end module KROME_coolingGH
 module KROME_cooling
 ! *************************************************************
 !  This file has been generated with:
-!  KROME 14.08.dev on 2018-08-24 14:18:10
+!  KROME 14.08.dev on 2018-08-27 13:38:19
 !  Changeset be164d7
 !  see http://kromepackage.org
 !
@@ -6766,7 +6770,7 @@ contains
 
 ! *************************************************************
 !  This file has been generated with:
-!  KROME 14.08.dev on 2018-08-24 14:18:10
+!  KROME 14.08.dev on 2018-08-27 13:38:19
 !  Changeset be164d7
 !  see http://kromepackage.org
 !
@@ -6829,7 +6833,7 @@ contains
 
 ! *************************************************************
 !  This file has been generated with:
-!  KROME 14.08.dev on 2018-08-24 14:18:10
+!  KROME 14.08.dev on 2018-08-27 13:38:19
 !  Changeset be164d7
 !  see http://kromepackage.org
 !
@@ -6900,11 +6904,11 @@ dnChem_H2O = 0d0  &
     +k(185)*n(idx_Hk)*n(idx_OH)  &
     +k(190)*n(idx_Ok)*n(idx_H2)  &
     +k(206)*n(idx_OH)*n(idx_H)  &
-    -k(224)*n(idx_H2O)  &
     -k(225)*n(idx_H2O)  &
-    +k(247)*n(idx_H3Oj)  &
-    -k(266)*n(idx_H2O)  &
-    +k(279)*n(idx_OH)*n(idx_H)
+    -k(226)*n(idx_H2O)  &
+    +k(248)*n(idx_H3Oj)  &
+    -k(267)*n(idx_H2O)  &
+    +k(280)*n(idx_OH)*n(idx_H)
 dnChem_CO = 0d0  &
     -k(53)*n(idx_HOCj)*n(idx_CO)  &
     +k(53)*n(idx_HOCj)*n(idx_CO)  &
@@ -6936,12 +6940,12 @@ dnChem_CO = 0d0  &
     +k(188)*n(idx_Ck)*n(idx_O)  &
     +k(191)*n(idx_Ok)*n(idx_C)  &
     +k(198)*n(idx_C)*n(idx_O)  &
-    -k(229)*n(idx_CO)  &
-    -k(254)*n(idx_CO)  &
+    -k(230)*n(idx_CO)  &
     -k(255)*n(idx_CO)  &
-    +k(267)*n(idx_HCO)  &
-    +k(272)*n(idx_C)*n(idx_O)  &
-    +k(273)*n(idx_C)*n(idx_O)
+    -k(256)*n(idx_CO)  &
+    +k(268)*n(idx_HCO)  &
+    +k(273)*n(idx_C)*n(idx_O)  &
+    +k(274)*n(idx_C)*n(idx_O)
 
 !E
 !E
@@ -7011,31 +7015,31 @@ dn(idx_E) = &
     +k(191)*n(idx_Ok)*n(idx_C) &
     -k(194)*n(idx_C)*n(idx_E) &
     -k(203)*n(idx_O)*n(idx_E) &
-    +k(212)*n(idx_H) &
-    +k(213)*n(idx_HE) &
-    +k(214)*n(idx_HEj) &
-    +k(215)*n(idx_O) &
-    +k(216)*n(idx_C) &
-    +k(217)*n(idx_H2) &
-    +k(218)*n(idx_Hk) &
-    +k(220)*n(idx_CH) &
-    +k(223)*n(idx_OH) &
-    +k(225)*n(idx_H2O) &
-    +k(226)*n(idx_O2) &
-    +k(228)*n(idx_H2) &
-    +k(234)*n(idx_Ck) &
-    +k(237)*n(idx_CH2) &
-    +k(241)*n(idx_Ok) &
-    +k(251)*n(idx_H) &
-    +k(252)*n(idx_HE) &
-    +k(253)*n(idx_O) &
-    +k(255)*n(idx_CO) &
-    +k(259)*n(idx_H2) &
-    +k(260)*n(idx_C) &
-    +k(263)*n(idx_O2) &
-    +k(265)*n(idx_CH2) &
-    +k(268)*n(idx_HCO) &
-    +k(269)*n(idx_H2)
+    +k(213)*n(idx_H) &
+    +k(214)*n(idx_HE) &
+    +k(215)*n(idx_HEj) &
+    +k(216)*n(idx_O) &
+    +k(217)*n(idx_C) &
+    +k(218)*n(idx_H2) &
+    +k(219)*n(idx_Hk) &
+    +k(221)*n(idx_CH) &
+    +k(224)*n(idx_OH) &
+    +k(226)*n(idx_H2O) &
+    +k(227)*n(idx_O2) &
+    +k(229)*n(idx_H2) &
+    +k(235)*n(idx_Ck) &
+    +k(238)*n(idx_CH2) &
+    +k(242)*n(idx_Ok) &
+    +k(252)*n(idx_H) &
+    +k(253)*n(idx_HE) &
+    +k(254)*n(idx_O) &
+    +k(256)*n(idx_CO) &
+    +k(260)*n(idx_H2) &
+    +k(261)*n(idx_C) &
+    +k(264)*n(idx_O2) &
+    +k(266)*n(idx_CH2) &
+    +k(269)*n(idx_HCO) &
+    +k(270)*n(idx_H2)
 
 !H-
 !H-
@@ -7052,8 +7056,8 @@ dn(idx_Hk) = &
     -k(183)*n(idx_Hk)*n(idx_C) &
     -k(184)*n(idx_Hk)*n(idx_O) &
     -k(185)*n(idx_Hk)*n(idx_OH) &
-    -k(218)*n(idx_Hk) &
-    +k(258)*n(idx_H2)
+    -k(219)*n(idx_Hk) &
+    +k(259)*n(idx_H2)
 
 !C-
 !C-
@@ -7063,7 +7067,7 @@ dn(idx_Ck) = &
     -k(187)*n(idx_Ck)*n(idx_H2) &
     -k(188)*n(idx_Ck)*n(idx_O) &
     +k(194)*n(idx_C)*n(idx_E) &
-    -k(234)*n(idx_Ck)
+    -k(235)*n(idx_Ck)
 
 !O-
 !O-
@@ -7073,7 +7077,7 @@ dn(idx_Ok) = &
     -k(190)*n(idx_Ok)*n(idx_H2) &
     -k(191)*n(idx_Ok)*n(idx_C) &
     +k(203)*n(idx_O)*n(idx_E) &
-    -k(241)*n(idx_Ok)
+    -k(242)*n(idx_Ok)
 
 !H
 !H
@@ -7198,29 +7202,30 @@ dn(idx_H) = &
     -k(199)*n(idx_Cj)*n(idx_H) &
     -k(204)*n(idx_O)*n(idx_H) &
     -k(206)*n(idx_OH)*n(idx_H) &
-    -k(212)*n(idx_H) &
-    +k(218)*n(idx_Hk) &
-    +k(219)*n(idx_CH) &
-    +k(222)*n(idx_OH) &
-    +k(224)*n(idx_H2O) &
-    +k(228)*n(idx_H2) &
-    +2.d0*k(230)*n(idx_H2) &
-    +k(231)*n(idx_H2j) &
-    +k(233)*n(idx_H3j) &
-    +k(236)*n(idx_CH2) &
-    +k(238)*n(idx_CH2j) &
-    +k(239)*n(idx_CH3j) &
-    +k(246)*n(idx_H2Oj) &
-    +k(249)*n(idx_H3Oj) &
-    -k(251)*n(idx_H) &
-    +2.d0*k(257)*n(idx_H2) &
-    +k(261)*n(idx_CH) &
-    +k(264)*n(idx_OH) &
-    +k(266)*n(idx_H2O) &
-    +k(267)*n(idx_HCO) &
-    +k(269)*n(idx_H2) &
-    -k(278)*n(idx_H)*n(idx_O) &
-    -k(279)*n(idx_OH)*n(idx_H)
+    -2.d0*k(207)*n(idx_H)*n(idx_H) &
+    -k(213)*n(idx_H) &
+    +k(219)*n(idx_Hk) &
+    +k(220)*n(idx_CH) &
+    +k(223)*n(idx_OH) &
+    +k(225)*n(idx_H2O) &
+    +k(229)*n(idx_H2) &
+    +2.d0*k(231)*n(idx_H2) &
+    +k(232)*n(idx_H2j) &
+    +k(234)*n(idx_H3j) &
+    +k(237)*n(idx_CH2) &
+    +k(239)*n(idx_CH2j) &
+    +k(240)*n(idx_CH3j) &
+    +k(247)*n(idx_H2Oj) &
+    +k(250)*n(idx_H3Oj) &
+    -k(252)*n(idx_H) &
+    +2.d0*k(258)*n(idx_H2) &
+    +k(262)*n(idx_CH) &
+    +k(265)*n(idx_OH) &
+    +k(267)*n(idx_H2O) &
+    +k(268)*n(idx_HCO) &
+    +k(270)*n(idx_H2) &
+    -k(279)*n(idx_H)*n(idx_O) &
+    -k(280)*n(idx_OH)*n(idx_H)
 
 !HE
 !HE
@@ -7259,8 +7264,8 @@ dn(idx_HE) = &
     +k(155)*n(idx_CO)*n(idx_HEj) &
     +k(156)*n(idx_CO)*n(idx_HEj) &
     +k(160)*n(idx_HEj)*n(idx_Hk) &
-    -k(213)*n(idx_HE) &
-    -k(252)*n(idx_HE)
+    -k(214)*n(idx_HE) &
+    -k(253)*n(idx_HE)
 
 !H2
 !H2
@@ -7334,17 +7339,18 @@ dn(idx_H2) = &
     -k(193)*n(idx_H2)*n(idx_Hj) &
     -k(196)*n(idx_C)*n(idx_H2) &
     -k(200)*n(idx_Cj)*n(idx_H2) &
-    -k(217)*n(idx_H2) &
-    -k(228)*n(idx_H2) &
-    -k(230)*n(idx_H2) &
-    +k(232)*n(idx_H3j) &
-    +k(240)*n(idx_CH3j) &
-    +k(245)*n(idx_H2Oj) &
-    +k(250)*n(idx_H3Oj) &
-    -k(257)*n(idx_H2) &
+    +k(207)*n(idx_H)*n(idx_H) &
+    -k(218)*n(idx_H2) &
+    -k(229)*n(idx_H2) &
+    -k(231)*n(idx_H2) &
+    +k(233)*n(idx_H3j) &
+    +k(241)*n(idx_CH3j) &
+    +k(246)*n(idx_H2Oj) &
+    +k(251)*n(idx_H3Oj) &
     -k(258)*n(idx_H2) &
     -k(259)*n(idx_H2) &
-    -k(269)*n(idx_H2)
+    -k(260)*n(idx_H2) &
+    -k(270)*n(idx_H2)
 
 !C
 !C
@@ -7393,22 +7399,22 @@ dn(idx_C) = &
     -k(196)*n(idx_C)*n(idx_H2) &
     -2.d0*k(197)*n(idx_C)*n(idx_C) &
     -k(198)*n(idx_C)*n(idx_O) &
-    -k(216)*n(idx_C) &
-    +k(219)*n(idx_CH) &
-    +2.d0*k(221)*n(idx_C2) &
-    +k(229)*n(idx_CO) &
-    +k(234)*n(idx_Ck) &
-    +k(235)*n(idx_CHj) &
-    +k(254)*n(idx_CO) &
-    +2.d0*k(256)*n(idx_C2) &
-    -k(260)*n(idx_C) &
-    +k(261)*n(idx_CH) &
-    -2.d0*k(270)*n(idx_C)*n(idx_C) &
+    -k(217)*n(idx_C) &
+    +k(220)*n(idx_CH) &
+    +2.d0*k(222)*n(idx_C2) &
+    +k(230)*n(idx_CO) &
+    +k(235)*n(idx_Ck) &
+    +k(236)*n(idx_CHj) &
+    +k(255)*n(idx_CO) &
+    +2.d0*k(257)*n(idx_C2) &
+    -k(261)*n(idx_C) &
+    +k(262)*n(idx_CH) &
     -2.d0*k(271)*n(idx_C)*n(idx_C) &
-    -k(272)*n(idx_C)*n(idx_O) &
+    -2.d0*k(272)*n(idx_C)*n(idx_C) &
     -k(273)*n(idx_C)*n(idx_O) &
-    -k(276)*n(idx_C)*n(idx_Oj) &
-    -k(277)*n(idx_C)*n(idx_Oj)
+    -k(274)*n(idx_C)*n(idx_O) &
+    -k(277)*n(idx_C)*n(idx_Oj) &
+    -k(278)*n(idx_C)*n(idx_Oj)
 
 !O
 !O
@@ -7464,23 +7470,23 @@ dn(idx_O) = &
     -k(203)*n(idx_O)*n(idx_E) &
     -k(204)*n(idx_O)*n(idx_H) &
     -2.d0*k(205)*n(idx_O)*n(idx_O) &
-    -k(215)*n(idx_O) &
-    +k(222)*n(idx_OH) &
-    +2.d0*k(227)*n(idx_O2) &
-    +k(229)*n(idx_CO) &
-    +k(241)*n(idx_Ok) &
-    +k(242)*n(idx_OHj) &
-    +k(243)*n(idx_H2Oj) &
-    -k(253)*n(idx_O) &
-    +k(254)*n(idx_CO) &
-    +2.d0*k(262)*n(idx_O2) &
-    +k(264)*n(idx_OH) &
-    -k(272)*n(idx_C)*n(idx_O) &
+    -k(216)*n(idx_O) &
+    +k(223)*n(idx_OH) &
+    +2.d0*k(228)*n(idx_O2) &
+    +k(230)*n(idx_CO) &
+    +k(242)*n(idx_Ok) &
+    +k(243)*n(idx_OHj) &
+    +k(244)*n(idx_H2Oj) &
+    -k(254)*n(idx_O) &
+    +k(255)*n(idx_CO) &
+    +2.d0*k(263)*n(idx_O2) &
+    +k(265)*n(idx_OH) &
     -k(273)*n(idx_C)*n(idx_O) &
-    -k(274)*n(idx_Cj)*n(idx_O) &
+    -k(274)*n(idx_C)*n(idx_O) &
     -k(275)*n(idx_Cj)*n(idx_O) &
-    -k(278)*n(idx_H)*n(idx_O) &
-    -2.d0*k(280)*n(idx_O)*n(idx_O)
+    -k(276)*n(idx_Cj)*n(idx_O) &
+    -k(279)*n(idx_H)*n(idx_O) &
+    -2.d0*k(281)*n(idx_O)*n(idx_O)
 
 !OH
 !OH
@@ -7521,22 +7527,22 @@ dn(idx_OH) = &
     +k(189)*n(idx_Ok)*n(idx_H) &
     +k(204)*n(idx_O)*n(idx_H) &
     -k(206)*n(idx_OH)*n(idx_H) &
-    -k(222)*n(idx_OH) &
     -k(223)*n(idx_OH) &
-    +k(224)*n(idx_H2O) &
-    +k(244)*n(idx_H2Oj) &
-    +k(248)*n(idx_H3Oj) &
-    -k(264)*n(idx_OH) &
-    +k(266)*n(idx_H2O) &
-    +k(278)*n(idx_H)*n(idx_O) &
-    -k(279)*n(idx_OH)*n(idx_H)
+    -k(224)*n(idx_OH) &
+    +k(225)*n(idx_H2O) &
+    +k(245)*n(idx_H2Oj) &
+    +k(249)*n(idx_H3Oj) &
+    -k(265)*n(idx_OH) &
+    +k(267)*n(idx_H2O) &
+    +k(279)*n(idx_H)*n(idx_O) &
+    -k(280)*n(idx_OH)*n(idx_H)
 
 !CO
 !CO_GAS
 dn(idx_CO) = &
     dnChem_CO &
-    -n(idx_CO)*(k(207)+k(211)) &
-    +k(211)*n(idx_CO_total)
+    -n(idx_CO)*(k(208)+k(212)) &
+    +k(212)*n(idx_CO_total)
 
 !CH
 !CH
@@ -7558,10 +7564,10 @@ dn(idx_CH) = &
     +k(183)*n(idx_Hk)*n(idx_C) &
     +k(186)*n(idx_Ck)*n(idx_H) &
     +k(195)*n(idx_C)*n(idx_H) &
-    -k(219)*n(idx_CH) &
     -k(220)*n(idx_CH) &
-    +k(236)*n(idx_CH2) &
-    -k(261)*n(idx_CH)
+    -k(221)*n(idx_CH) &
+    +k(237)*n(idx_CH2) &
+    -k(262)*n(idx_CH)
 
 !CH2
 !CH2
@@ -7583,9 +7589,9 @@ dn(idx_CH2) = &
     +k(167)*n(idx_CH3j)*n(idx_E) &
     +k(187)*n(idx_Ck)*n(idx_H2) &
     +k(196)*n(idx_C)*n(idx_H2) &
-    -k(236)*n(idx_CH2) &
     -k(237)*n(idx_CH2) &
-    -k(265)*n(idx_CH2)
+    -k(238)*n(idx_CH2) &
+    -k(266)*n(idx_CH2)
 
 !C2
 !C2
@@ -7596,24 +7602,24 @@ dn(idx_C2) = &
     -k(99)*n(idx_C2)*n(idx_Oj) &
     -k(139)*n(idx_C2)*n(idx_HEj) &
     +k(197)*n(idx_C)*n(idx_C) &
-    -k(221)*n(idx_C2) &
-    -k(256)*n(idx_C2) &
-    +k(270)*n(idx_C)*n(idx_C) &
-    +k(271)*n(idx_C)*n(idx_C)
+    -k(222)*n(idx_C2) &
+    -k(257)*n(idx_C2) &
+    +k(271)*n(idx_C)*n(idx_C) &
+    +k(272)*n(idx_C)*n(idx_C)
 
 !HCO
 !HCO
 dn(idx_HCO) = &
     +k(65)*n(idx_CH2)*n(idx_O) &
-    -k(267)*n(idx_HCO) &
-    -k(268)*n(idx_HCO)
+    -k(268)*n(idx_HCO) &
+    -k(269)*n(idx_HCO)
 
 !H2O
 !H2O_GAS
 dn(idx_H2O) = &
     dnChem_H2O &
-    -n(idx_H2O)*(k(209)+k(210)) &
-    +k(210)*n(idx_H2O_total)
+    -n(idx_H2O)*(k(210)+k(211)) &
+    +k(211)*n(idx_H2O_total)
 
 !O2
 !O2
@@ -7632,11 +7638,11 @@ dn(idx_O2) = &
     -k(153)*n(idx_O2)*n(idx_HEj) &
     -k(154)*n(idx_O2)*n(idx_HEj) &
     +k(205)*n(idx_O)*n(idx_O) &
-    -k(226)*n(idx_O2) &
     -k(227)*n(idx_O2) &
-    -k(262)*n(idx_O2) &
+    -k(228)*n(idx_O2) &
     -k(263)*n(idx_O2) &
-    +k(280)*n(idx_O)*n(idx_O)
+    -k(264)*n(idx_O2) &
+    +k(281)*n(idx_O)*n(idx_O)
 
 !CO_total
 !CO_TOTAL
@@ -7687,17 +7693,17 @@ dn(idx_Hj) = &
     -k(192)*n(idx_H2)*n(idx_Hj) &
     +k(192)*n(idx_H2)*n(idx_Hj) &
     -k(193)*n(idx_H2)*n(idx_Hj) &
-    +k(212)*n(idx_H) &
-    +k(228)*n(idx_H2) &
-    +k(231)*n(idx_H2j) &
-    +k(232)*n(idx_H3j) &
-    +k(235)*n(idx_CHj) &
-    +k(242)*n(idx_OHj) &
-    +k(244)*n(idx_H2Oj) &
-    +k(247)*n(idx_H3Oj) &
-    +k(251)*n(idx_H) &
-    +k(258)*n(idx_H2) &
-    +k(269)*n(idx_H2)
+    +k(213)*n(idx_H) &
+    +k(229)*n(idx_H2) &
+    +k(232)*n(idx_H2j) &
+    +k(233)*n(idx_H3j) &
+    +k(236)*n(idx_CHj) &
+    +k(243)*n(idx_OHj) &
+    +k(245)*n(idx_H2Oj) &
+    +k(248)*n(idx_H3Oj) &
+    +k(252)*n(idx_H) &
+    +k(259)*n(idx_H2) &
+    +k(270)*n(idx_H2)
 
 !HE+
 !HE+
@@ -7736,9 +7742,9 @@ dn(idx_HEj) = &
     -k(155)*n(idx_CO)*n(idx_HEj) &
     -k(156)*n(idx_CO)*n(idx_HEj) &
     -k(160)*n(idx_HEj)*n(idx_Hk) &
-    +k(213)*n(idx_HE) &
-    -k(214)*n(idx_HEj) &
-    +k(252)*n(idx_HE)
+    +k(214)*n(idx_HE) &
+    -k(215)*n(idx_HEj) &
+    +k(253)*n(idx_HE)
 
 !H2+
 !H2+
@@ -7756,12 +7762,12 @@ dn(idx_H2j) = &
     +k(85)*n(idx_H3j)*n(idx_H) &
     -k(86)*n(idx_C)*n(idx_H2j) &
     -k(101)*n(idx_O)*n(idx_H2j) &
-    +k(217)*n(idx_H2) &
-    -k(231)*n(idx_H2j) &
-    +k(233)*n(idx_H3j) &
-    +k(243)*n(idx_H2Oj) &
-    +k(248)*n(idx_H3Oj) &
-    +k(259)*n(idx_H2)
+    +k(218)*n(idx_H2) &
+    -k(232)*n(idx_H2j) &
+    +k(234)*n(idx_H3j) &
+    +k(244)*n(idx_H2Oj) &
+    +k(249)*n(idx_H3Oj) &
+    +k(260)*n(idx_H2)
 
 !C+
 !C+
@@ -7794,10 +7800,10 @@ dn(idx_Cj) = &
     -k(200)*n(idx_Cj)*n(idx_H2) &
     -k(201)*n(idx_Cj)*n(idx_O) &
     -k(202)*n(idx_Cj)*n(idx_O) &
-    +k(216)*n(idx_C) &
-    +k(260)*n(idx_C) &
-    -k(274)*n(idx_Cj)*n(idx_O) &
-    -k(275)*n(idx_Cj)*n(idx_O)
+    +k(217)*n(idx_C) &
+    +k(261)*n(idx_C) &
+    -k(275)*n(idx_Cj)*n(idx_O) &
+    -k(276)*n(idx_Cj)*n(idx_O)
 
 !O+
 !O+
@@ -7815,11 +7821,11 @@ dn(idx_Oj) = &
     +k(143)*n(idx_OH)*n(idx_HEj) &
     +k(154)*n(idx_O2)*n(idx_HEj) &
     +k(156)*n(idx_CO)*n(idx_HEj) &
-    +k(215)*n(idx_O) &
-    +k(245)*n(idx_H2Oj) &
-    +k(253)*n(idx_O) &
-    -k(276)*n(idx_C)*n(idx_Oj) &
-    -k(277)*n(idx_C)*n(idx_Oj)
+    +k(216)*n(idx_O) &
+    +k(246)*n(idx_H2Oj) &
+    +k(254)*n(idx_O) &
+    -k(277)*n(idx_C)*n(idx_Oj) &
+    -k(278)*n(idx_C)*n(idx_Oj)
 
 !HOC+
 !HOC+
@@ -7853,7 +7859,7 @@ dn(idx_HCOj) = &
     -k(128)*n(idx_HCOj)*n(idx_H2O) &
     -k(180)*n(idx_HCOj)*n(idx_E) &
     -k(181)*n(idx_HCOj)*n(idx_E) &
-    +k(268)*n(idx_HCO)
+    +k(269)*n(idx_HCO)
 
 !H3+
 !H3+
@@ -7875,8 +7881,8 @@ dn(idx_H3j) = &
     -k(161)*n(idx_H3j)*n(idx_E) &
     -k(162)*n(idx_H3j)*n(idx_E) &
     +k(193)*n(idx_H2)*n(idx_Hj) &
-    -k(232)*n(idx_H3j) &
-    -k(233)*n(idx_H3j)
+    -k(233)*n(idx_H3j) &
+    -k(234)*n(idx_H3j)
 
 !CH+
 !CH+
@@ -7897,10 +7903,10 @@ dn(idx_CHj) = &
     +k(138)*n(idx_CH2)*n(idx_HEj) &
     -k(163)*n(idx_CHj)*n(idx_E) &
     +k(199)*n(idx_Cj)*n(idx_H) &
-    +k(220)*n(idx_CH) &
-    -k(235)*n(idx_CHj) &
-    +k(238)*n(idx_CH2j) &
-    +k(240)*n(idx_CH3j)
+    +k(221)*n(idx_CH) &
+    -k(236)*n(idx_CHj) &
+    +k(239)*n(idx_CH2j) &
+    +k(241)*n(idx_CH3j)
 
 !CH2+
 !CH2+
@@ -7918,10 +7924,10 @@ dn(idx_CH2j) = &
     -k(165)*n(idx_CH2j)*n(idx_E) &
     -k(166)*n(idx_CH2j)*n(idx_E) &
     +k(200)*n(idx_Cj)*n(idx_H2) &
-    +k(237)*n(idx_CH2) &
-    -k(238)*n(idx_CH2j) &
-    +k(239)*n(idx_CH3j) &
-    +k(265)*n(idx_CH2)
+    +k(238)*n(idx_CH2) &
+    -k(239)*n(idx_CH2j) &
+    +k(240)*n(idx_CH3j) &
+    +k(266)*n(idx_CH2)
 
 !CO+
 !CO+
@@ -7936,11 +7942,11 @@ dn(idx_COj) = &
     -k(179)*n(idx_COj)*n(idx_E) &
     +k(201)*n(idx_Cj)*n(idx_O) &
     +k(202)*n(idx_Cj)*n(idx_O) &
-    +k(255)*n(idx_CO) &
-    +k(274)*n(idx_Cj)*n(idx_O) &
+    +k(256)*n(idx_CO) &
     +k(275)*n(idx_Cj)*n(idx_O) &
-    +k(276)*n(idx_C)*n(idx_Oj) &
-    +k(277)*n(idx_C)*n(idx_Oj)
+    +k(276)*n(idx_Cj)*n(idx_O) &
+    +k(277)*n(idx_C)*n(idx_Oj) &
+    +k(278)*n(idx_C)*n(idx_Oj)
 
 !CH3+
 !CH3+
@@ -7952,8 +7958,8 @@ dn(idx_CH3j) = &
     -k(167)*n(idx_CH3j)*n(idx_E) &
     -k(168)*n(idx_CH3j)*n(idx_E) &
     -k(169)*n(idx_CH3j)*n(idx_E) &
-    -k(239)*n(idx_CH3j) &
-    -k(240)*n(idx_CH3j)
+    -k(240)*n(idx_CH3j) &
+    -k(241)*n(idx_CH3j)
 
 !OH+
 !OH+
@@ -7967,10 +7973,10 @@ dn(idx_OHj) = &
     +k(148)*n(idx_H2O)*n(idx_HEj) &
     +k(149)*n(idx_H2O)*n(idx_HEj) &
     -k(170)*n(idx_OHj)*n(idx_E) &
-    +k(223)*n(idx_OH) &
-    -k(242)*n(idx_OHj) &
-    +k(246)*n(idx_H2Oj) &
-    +k(250)*n(idx_H3Oj)
+    +k(224)*n(idx_OH) &
+    -k(243)*n(idx_OHj) &
+    +k(247)*n(idx_H2Oj) &
+    +k(251)*n(idx_H3Oj)
 
 !H2O+
 !H2O+
@@ -7988,12 +7994,12 @@ dn(idx_H2Oj) = &
     -k(171)*n(idx_H2Oj)*n(idx_E) &
     -k(172)*n(idx_H2Oj)*n(idx_E) &
     -k(173)*n(idx_H2Oj)*n(idx_E) &
-    +k(225)*n(idx_H2O) &
-    -k(243)*n(idx_H2Oj) &
+    +k(226)*n(idx_H2O) &
     -k(244)*n(idx_H2Oj) &
     -k(245)*n(idx_H2Oj) &
     -k(246)*n(idx_H2Oj) &
-    +k(249)*n(idx_H3Oj)
+    -k(247)*n(idx_H2Oj) &
+    +k(250)*n(idx_H3Oj)
 
 !H3O+
 !H3O+
@@ -8008,10 +8014,10 @@ dn(idx_H3Oj) = &
     -k(175)*n(idx_H3Oj)*n(idx_E) &
     -k(176)*n(idx_H3Oj)*n(idx_E) &
     -k(177)*n(idx_H3Oj)*n(idx_E) &
-    -k(247)*n(idx_H3Oj) &
     -k(248)*n(idx_H3Oj) &
     -k(249)*n(idx_H3Oj) &
-    -k(250)*n(idx_H3Oj)
+    -k(250)*n(idx_H3Oj) &
+    -k(251)*n(idx_H3Oj)
 
 !O2+
 !O2+
@@ -8021,15 +8027,15 @@ dn(idx_O2j) = &
     +k(152)*n(idx_O2)*n(idx_Hj) &
     +k(153)*n(idx_O2)*n(idx_HEj) &
     -k(178)*n(idx_O2j)*n(idx_E) &
-    +k(226)*n(idx_O2) &
-    +k(263)*n(idx_O2)
+    +k(227)*n(idx_O2) &
+    +k(264)*n(idx_O2)
 
 !HE++
 !HE++
 dn(idx_HEjj) = &
     +k(7)*n(idx_HEj)*n(idx_E) &
     -k(15)*n(idx_HEjj)*n(idx_E) &
-    +k(214)*n(idx_HEj)
+    +k(215)*n(idx_HEj)
 
 !CR
 !CR
@@ -8271,6 +8277,7 @@ pdj(36) =  &
 elseif(j==2) then
 pdj(1) =  &
     +k(184)*n(idx_O)  &
+    +k(219)  &
     +k(183)*n(idx_C)  &
     -k(24)*n(idx_E)  &
     +k(26)*n(idx_H)  &
@@ -8278,14 +8285,13 @@ pdj(1) =  &
     +k(28)*n(idx_Hj)  &
     +k(17)*n(idx_H)  &
     +k(25)*n(idx_H)  &
-    +2.d0*k(24)*n(idx_E)  &
-    +k(218)
+    +2.d0*k(24)*n(idx_E)
 pdj(2) =  &
-    -k(218)  &
     -k(24)*n(idx_E)  &
     -k(31)*n(idx_H2j)  &
     -k(28)*n(idx_Hj)  &
     -k(185)*n(idx_OH)  &
+    -k(219)  &
     -k(27)*n(idx_Hj)  &
     -k(17)*n(idx_H)  &
     -k(184)*n(idx_O)  &
@@ -8294,6 +8300,7 @@ pdj(2) =  &
     -k(160)*n(idx_HEj)  &
     -k(26)*n(idx_H)
 pdj(5) =  &
+    +k(219)  &
     +k(31)*n(idx_H2j)  &
     +2.d0*k(26)*n(idx_H)  &
     +2.d0*k(27)*n(idx_Hj)  &
@@ -8302,8 +8309,7 @@ pdj(5) =  &
     -k(17)*n(idx_H)  &
     +k(24)*n(idx_E)  &
     +k(160)*n(idx_HEj)  &
-    -k(25)*n(idx_H)  &
-    +k(218)
+    -k(25)*n(idx_H)
 pdj(6) =  &
     +k(160)*n(idx_HEj)
 pdj(7) =  &
@@ -8330,13 +8336,13 @@ pdj(22) =  &
     +k(28)*n(idx_Hj)
 elseif(j==3) then
 pdj(1) =  &
-    +k(234)  &
+    +k(235)  &
     +k(187)*n(idx_H2)  &
     +k(188)*n(idx_O)  &
     +k(186)*n(idx_H)
 pdj(3) =  &
     -k(158)*n(idx_Hj)  &
-    -k(234)  &
+    -k(235)  &
     -k(187)*n(idx_H2)  &
     -k(188)*n(idx_O)  &
     -k(186)*n(idx_H)
@@ -8346,7 +8352,7 @@ pdj(5) =  &
 pdj(7) =  &
     -k(187)*n(idx_H2)
 pdj(8) =  &
-    +k(234)  &
+    +k(235)  &
     +k(158)*n(idx_Hj)
 pdj(9) =  &
     -k(188)*n(idx_O)
@@ -8360,15 +8366,15 @@ pdj(20) =  &
     -k(158)*n(idx_Hj)
 elseif(j==4) then
 pdj(1) =  &
-    +k(241)  &
+    +k(242)  &
     +k(189)*n(idx_H)  &
     +k(191)*n(idx_C)  &
     +k(190)*n(idx_H2)
 pdj(4) =  &
     -k(191)*n(idx_C)  &
     -k(159)*n(idx_Hj)  &
-    -k(241)  &
     -k(189)*n(idx_H)  &
+    -k(242)  &
     -k(190)*n(idx_H2)
 pdj(5) =  &
     -k(189)*n(idx_H)  &
@@ -8378,7 +8384,7 @@ pdj(7) =  &
 pdj(8) =  &
     -k(191)*n(idx_C)
 pdj(9) =  &
-    +k(241)  &
+    +k(242)  &
     +k(159)*n(idx_Hj)
 pdj(10) =  &
     +k(189)*n(idx_H)
@@ -8396,9 +8402,9 @@ pdj(1) =  &
     -k(1)*n(idx_E)  &
     +k(25)*n(idx_Hk)  &
     +2.d0*k(1)*n(idx_E)  &
-    +k(251)  &
     -k(16)*n(idx_E)  &
-    +k(212)  &
+    +k(252)  &
+    +k(213)  &
     +k(17)*n(idx_Hk)
 pdj(2) =  &
     -k(26)*n(idx_Hk)  &
@@ -8417,21 +8423,19 @@ pdj(5) =  &
     -k(26)*n(idx_Hk)  &
     -k(17)*n(idx_Hk)  &
     -4.d0*k(35)*n(idx_H2)*n(idx_H)  &
-    -k(212)  &
     -k(189)*n(idx_Ok)  &
     -k(195)*n(idx_C)  &
     -k(25)*n(idx_Hk)  &
     -k(83)*n(idx_CO)  &
-    -k(278)*n(idx_O)  &
+    -k(213)  &
+    -k(280)*n(idx_OH)  &
     -k(79)*n(idx_O2)  &
     -k(18)*n(idx_Hj)  &
-    -k(251)  &
     -k(8)*n(idx_HEj)  &
     -k(206)*n(idx_OH)  &
     -k(90)*n(idx_CHj)  &
     -9.d0*k(34)*n(idx_H)*n(idx_H)  &
     +3.d0*k(34)*n(idx_H)*n(idx_H)  &
-    -k(279)*n(idx_OH)  &
     -k(78)*n(idx_H2O)  &
     -k(51)*n(idx_OH)  &
     -k(96)*n(idx_CH3j)  &
@@ -8441,7 +8445,10 @@ pdj(5) =  &
     -k(47)*n(idx_Cj)  &
     -k(93)*n(idx_CH2j)  &
     -k(19)*n(idx_Hj)  &
+    -k(279)*n(idx_O)  &
+    -k(252)  &
     -k(62)*n(idx_CH2)  &
+    -4.d0*k(207)*n(idx_H)  &
     -k(71)*n(idx_OH)  &
     +2.d0*k(25)*n(idx_Hk)  &
     +3.d0*k(23)*n(idx_H2)  &
@@ -8461,6 +8468,7 @@ pdj(7) =  &
     +4.d0*k(35)*n(idx_H2)*n(idx_H)  &
     +k(96)*n(idx_CH3j)  &
     +k(93)*n(idx_CH2j)  &
+    +2.d0*k(207)*n(idx_H)  &
     +k(78)*n(idx_H2O)  &
     +2.d0*k(33)*n(idx_H)*n(idx_HE)  &
     +k(70)*n(idx_OH)  &
@@ -8481,14 +8489,16 @@ pdj(8) =  &
     +k(83)*n(idx_CO)
 pdj(9) =  &
     +k(43)*n(idx_Oj)  &
-    -k(278)*n(idx_O)  &
     +k(70)*n(idx_OH)  &
     +k(71)*n(idx_OH)  &
     -k(204)*n(idx_O)  &
     +k(79)*n(idx_O2)  &
+    -k(279)*n(idx_O)  &
     +k(51)*n(idx_OH)
 pdj(10) =  &
     -k(51)*n(idx_OH)  &
+    +k(279)*n(idx_O)  &
+    -k(280)*n(idx_OH)  &
     +k(78)*n(idx_H2O)  &
     -k(70)*n(idx_OH)  &
     -k(71)*n(idx_OH)  &
@@ -8496,9 +8506,7 @@ pdj(10) =  &
     +k(189)*n(idx_Ok)  &
     -k(206)*n(idx_OH)  &
     +k(204)*n(idx_O)  &
-    +k(79)*n(idx_O2)  &
-    -k(279)*n(idx_OH)  &
-    +k(278)*n(idx_O)
+    +k(79)*n(idx_O2)
 pdj(11) =  &
     +k(157)*n(idx_COj)  &
     -k(83)*n(idx_CO)
@@ -8510,9 +8518,9 @@ pdj(12) =  &
 pdj(13) =  &
     -k(62)*n(idx_CH2)
 pdj(16) =  &
+    +k(280)*n(idx_OH)  &
     +k(206)*n(idx_OH)  &
-    -k(78)*n(idx_H2O)  &
-    +k(279)*n(idx_OH)
+    -k(78)*n(idx_H2O)
 pdj(17) =  &
     -k(79)*n(idx_O2)
 pdj(20) =  &
@@ -8521,11 +8529,11 @@ pdj(20) =  &
     -k(18)*n(idx_Hj)  &
     +k(20)*n(idx_H2j)  &
     +k(1)*n(idx_E)  &
-    +k(212)  &
-    +k(251)  &
     -k(19)*n(idx_Hj)  &
+    +k(252)  &
     +k(8)*n(idx_HEj)  &
-    +k(47)*n(idx_Cj)
+    +k(47)*n(idx_Cj)  &
+    +k(213)
 pdj(21) =  &
     -k(8)*n(idx_HEj)
 pdj(22) =  &
@@ -8554,9 +8562,9 @@ pdj(31) =  &
     -k(96)*n(idx_CH3j)
 elseif(j==6) then
 pdj(1) =  &
-    +k(252)  &
+    +k(253)  &
+    +k(214)  &
     +2.d0*k(4)*n(idx_E)  &
-    +k(213)  &
     -k(4)*n(idx_E)
 pdj(5) =  &
     +k(9)*n(idx_Hj)  &
@@ -8569,10 +8577,10 @@ pdj(6) =  &
     -k(11)*n(idx_H2)  &
     -k(33)*n(idx_H)*n(idx_H)  &
     -k(9)*n(idx_Hj)  &
-    -k(252)  &
+    -k(253)  &
     -k(4)*n(idx_E)  &
-    -k(213)  &
-    +k(11)*n(idx_H2)
+    +k(11)*n(idx_H2)  &
+    -k(214)
 pdj(7) =  &
     -k(11)*n(idx_H2)  &
     +k(33)*n(idx_H)*n(idx_H)
@@ -8582,21 +8590,21 @@ pdj(20) =  &
 pdj(21) =  &
     +k(9)*n(idx_Hj)  &
     +k(10)*n(idx_Hj)  &
-    +k(4)*n(idx_E)  &
-    +k(213)  &
-    +k(252)
+    +k(253)  &
+    +k(214)  &
+    +k(4)*n(idx_E)
 elseif(j==7) then
 pdj(1) =  &
-    +k(259)  &
+    +k(270)  &
+    +k(260)  &
     -k(22)*n(idx_E)  &
     +k(190)*n(idx_Ok)  &
-    +k(217)  &
-    +k(228)  &
+    +k(229)  &
     +k(22)*n(idx_E)  &
-    +k(269)  &
-    +k(187)*n(idx_Ck)
+    +k(187)*n(idx_Ck)  &
+    +k(218)
 pdj(2) =  &
-    +k(258)
+    +k(259)
 pdj(3) =  &
     -k(187)*n(idx_Ck)
 pdj(4) =  &
@@ -8609,21 +8617,21 @@ pdj(5) =  &
     -2.d0*k(35)*n(idx_H)*n(idx_H)  &
     +2.d0*k(22)*n(idx_E)  &
     +k(100)*n(idx_Oj)  &
-    +2.d0*k(230)  &
+    +2.d0*k(258)  &
     +k(108)*n(idx_OHj)  &
     +k(84)*n(idx_H2j)  &
-    +k(228)  &
     +k(21)*n(idx_Hj)  &
     +k(89)*n(idx_Cj)  &
     +k(13)*n(idx_HEj)  &
+    +k(270)  &
     +2.d0*k(14)*n(idx_HEj)  &
     +2.d0*k(192)*n(idx_Hj)  &
     +k(69)*n(idx_O)  &
-    +k(269)  &
     +4.d0*k(32)*n(idx_H2)  &
-    +2.d0*k(257)  &
+    +2.d0*k(231)  &
     +3.d0*k(23)*n(idx_H)  &
     +k(55)*n(idx_C)  &
+    +k(229)  &
     +k(72)*n(idx_OH)  &
     +k(109)*n(idx_H2Oj)  &
     +k(91)*n(idx_CHj)
@@ -8638,8 +8646,10 @@ pdj(7) =  &
     -k(57)*n(idx_CH)  &
     -k(55)*n(idx_C)  &
     -k(94)*n(idx_CH2j)  &
+    -k(260)  &
     -k(23)*n(idx_H)  &
     -k(84)*n(idx_H2j)  &
+    -k(270)  &
     -k(187)*n(idx_Ck)  &
     -k(35)*n(idx_H)*n(idx_H)  &
     +2.d0*k(35)*n(idx_H)*n(idx_H)  &
@@ -8647,28 +8657,26 @@ pdj(7) =  &
     -k(196)*n(idx_C)  &
     -k(89)*n(idx_Cj)  &
     -k(200)*n(idx_Cj)  &
-    -k(230)  &
     -k(193)*n(idx_Hj)  &
+    -k(218)  &
     -k(22)*n(idx_E)  &
-    -k(228)  &
     -k(192)*n(idx_Hj)  &
-    -k(257)  &
     -k(11)*n(idx_HE)  &
     -k(14)*n(idx_HEj)  &
-    -k(217)  &
     -k(108)*n(idx_OHj)  &
     -k(80)*n(idx_O2)  &
     -k(12)*n(idx_HEj)  &
     -k(69)*n(idx_O)  &
-    -k(269)  &
     -k(109)*n(idx_H2Oj)  &
     -k(258)  &
     -k(21)*n(idx_Hj)  &
     +2.d0*k(32)*n(idx_H2)  &
     -k(72)*n(idx_OH)  &
+    -k(231)  &
     -k(91)*n(idx_CHj)  &
     -k(100)*n(idx_Oj)  &
     -4.d0*k(32)*n(idx_H2)  &
+    -k(229)  &
     +k(52)*n(idx_HOCj)  &
     -k(190)*n(idx_Ok)
 pdj(8) =  &
@@ -8693,11 +8701,11 @@ pdj(16) =  &
 pdj(17) =  &
     -k(80)*n(idx_O2)
 pdj(20) =  &
-    +k(258)  &
+    +k(270)  &
     -k(193)*n(idx_Hj)  &
     -k(21)*n(idx_Hj)  &
-    +k(269)  &
-    +k(228)  &
+    +k(259)  &
+    +k(229)  &
     +k(192)*n(idx_Hj)  &
     -k(192)*n(idx_Hj)  &
     +k(13)*n(idx_HEj)
@@ -8707,10 +8715,10 @@ pdj(21) =  &
     +k(14)*n(idx_HEj)  &
     -k(14)*n(idx_HEj)
 pdj(22) =  &
+    +k(260)  &
     +k(21)*n(idx_Hj)  &
-    +k(217)  &
     -k(84)*n(idx_H2j)  &
-    +k(259)  &
+    +k(218)  &
     +k(12)*n(idx_HEj)
 pdj(23) =  &
     -k(89)*n(idx_Cj)  &
@@ -8744,11 +8752,11 @@ pdj(34) =  &
 elseif(j==8) then
 pdj(1) =  &
     +k(183)*n(idx_Hk)  &
-    +k(216)  &
+    +k(261)  &
     +k(191)*n(idx_Ok)  &
     -k(194)*n(idx_E)  &
     +2.d0*k(41)*n(idx_E)  &
-    +k(260)  &
+    +k(217)  &
     -k(41)*n(idx_E)
 pdj(2) =  &
     -k(183)*n(idx_Hk)
@@ -8776,22 +8784,22 @@ pdj(7) =  &
     -k(196)*n(idx_H2)
 pdj(8) =  &
     -k(87)*n(idx_H3j)  &
-    -k(216)  &
-    -k(260)  &
+    -k(278)*n(idx_Oj)  &
     -4.d0*k(197)*n(idx_C)  &
-    -4.d0*k(270)*n(idx_C)  &
+    -4.d0*k(272)*n(idx_C)  &
     -k(191)*n(idx_Ok)  &
+    -k(274)*n(idx_O)  &
     -k(194)*n(idx_E)  &
     -k(196)*n(idx_H2)  &
     -k(277)*n(idx_Oj)  &
     -k(273)*n(idx_O)  &
-    -k(272)*n(idx_O)  &
     -k(116)*n(idx_H3Oj)  &
+    -k(217)  &
     -k(49)*n(idx_HEj)  &
     -k(88)*n(idx_H3j)  &
+    -k(261)  &
     -k(58)*n(idx_CH)  &
     -k(46)*n(idx_Hj)  &
-    -k(276)*n(idx_Oj)  &
     -k(50)*n(idx_HEj)  &
     -k(73)*n(idx_OH)  &
     -k(120)*n(idx_O2j)  &
@@ -8810,11 +8818,11 @@ pdj(8) =  &
     -k(41)*n(idx_E)
 pdj(9) =  &
     +k(81)*n(idx_O2)  &
+    -k(274)*n(idx_O)  &
     +k(120)*n(idx_O2j)  &
     -k(198)*n(idx_O)  &
     +k(82)*n(idx_O2)  &
-    -k(273)*n(idx_O)  &
-    -k(272)*n(idx_O)
+    -k(273)*n(idx_O)
 pdj(10) =  &
     -k(73)*n(idx_OH)  &
     -k(74)*n(idx_OH)
@@ -8825,7 +8833,7 @@ pdj(11) =  &
     +k(191)*n(idx_Ok)  &
     +k(198)*n(idx_O)  &
     +k(126)*n(idx_HCOj)  &
-    +k(272)*n(idx_O)  &
+    +k(274)*n(idx_O)  &
     +k(82)*n(idx_O2)  &
     +k(273)*n(idx_O)
 pdj(12) =  &
@@ -8837,7 +8845,7 @@ pdj(13) =  &
     +k(196)*n(idx_H2)
 pdj(14) =  &
     +k(58)*n(idx_CH)  &
-    +2.d0*k(270)*n(idx_C)  &
+    +2.d0*k(272)*n(idx_C)  &
     +2.d0*k(197)*n(idx_C)  &
     +2.d0*k(271)*n(idx_C)
 pdj(17) =  &
@@ -8854,15 +8862,15 @@ pdj(22) =  &
     -k(86)*n(idx_H2j)
 pdj(23) =  &
     +k(50)*n(idx_HEj)  &
-    +k(260)  &
     +k(121)*n(idx_O2j)  &
     +k(46)*n(idx_Hj)  &
-    +k(216)  &
+    +k(261)  &
     +k(48)*n(idx_HEj)  &
     +k(49)*n(idx_HEj)  &
-    +k(41)*n(idx_E)
+    +k(41)*n(idx_E)  &
+    +k(217)
 pdj(24) =  &
-    -k(276)*n(idx_Oj)  &
+    -k(278)*n(idx_Oj)  &
     -k(277)*n(idx_Oj)
 pdj(26) =  &
     -k(126)*n(idx_HCOj)  &
@@ -8878,8 +8886,8 @@ pdj(29) =  &
     +k(88)*n(idx_H3j)
 pdj(30) =  &
     +k(120)*n(idx_O2j)  &
-    +k(276)*n(idx_Oj)  &
-    +k(277)*n(idx_Oj)
+    +k(277)*n(idx_Oj)  &
+    +k(278)*n(idx_Oj)
 pdj(34) =  &
     -k(116)*n(idx_H3Oj)
 pdj(35) =  &
@@ -8889,12 +8897,12 @@ elseif(j==9) then
 pdj(1) =  &
     -k(203)*n(idx_E)  &
     +k(60)*n(idx_CH)  &
-    +k(215)  &
     +2.d0*k(42)*n(idx_E)  &
+    +k(216)  &
     -k(42)*n(idx_E)  &
-    +k(253)  &
     +k(184)*n(idx_Hk)  &
-    +k(188)*n(idx_Ck)
+    +k(188)*n(idx_Ck)  &
+    +k(254)
 pdj(2) =  &
     -k(184)*n(idx_Hk)
 pdj(3) =  &
@@ -8902,7 +8910,6 @@ pdj(3) =  &
 pdj(4) =  &
     +k(203)*n(idx_E)
 pdj(5) =  &
-    -k(278)*n(idx_H)  &
     +2.d0*k(63)*n(idx_CH2)  &
     +k(44)*n(idx_Hj)  &
     +k(103)*n(idx_H3j)  &
@@ -8912,6 +8919,7 @@ pdj(5) =  &
     +k(101)*n(idx_H2j)  &
     +k(76)*n(idx_OH)  &
     +k(69)*n(idx_H2)  &
+    -k(279)*n(idx_H)  &
     +k(75)*n(idx_OH)  &
     +k(59)*n(idx_CH)  &
     +k(65)*n(idx_CH2)
@@ -8924,36 +8932,35 @@ pdj(7) =  &
     -k(69)*n(idx_H2)  &
     +k(64)*n(idx_CH2)
 pdj(8) =  &
+    -k(274)*n(idx_C)  &
     -k(198)*n(idx_C)  &
     +k(67)*n(idx_C2)  &
     +k(68)*n(idx_C2)  &
     -k(273)*n(idx_C)  &
-    +k(61)*n(idx_CH)  &
-    -k(272)*n(idx_C)
+    +k(61)*n(idx_CH)
 pdj(9) =  &
+    -k(216)  &
     -k(203)*n(idx_E)  &
     -k(59)*n(idx_CH)  &
-    -k(274)*n(idx_Cj)  &
     -k(202)*n(idx_Cj)  &
-    -4.d0*k(280)*n(idx_O)  &
+    -k(279)*n(idx_H)  &
     -k(42)*n(idx_E)  &
-    -k(272)*n(idx_C)  &
     -k(198)*n(idx_C)  &
     -k(188)*n(idx_Ck)  &
     -k(45)*n(idx_HEj)  &
     -k(65)*n(idx_CH2)  &
+    -4.d0*k(281)*n(idx_O)  &
     -k(103)*n(idx_H3j)  &
     -k(184)*n(idx_Hk)  &
     -k(204)*n(idx_H)  &
     -k(201)*n(idx_Cj)  &
+    -k(276)*n(idx_Cj)  &
     -k(101)*n(idx_H2j)  &
     -k(92)*n(idx_CHj)  &
-    -k(278)*n(idx_H)  &
     -k(102)*n(idx_H3j)  &
     -k(273)*n(idx_C)  &
-    -k(253)  &
-    -k(215)  &
     -k(67)*n(idx_C2)  &
+    -k(274)*n(idx_C)  &
     -k(60)*n(idx_CH)  &
     -k(66)*n(idx_CH2)  &
     -k(61)*n(idx_CH)  &
@@ -8968,20 +8975,21 @@ pdj(9) =  &
     -k(97)*n(idx_CH3j)  &
     -k(68)*n(idx_C2)  &
     -k(76)*n(idx_OH)  &
-    -k(64)*n(idx_CH2)
+    -k(64)*n(idx_CH2)  &
+    -k(254)
 pdj(10) =  &
     +k(204)*n(idx_H)  &
     -k(75)*n(idx_OH)  &
-    +k(278)*n(idx_H)  &
+    +k(279)*n(idx_H)  &
     +k(66)*n(idx_CH2)  &
     -k(76)*n(idx_OH)  &
     +k(69)*n(idx_H2)  &
     +k(61)*n(idx_CH)  &
     +k(184)*n(idx_Hk)
 pdj(11) =  &
+    +k(274)*n(idx_C)  &
     +k(63)*n(idx_CH2)  &
     +k(198)*n(idx_C)  &
-    +k(272)*n(idx_C)  &
     +k(68)*n(idx_C2)  &
     +k(67)*n(idx_C2)  &
     +k(273)*n(idx_C)  &
@@ -9006,8 +9014,8 @@ pdj(15) =  &
 pdj(17) =  &
     +k(76)*n(idx_OH)  &
     +k(75)*n(idx_OH)  &
-    +2.d0*k(205)*n(idx_O)  &
-    +2.d0*k(280)*n(idx_O)
+    +2.d0*k(281)*n(idx_O)  &
+    +2.d0*k(205)*n(idx_O)
 pdj(20) =  &
     -k(44)*n(idx_Hj)
 pdj(21) =  &
@@ -9015,16 +9023,16 @@ pdj(21) =  &
 pdj(22) =  &
     -k(101)*n(idx_H2j)
 pdj(23) =  &
-    -k(274)*n(idx_Cj)  &
     -k(275)*n(idx_Cj)  &
     -k(202)*n(idx_Cj)  &
-    -k(201)*n(idx_Cj)
+    -k(201)*n(idx_Cj)  &
+    -k(276)*n(idx_Cj)
 pdj(24) =  &
     +k(44)*n(idx_Hj)  &
-    +k(253)  &
+    +k(216)  &
     +k(45)*n(idx_HEj)  &
-    +k(215)  &
-    +k(42)*n(idx_E)
+    +k(42)*n(idx_E)  &
+    +k(254)
 pdj(25) =  &
     +k(97)*n(idx_CH3j)
 pdj(26) =  &
@@ -9040,9 +9048,9 @@ pdj(29) =  &
     -k(95)*n(idx_CH2j)
 pdj(30) =  &
     +k(275)*n(idx_Cj)  &
+    +k(276)*n(idx_Cj)  &
     +k(202)*n(idx_Cj)  &
     +k(92)*n(idx_CHj)  &
-    +k(274)*n(idx_Cj)  &
     +k(201)*n(idx_Cj)
 pdj(31) =  &
     -k(98)*n(idx_CH3j)  &
@@ -9054,17 +9062,18 @@ pdj(33) =  &
     +k(103)*n(idx_H3j)
 elseif(j==10) then
 pdj(1) =  &
-    +k(223)  &
+    +k(224)  &
     +k(185)*n(idx_Hk)
 pdj(2) =  &
     -k(185)*n(idx_Hk)
 pdj(5) =  &
+    -k(280)*n(idx_H)  &
     +k(106)*n(idx_Cj)  &
     -k(70)*n(idx_H)  &
+    +k(223)  &
     +k(73)*n(idx_C)  &
     +k(141)*n(idx_Hj)  &
     +k(143)*n(idx_HEj)  &
-    +k(222)  &
     +k(75)*n(idx_O)  &
     +k(72)*n(idx_H2)  &
     -k(71)*n(idx_H)  &
@@ -9073,9 +9082,8 @@ pdj(5) =  &
     +k(107)*n(idx_Cj)  &
     +k(76)*n(idx_O)  &
     -k(206)*n(idx_H)  &
-    -k(279)*n(idx_H)  &
     +k(140)*n(idx_Hj)  &
-    +k(264)  &
+    +k(265)  &
     +2.d0*k(51)*n(idx_H)  &
     +k(74)*n(idx_C)
 pdj(6) =  &
@@ -9093,26 +9101,25 @@ pdj(8) =  &
 pdj(9) =  &
     -k(75)*n(idx_O)  &
     +2.d0*k(77)*n(idx_OH)  &
-    +k(222)  &
     +k(71)*n(idx_H)  &
+    +k(223)  &
     +k(70)*n(idx_H)  &
     -k(76)*n(idx_O)  &
-    +k(264)  &
+    +k(265)  &
     +k(51)*n(idx_H)
 pdj(10) =  &
+    -k(280)*n(idx_H)  &
     -k(143)*n(idx_HEj)  &
-    -k(279)*n(idx_H)  &
     -k(51)*n(idx_H)  &
     -4.d0*k(77)*n(idx_OH)  &
     -k(206)*n(idx_H)  &
     -k(140)*n(idx_Hj)  &
     -k(142)*n(idx_HEj)  &
+    -k(224)  &
     -k(71)*n(idx_H)  &
     -k(70)*n(idx_H)  &
     -k(141)*n(idx_Hj)  &
-    -k(222)  &
     -k(185)*n(idx_Hk)  &
-    -k(264)  &
     -k(76)*n(idx_O)  &
     -k(75)*n(idx_O)  &
     -k(104)*n(idx_H3j)  &
@@ -9120,6 +9127,7 @@ pdj(10) =  &
     -k(223)  &
     -k(107)*n(idx_Cj)  &
     -k(106)*n(idx_Cj)  &
+    -k(265)  &
     -k(72)*n(idx_H2)  &
     -k(105)*n(idx_H3j)  &
     -k(73)*n(idx_C)
@@ -9128,8 +9136,8 @@ pdj(11) =  &
     +k(74)*n(idx_C)
 pdj(16) =  &
     +k(206)*n(idx_H)  &
-    +k(279)*n(idx_H)  &
     +2.d0*k(77)*n(idx_OH)  &
+    +k(280)*n(idx_H)  &
     +k(72)*n(idx_H2)  &
     +k(185)*n(idx_Hk)
 pdj(17) =  &
@@ -9154,15 +9162,15 @@ pdj(30) =  &
     +k(106)*n(idx_Cj)  &
     +k(107)*n(idx_Cj)
 pdj(32) =  &
+    +k(224)  &
     +k(141)*n(idx_Hj)  &
-    +k(140)*n(idx_Hj)  &
-    +k(223)
+    +k(140)*n(idx_Hj)
 pdj(33) =  &
     +k(104)*n(idx_H3j)  &
     +k(105)*n(idx_H3j)
 elseif(j==11) then
 pdj(1) =  &
-    +k(255)
+    +k(256)
 pdj(5) =  &
     -k(83)*n(idx_H)
 pdj(6) =  &
@@ -9175,13 +9183,13 @@ pdj(7) =  &
     +k(125)*n(idx_H3j)
 pdj(8) =  &
     +k(83)*n(idx_H)  &
-    +k(229)  &
+    +k(255)  &
     +k(156)*n(idx_HEj)  &
-    +k(254)
+    +k(230)
 pdj(9) =  &
-    +k(229)  &
-    +k(155)*n(idx_HEj)  &
-    +k(254)
+    +k(255)  &
+    +k(230)  &
+    +k(155)*n(idx_HEj)
 pdj(10) =  &
     +k(83)*n(idx_H)
 pdj(11) =  &
@@ -9190,14 +9198,14 @@ pdj(11) =  &
     -k(124)*n(idx_H3j)  &
     -k(54)*n(idx_HOCj)  &
     -k(83)*n(idx_H)  &
+    -k(230)  &
     -k(123)*n(idx_H3j)  &
     -k(156)*n(idx_HEj)  &
     +k(54)*n(idx_HOCj)  &
     -k(53)*n(idx_HOCj)  &
-    -k(229)  &
+    -k(256)  &
     +k(53)*n(idx_HOCj)  &
     -k(155)*n(idx_HEj)  &
-    -k(254)  &
     -k(255)
 pdj(21) =  &
     -k(155)*n(idx_HEj)  &
@@ -9222,14 +9230,14 @@ pdj(27) =  &
     -k(122)*n(idx_H3j)  &
     -k(123)*n(idx_H3j)
 pdj(30) =  &
-    +k(255)
+    +k(256)
 elseif(j==12) then
 pdj(1) =  &
-    +k(220)  &
+    +k(221)  &
     +k(60)*n(idx_O)
 pdj(5) =  &
-    +k(219)  &
-    +k(261)  &
+    +k(220)  &
+    +k(262)  &
     -k(56)*n(idx_H)  &
     +k(130)*n(idx_Hj)  &
     +k(59)*n(idx_O)  &
@@ -9240,9 +9248,9 @@ pdj(7) =  &
     -k(57)*n(idx_H2)  &
     +k(56)*n(idx_H)
 pdj(8) =  &
-    +k(219)  &
     +k(61)*n(idx_O)  &
-    +k(261)  &
+    +k(220)  &
+    +k(262)  &
     +k(56)*n(idx_H)  &
     -k(58)*n(idx_C)
 pdj(9) =  &
@@ -9254,16 +9262,16 @@ pdj(10) =  &
 pdj(11) =  &
     +k(59)*n(idx_O)
 pdj(12) =  &
-    -k(220)  &
     -k(129)*n(idx_Hj)  &
     -k(60)*n(idx_O)  &
-    -k(261)  &
+    -k(262)  &
     -k(130)*n(idx_Hj)  &
+    -k(221)  &
     -k(59)*n(idx_O)  &
     -k(61)*n(idx_O)  &
     -k(56)*n(idx_H)  &
     -k(57)*n(idx_H2)  &
-    -k(219)  &
+    -k(220)  &
     -k(58)*n(idx_C)
 pdj(13) =  &
     +k(57)*n(idx_H2)
@@ -9276,18 +9284,18 @@ pdj(26) =  &
     +k(60)*n(idx_O)
 pdj(28) =  &
     +k(130)*n(idx_Hj)  &
-    +k(220)  &
+    +k(221)  &
     +k(129)*n(idx_Hj)
 elseif(j==13) then
 pdj(1) =  &
-    +k(265)  &
-    +k(237)
+    +k(266)  &
+    +k(238)
 pdj(5) =  &
     +k(133)*n(idx_Hj)  &
     +k(137)*n(idx_HEj)  &
     +k(138)*n(idx_HEj)  &
     -k(62)*n(idx_H)  &
-    +k(236)  &
+    +k(237)  &
     +k(65)*n(idx_O)  &
     +2.d0*k(63)*n(idx_O)  &
     +k(134)*n(idx_Hj)
@@ -9314,12 +9322,11 @@ pdj(11) =  &
     +k(64)*n(idx_O)  &
     +k(63)*n(idx_O)
 pdj(12) =  &
-    +k(236)  &
+    +k(237)  &
     +k(66)*n(idx_O)  &
     +k(62)*n(idx_H)
 pdj(13) =  &
     -k(66)*n(idx_O)  &
-    -k(236)  &
     -k(237)  &
     -k(137)*n(idx_HEj)  &
     -k(136)*n(idx_HEj)  &
@@ -9328,8 +9335,9 @@ pdj(13) =  &
     -k(132)*n(idx_Hj)  &
     -k(62)*n(idx_H)  &
     -k(135)*n(idx_HEj)  &
+    -k(238)  &
+    -k(266)  &
     -k(65)*n(idx_O)  &
-    -k(265)  &
     -k(63)*n(idx_O)  &
     -k(133)*n(idx_Hj)  &
     -k(131)*n(idx_Hj)  &
@@ -9355,17 +9363,17 @@ pdj(28) =  &
     +k(132)*n(idx_Hj)  &
     +k(137)*n(idx_HEj)
 pdj(29) =  &
-    +k(237)  &
-    +k(265)  &
+    +k(266)  &
     +k(133)*n(idx_Hj)  &
-    +k(134)*n(idx_Hj)
+    +k(134)*n(idx_Hj)  &
+    +k(238)
 elseif(j==14) then
 pdj(6) =  &
     +k(139)*n(idx_HEj)
 pdj(8) =  &
-    +2.d0*k(256)  &
+    +2.d0*k(257)  &
     +k(139)*n(idx_HEj)  &
-    +2.d0*k(221)  &
+    +2.d0*k(222)  &
     +k(99)*n(idx_Oj)  &
     +k(67)*n(idx_O)  &
     +k(68)*n(idx_O)
@@ -9376,11 +9384,11 @@ pdj(11) =  &
     +k(67)*n(idx_O)  &
     +k(68)*n(idx_O)
 pdj(14) =  &
+    -k(222)  &
     -k(68)*n(idx_O)  &
     -k(99)*n(idx_Oj)  &
     -k(67)*n(idx_O)  &
-    -k(221)  &
-    -k(256)  &
+    -k(257)  &
     -k(139)*n(idx_HEj)
 pdj(21) =  &
     -k(139)*n(idx_HEj)
@@ -9392,28 +9400,28 @@ pdj(30) =  &
     +k(99)*n(idx_Oj)
 elseif(j==15) then
 pdj(1) =  &
-    +k(268)
+    +k(269)
 pdj(5) =  &
-    +k(267)
-pdj(11) =  &
-    +k(267)
-pdj(15) =  &
-    -k(268)  &
-    -k(267)
-pdj(26) =  &
     +k(268)
+pdj(11) =  &
+    +k(268)
+pdj(15) =  &
+    -k(269)  &
+    -k(268)
+pdj(26) =  &
+    +k(269)
 elseif(j==16) then
 pdj(1) =  &
-    +k(225)
+    +k(226)
 pdj(5) =  &
     +k(148)*n(idx_HEj)  &
     +k(113)*n(idx_Cj)  &
-    +k(266)  &
     +k(149)*n(idx_HEj)  &
     +k(114)*n(idx_Cj)  &
     +k(145)*n(idx_Hj)  &
     +k(144)*n(idx_Hj)  &
-    +k(224)  &
+    +k(225)  &
+    +k(267)  &
     +k(112)*n(idx_Cj)  &
     -k(78)*n(idx_H)
 pdj(6) =  &
@@ -9430,9 +9438,9 @@ pdj(7) =  &
 pdj(8) =  &
     +k(115)*n(idx_Cj)
 pdj(10) =  &
-    +k(224)  &
+    +k(267)  &
     +k(78)*n(idx_H)  &
-    +k(266)  &
+    +k(225)  &
     +k(146)*n(idx_HEj)  &
     +k(147)*n(idx_HEj)
 pdj(11) =  &
@@ -9440,16 +9448,16 @@ pdj(11) =  &
     +k(127)*n(idx_HCOj)
 pdj(16) =  &
     -k(151)*n(idx_HEj)  &
-    -k(224)  &
     -k(127)*n(idx_HCOj)  &
     -k(115)*n(idx_Cj)  &
     -k(225)  &
     -k(144)*n(idx_Hj)  &
     -k(110)*n(idx_H3j)  &
     -k(148)*n(idx_HEj)  &
+    -k(267)  &
     -k(112)*n(idx_Cj)  &
     -k(150)*n(idx_HEj)  &
-    -k(266)  &
+    -k(226)  &
     -k(128)*n(idx_HCOj)  &
     -k(145)*n(idx_Hj)  &
     -k(146)*n(idx_HEj)  &
@@ -9495,7 +9503,7 @@ pdj(33) =  &
     +k(151)*n(idx_HEj)  &
     +k(145)*n(idx_Hj)  &
     +k(144)*n(idx_Hj)  &
-    +k(225)
+    +k(226)
 pdj(34) =  &
     +k(111)*n(idx_H3j)  &
     +k(110)*n(idx_H3j)  &
@@ -9503,8 +9511,8 @@ pdj(34) =  &
     +k(127)*n(idx_HCOj)
 elseif(j==17) then
 pdj(1) =  &
-    +k(263)  &
-    +k(226)
+    +k(264)  &
+    +k(227)
 pdj(5) =  &
     -k(79)*n(idx_H)  &
     +k(152)*n(idx_Hj)
@@ -9518,12 +9526,12 @@ pdj(8) =  &
     -k(82)*n(idx_C)
 pdj(9) =  &
     +k(79)*n(idx_H)  &
-    +2.d0*k(262)  &
+    +2.d0*k(263)  &
     +k(81)*n(idx_C)  &
+    +2.d0*k(228)  &
     +k(117)*n(idx_Cj)  &
     +k(154)*n(idx_HEj)  &
-    +k(82)*n(idx_C)  &
-    +2.d0*k(227)
+    +k(82)*n(idx_C)
 pdj(10) =  &
     +2.d0*k(80)*n(idx_H2)  &
     +k(119)*n(idx_CH2j)  &
@@ -9535,7 +9543,7 @@ pdj(11) =  &
 pdj(17) =  &
     -k(118)*n(idx_Cj)  &
     -k(263)  &
-    -k(262)  &
+    -k(264)  &
     -k(82)*n(idx_C)  &
     -k(79)*n(idx_H)  &
     -k(153)*n(idx_HEj)  &
@@ -9543,9 +9551,9 @@ pdj(17) =  &
     -k(152)*n(idx_Hj)  &
     -k(80)*n(idx_H2)  &
     -k(117)*n(idx_Cj)  &
+    -k(228)  &
     -k(119)*n(idx_CH2j)  &
     -k(227)  &
-    -k(226)  &
     -k(154)*n(idx_HEj)
 pdj(20) =  &
     -k(152)*n(idx_Hj)
@@ -9567,8 +9575,8 @@ pdj(30) =  &
 pdj(35) =  &
     +k(153)*n(idx_HEj)  &
     +k(152)*n(idx_Hj)  &
-    +k(263)  &
-    +k(226)
+    +k(264)  &
+    +k(227)
 elseif(j==18) then
 elseif(j==19) then
 elseif(j==20) then
@@ -9700,7 +9708,7 @@ pdj(1) =  &
     -k(7)*n(idx_E)  &
     -k(6)*n(idx_E)  &
     +2.d0*k(7)*n(idx_E)  &
-    +k(214)  &
+    +k(215)  &
     -k(5)*n(idx_E)
 pdj(2) =  &
     -k(160)*n(idx_Hk)
@@ -9801,12 +9809,12 @@ pdj(21) =  &
     -k(6)*n(idx_E)  &
     -k(49)*n(idx_C)  &
     -k(148)*n(idx_H2O)  &
-    -k(214)  &
     +k(14)*n(idx_H2)  &
     -k(142)*n(idx_OH)  &
     -k(150)*n(idx_H2O)  &
     -k(50)*n(idx_C)  &
     -k(147)*n(idx_H2O)  &
+    -k(215)  &
     -k(138)*n(idx_CH2)  &
     -k(154)*n(idx_O2)  &
     -k(45)*n(idx_O)  &
@@ -9850,7 +9858,7 @@ pdj(35) =  &
     +k(153)*n(idx_O2)
 pdj(36) =  &
     +k(7)*n(idx_E)  &
-    +k(214)
+    +k(215)
 elseif(j==22) then
 pdj(1) =  &
     -k(29)*n(idx_E)  &
@@ -9861,11 +9869,11 @@ pdj(5) =  &
     +2.d0*k(30)*n(idx_E)  &
     -k(20)*n(idx_H)  &
     +k(84)*n(idx_H2)  &
-    +k(231)  &
     +k(101)*n(idx_O)  &
     +k(31)*n(idx_Hk)  &
     +k(86)*n(idx_C)  &
-    +2.d0*k(29)*n(idx_E)
+    +2.d0*k(29)*n(idx_E)  &
+    +k(232)
 pdj(7) =  &
     +k(20)*n(idx_H)  &
     +k(31)*n(idx_Hk)  &
@@ -9876,13 +9884,13 @@ pdj(9) =  &
     -k(101)*n(idx_O)
 pdj(20) =  &
     +k(20)*n(idx_H)  &
-    +k(231)
+    +k(232)
 pdj(22) =  &
     -k(86)*n(idx_C)  &
     -k(20)*n(idx_H)  &
-    -k(231)  &
     -k(29)*n(idx_E)  &
     -k(30)*n(idx_E)  &
+    -k(232)  &
     -k(84)*n(idx_H2)  &
     -k(31)*n(idx_Hk)  &
     -k(101)*n(idx_O)
@@ -9918,8 +9926,8 @@ pdj(8) =  &
 pdj(9) =  &
     -k(201)*n(idx_O)  &
     +k(117)*n(idx_O2)  &
+    -k(276)*n(idx_O)  &
     -k(202)*n(idx_O)  &
-    -k(274)*n(idx_O)  &
     -k(275)*n(idx_O)
 pdj(10) =  &
     -k(107)*n(idx_OH)  &
@@ -9937,6 +9945,7 @@ pdj(17) =  &
 pdj(20) =  &
     +k(47)*n(idx_H)
 pdj(23) =  &
+    -k(276)*n(idx_O)  &
     -k(200)*n(idx_H2)  &
     -k(38)*n(idx_E)  &
     -k(199)*n(idx_H)  &
@@ -9952,7 +9961,6 @@ pdj(23) =  &
     -k(202)*n(idx_O)  &
     -k(113)*n(idx_H2O)  &
     -k(106)*n(idx_OH)  &
-    -k(274)*n(idx_O)  &
     -k(115)*n(idx_H2O)  &
     -k(89)*n(idx_H2)  &
     -k(118)*n(idx_O2)
@@ -9972,8 +9980,8 @@ pdj(30) =  &
     +k(201)*n(idx_O)  &
     +k(107)*n(idx_OH)  &
     +k(202)*n(idx_O)  &
+    +k(276)*n(idx_O)  &
     +k(117)*n(idx_O2)  &
-    +k(274)*n(idx_O)  &
     +k(106)*n(idx_OH)  &
     +k(275)*n(idx_O)
 pdj(33) =  &
@@ -9990,7 +9998,7 @@ pdj(7) =  &
 pdj(8) =  &
     +k(99)*n(idx_C2)  &
     -k(277)*n(idx_C)  &
-    -k(276)*n(idx_C)
+    -k(278)*n(idx_C)
 pdj(9) =  &
     +k(39)*n(idx_E)  &
     +k(40)*n(idx_E)  &
@@ -10004,12 +10012,12 @@ pdj(24) =  &
     -k(43)*n(idx_H)  &
     -k(99)*n(idx_C2)  &
     -k(100)*n(idx_H2)  &
-    -k(276)*n(idx_C)  &
+    -k(278)*n(idx_C)  &
     -k(277)*n(idx_C)  &
     -k(40)*n(idx_E)
 pdj(30) =  &
-    +k(276)*n(idx_C)  &
     +k(99)*n(idx_C2)  &
+    +k(278)*n(idx_C)  &
     +k(277)*n(idx_C)
 pdj(32) =  &
     +k(100)*n(idx_H2)
@@ -10071,13 +10079,14 @@ pdj(1) =  &
     -k(162)*n(idx_E)  &
     -k(161)*n(idx_E)
 pdj(5) =  &
-    +k(233)  &
     +k(88)*n(idx_C)  &
     +k(103)*n(idx_O)  &
+    +k(234)  &
     +3.d0*k(162)*n(idx_E)  &
     -k(85)*n(idx_H)  &
     +k(161)*n(idx_E)
 pdj(7) =  &
+    +k(233)  &
     +k(87)*n(idx_C)  &
     +k(122)*n(idx_CO)  &
     +k(125)*n(idx_CO)  &
@@ -10089,8 +10098,7 @@ pdj(7) =  &
     +k(105)*n(idx_OH)  &
     +k(110)*n(idx_H2O)  &
     +k(161)*n(idx_E)  &
-    +k(85)*n(idx_H)  &
-    +k(232)
+    +k(85)*n(idx_H)
 pdj(8) =  &
     -k(88)*n(idx_C)  &
     -k(87)*n(idx_C)
@@ -10109,9 +10117,9 @@ pdj(16) =  &
     -k(111)*n(idx_H2O)  &
     -k(110)*n(idx_H2O)
 pdj(20) =  &
-    +k(232)
+    +k(233)
 pdj(22) =  &
-    +k(233)  &
+    +k(234)  &
     +k(85)*n(idx_H)
 pdj(25) =  &
     +k(125)*n(idx_CO)  &
@@ -10132,10 +10140,10 @@ pdj(27) =  &
     -k(161)*n(idx_E)  &
     -k(111)*n(idx_H2O)  &
     -k(162)*n(idx_E)  &
-    -k(232)  &
     -k(102)*n(idx_O)  &
     -k(104)*n(idx_OH)  &
     -k(105)*n(idx_OH)  &
+    -k(234)  &
     -k(85)*n(idx_H)
 pdj(28) =  &
     +k(87)*n(idx_C)
@@ -10162,19 +10170,19 @@ pdj(7) =  &
     -k(91)*n(idx_H2)  &
     +k(90)*n(idx_H)
 pdj(8) =  &
-    +k(235)  &
+    +k(236)  &
     +k(163)*n(idx_E)
 pdj(9) =  &
     -k(92)*n(idx_O)
 pdj(20) =  &
-    +k(235)
+    +k(236)
 pdj(23) =  &
     +k(90)*n(idx_H)
 pdj(28) =  &
     -k(91)*n(idx_H2)  &
     -k(92)*n(idx_O)  &
     -k(90)*n(idx_H)  &
-    -k(235)  &
+    -k(236)  &
     -k(163)*n(idx_E)
 pdj(29) =  &
     +k(91)*n(idx_H2)
@@ -10191,7 +10199,7 @@ pdj(5) =  &
     +2.d0*k(166)*n(idx_E)  &
     +k(164)*n(idx_E)  &
     +k(95)*n(idx_O)  &
-    +k(238)
+    +k(239)
 pdj(7) =  &
     +k(165)*n(idx_E)  &
     +k(93)*n(idx_H)  &
@@ -10212,15 +10220,15 @@ pdj(26) =  &
     +k(95)*n(idx_O)
 pdj(28) =  &
     +k(93)*n(idx_H)  &
-    +k(238)
+    +k(239)
 pdj(29) =  &
     -k(95)*n(idx_O)  &
     -k(164)*n(idx_E)  &
     -k(166)*n(idx_E)  &
     -k(93)*n(idx_H)  &
     -k(94)*n(idx_H2)  &
+    -k(239)  &
     -k(165)*n(idx_E)  &
-    -k(238)  &
     -k(119)*n(idx_O2)
 pdj(31) =  &
     +k(94)*n(idx_H2)
@@ -10246,13 +10254,13 @@ pdj(1) =  &
     -k(168)*n(idx_E)  &
     -k(169)*n(idx_E)
 pdj(5) =  &
+    +k(240)  &
     -k(96)*n(idx_H)  &
     +2.d0*k(169)*n(idx_E)  &
-    +k(239)  &
     +k(167)*n(idx_E)
 pdj(7) =  &
+    +k(241)  &
     +k(96)*n(idx_H)  &
-    +k(240)  &
     +k(168)*n(idx_E)  &
     +k(97)*n(idx_O)  &
     +k(98)*n(idx_O)
@@ -10269,15 +10277,15 @@ pdj(25) =  &
 pdj(26) =  &
     +k(98)*n(idx_O)
 pdj(28) =  &
-    +k(240)
+    +k(241)
 pdj(29) =  &
     +k(96)*n(idx_H)  &
-    +k(239)
+    +k(240)
 pdj(31) =  &
     -k(97)*n(idx_O)  &
     -k(169)*n(idx_E)  &
+    -k(241)  &
     -k(167)*n(idx_E)  &
-    -k(239)  &
     -k(98)*n(idx_O)  &
     -k(240)  &
     -k(96)*n(idx_H)  &
@@ -10291,14 +10299,14 @@ pdj(5) =  &
 pdj(7) =  &
     -k(108)*n(idx_H2)
 pdj(9) =  &
-    +k(242)  &
+    +k(243)  &
     +k(170)*n(idx_E)
 pdj(20) =  &
-    +k(242)
+    +k(243)
 pdj(32) =  &
     -k(170)*n(idx_E)  &
     -k(108)*n(idx_H2)  &
-    -k(242)
+    -k(243)
 pdj(33) =  &
     +k(108)*n(idx_H2)
 elseif(j==33) then
@@ -10309,27 +10317,27 @@ pdj(1) =  &
 pdj(5) =  &
     +2.d0*k(173)*n(idx_E)  &
     +k(172)*n(idx_E)  &
-    +k(246)  &
-    +k(109)*n(idx_H2)
+    +k(109)*n(idx_H2)  &
+    +k(247)
 pdj(7) =  &
+    +k(246)  &
     -k(109)*n(idx_H2)  &
-    +k(245)  &
     +k(171)*n(idx_E)
 pdj(9) =  &
     +k(173)*n(idx_E)  &
-    +k(243)  &
+    +k(244)  &
     +k(171)*n(idx_E)
 pdj(10) =  &
     +k(172)*n(idx_E)  &
-    +k(244)
-pdj(20) =  &
-    +k(244)
-pdj(22) =  &
-    +k(243)
-pdj(24) =  &
     +k(245)
-pdj(32) =  &
+pdj(20) =  &
+    +k(245)
+pdj(22) =  &
+    +k(244)
+pdj(24) =  &
     +k(246)
+pdj(32) =  &
+    +k(247)
 pdj(33) =  &
     -k(109)*n(idx_H2)  &
     -k(173)*n(idx_E)  &
@@ -10337,8 +10345,8 @@ pdj(33) =  &
     -k(245)  &
     -k(244)  &
     -k(172)*n(idx_E)  &
-    -k(246)  &
-    -k(243)
+    -k(247)  &
+    -k(246)
 pdj(34) =  &
     +k(109)*n(idx_H2)
 elseif(j==34) then
@@ -10348,44 +10356,44 @@ pdj(1) =  &
     -k(175)*n(idx_E)  &
     -k(174)*n(idx_E)
 pdj(5) =  &
-    +k(249)  &
+    +k(250)  &
     +k(175)*n(idx_E)  &
     +2.d0*k(174)*n(idx_E)  &
     +k(176)*n(idx_E)
 pdj(7) =  &
     +k(116)*n(idx_C)  &
     +k(175)*n(idx_E)  &
-    +k(250)  &
-    +k(177)*n(idx_E)
+    +k(177)*n(idx_E)  &
+    +k(251)
 pdj(8) =  &
     -k(116)*n(idx_C)
 pdj(9) =  &
     +k(175)*n(idx_E)
 pdj(10) =  &
-    +k(248)  &
+    +k(249)  &
     +k(174)*n(idx_E)  &
     +k(177)*n(idx_E)
 pdj(16) =  &
-    +k(176)*n(idx_E)  &
-    +k(247)
+    +k(248)  &
+    +k(176)*n(idx_E)
 pdj(20) =  &
-    +k(247)
-pdj(22) =  &
     +k(248)
+pdj(22) =  &
+    +k(249)
 pdj(26) =  &
     +k(116)*n(idx_C)
 pdj(32) =  &
-    +k(250)
+    +k(251)
 pdj(33) =  &
-    +k(249)
+    +k(250)
 pdj(34) =  &
     -k(248)  &
-    -k(250)  &
     -k(116)*n(idx_C)  &
     -k(177)*n(idx_E)  &
     -k(175)*n(idx_E)  &
     -k(174)*n(idx_E)  &
-    -k(247)  &
+    -k(250)  &
+    -k(251)  &
     -k(176)*n(idx_E)  &
     -k(249)
 elseif(j==35) then
@@ -10700,6 +10708,7 @@ pd(36,1) =  &
 !d[E_dot]/d[H-]
 pd(1,2) =  &
     +k(184)*n(idx_O)  &
+    +k(219)  &
     +k(183)*n(idx_C)  &
     -k(24)*n(idx_E)  &
     +k(26)*n(idx_H)  &
@@ -10707,16 +10716,15 @@ pd(1,2) =  &
     +k(28)*n(idx_Hj)  &
     +k(17)*n(idx_H)  &
     +k(25)*n(idx_H)  &
-    +2.d0*k(24)*n(idx_E)  &
-    +k(218)
+    +2.d0*k(24)*n(idx_E)
 
 !d[H-_dot]/d[H-]
 pd(2,2) =  &
-    -k(218)  &
     -k(24)*n(idx_E)  &
     -k(31)*n(idx_H2j)  &
     -k(28)*n(idx_Hj)  &
     -k(185)*n(idx_OH)  &
+    -k(219)  &
     -k(27)*n(idx_Hj)  &
     -k(17)*n(idx_H)  &
     -k(184)*n(idx_O)  &
@@ -10727,6 +10735,7 @@ pd(2,2) =  &
 
 !d[H_dot]/d[H-]
 pd(5,2) =  &
+    +k(219)  &
     +k(31)*n(idx_H2j)  &
     +2.d0*k(26)*n(idx_H)  &
     +2.d0*k(27)*n(idx_Hj)  &
@@ -10735,8 +10744,7 @@ pd(5,2) =  &
     -k(17)*n(idx_H)  &
     +k(24)*n(idx_E)  &
     +k(160)*n(idx_HEj)  &
-    -k(25)*n(idx_H)  &
-    +k(218)
+    -k(25)*n(idx_H)
 
 !d[HE_dot]/d[H-]
 pd(6,2) =  &
@@ -10784,7 +10792,7 @@ pd(22,2) =  &
 
 !d[E_dot]/d[C-]
 pd(1,3) =  &
-    +k(234)  &
+    +k(235)  &
     +k(187)*n(idx_H2)  &
     +k(188)*n(idx_O)  &
     +k(186)*n(idx_H)
@@ -10792,7 +10800,7 @@ pd(1,3) =  &
 !d[C-_dot]/d[C-]
 pd(3,3) =  &
     -k(158)*n(idx_Hj)  &
-    -k(234)  &
+    -k(235)  &
     -k(187)*n(idx_H2)  &
     -k(188)*n(idx_O)  &
     -k(186)*n(idx_H)
@@ -10808,7 +10816,7 @@ pd(7,3) =  &
 
 !d[C_dot]/d[C-]
 pd(8,3) =  &
-    +k(234)  &
+    +k(235)  &
     +k(158)*n(idx_Hj)
 
 !d[O_dot]/d[C-]
@@ -10833,7 +10841,7 @@ pd(20,3) =  &
 
 !d[E_dot]/d[O-]
 pd(1,4) =  &
-    +k(241)  &
+    +k(242)  &
     +k(189)*n(idx_H)  &
     +k(191)*n(idx_C)  &
     +k(190)*n(idx_H2)
@@ -10842,8 +10850,8 @@ pd(1,4) =  &
 pd(4,4) =  &
     -k(191)*n(idx_C)  &
     -k(159)*n(idx_Hj)  &
-    -k(241)  &
     -k(189)*n(idx_H)  &
+    -k(242)  &
     -k(190)*n(idx_H2)
 
 !d[H_dot]/d[O-]
@@ -10861,7 +10869,7 @@ pd(8,4) =  &
 
 !d[O_dot]/d[O-]
 pd(9,4) =  &
-    +k(241)  &
+    +k(242)  &
     +k(159)*n(idx_Hj)
 
 !d[OH_dot]/d[O-]
@@ -10888,9 +10896,9 @@ pd(1,5) =  &
     -k(1)*n(idx_E)  &
     +k(25)*n(idx_Hk)  &
     +2.d0*k(1)*n(idx_E)  &
-    +k(251)  &
     -k(16)*n(idx_E)  &
-    +k(212)  &
+    +k(252)  &
+    +k(213)  &
     +k(17)*n(idx_Hk)
 
 !d[H-_dot]/d[H]
@@ -10917,21 +10925,19 @@ pd(5,5) =  &
     -k(26)*n(idx_Hk)  &
     -k(17)*n(idx_Hk)  &
     -4.d0*k(35)*n(idx_H2)*n(idx_H)  &
-    -k(212)  &
     -k(189)*n(idx_Ok)  &
     -k(195)*n(idx_C)  &
     -k(25)*n(idx_Hk)  &
     -k(83)*n(idx_CO)  &
-    -k(278)*n(idx_O)  &
+    -k(213)  &
+    -k(280)*n(idx_OH)  &
     -k(79)*n(idx_O2)  &
     -k(18)*n(idx_Hj)  &
-    -k(251)  &
     -k(8)*n(idx_HEj)  &
     -k(206)*n(idx_OH)  &
     -k(90)*n(idx_CHj)  &
     -9.d0*k(34)*n(idx_H)*n(idx_H)  &
     +3.d0*k(34)*n(idx_H)*n(idx_H)  &
-    -k(279)*n(idx_OH)  &
     -k(78)*n(idx_H2O)  &
     -k(51)*n(idx_OH)  &
     -k(96)*n(idx_CH3j)  &
@@ -10941,7 +10947,10 @@ pd(5,5) =  &
     -k(47)*n(idx_Cj)  &
     -k(93)*n(idx_CH2j)  &
     -k(19)*n(idx_Hj)  &
+    -k(279)*n(idx_O)  &
+    -k(252)  &
     -k(62)*n(idx_CH2)  &
+    -4.d0*k(207)*n(idx_H)  &
     -k(71)*n(idx_OH)  &
     +2.d0*k(25)*n(idx_Hk)  &
     +3.d0*k(23)*n(idx_H2)  &
@@ -10965,6 +10974,7 @@ pd(7,5) =  &
     +4.d0*k(35)*n(idx_H2)*n(idx_H)  &
     +k(96)*n(idx_CH3j)  &
     +k(93)*n(idx_CH2j)  &
+    +2.d0*k(207)*n(idx_H)  &
     +k(78)*n(idx_H2O)  &
     +2.d0*k(33)*n(idx_H)*n(idx_HE)  &
     +k(70)*n(idx_OH)  &
@@ -10989,16 +10999,18 @@ pd(8,5) =  &
 !d[O_dot]/d[H]
 pd(9,5) =  &
     +k(43)*n(idx_Oj)  &
-    -k(278)*n(idx_O)  &
     +k(70)*n(idx_OH)  &
     +k(71)*n(idx_OH)  &
     -k(204)*n(idx_O)  &
     +k(79)*n(idx_O2)  &
+    -k(279)*n(idx_O)  &
     +k(51)*n(idx_OH)
 
 !d[OH_dot]/d[H]
 pd(10,5) =  &
     -k(51)*n(idx_OH)  &
+    +k(279)*n(idx_O)  &
+    -k(280)*n(idx_OH)  &
     +k(78)*n(idx_H2O)  &
     -k(70)*n(idx_OH)  &
     -k(71)*n(idx_OH)  &
@@ -11006,9 +11018,7 @@ pd(10,5) =  &
     +k(189)*n(idx_Ok)  &
     -k(206)*n(idx_OH)  &
     +k(204)*n(idx_O)  &
-    +k(79)*n(idx_O2)  &
-    -k(279)*n(idx_OH)  &
-    +k(278)*n(idx_O)
+    +k(79)*n(idx_O2)
 
 !d[CO_dot]/d[H]
 pd(11,5) =  &
@@ -11028,9 +11038,9 @@ pd(13,5) =  &
 
 !d[H2O_dot]/d[H]
 pd(16,5) =  &
+    +k(280)*n(idx_OH)  &
     +k(206)*n(idx_OH)  &
-    -k(78)*n(idx_H2O)  &
-    +k(279)*n(idx_OH)
+    -k(78)*n(idx_H2O)
 
 !d[O2_dot]/d[H]
 pd(17,5) =  &
@@ -11043,11 +11053,11 @@ pd(20,5) =  &
     -k(18)*n(idx_Hj)  &
     +k(20)*n(idx_H2j)  &
     +k(1)*n(idx_E)  &
-    +k(212)  &
-    +k(251)  &
     -k(19)*n(idx_Hj)  &
+    +k(252)  &
     +k(8)*n(idx_HEj)  &
-    +k(47)*n(idx_Cj)
+    +k(47)*n(idx_Cj)  &
+    +k(213)
 
 !d[HE+_dot]/d[H]
 pd(21,5) =  &
@@ -11095,9 +11105,9 @@ pd(31,5) =  &
 
 !d[E_dot]/d[HE]
 pd(1,6) =  &
-    +k(252)  &
+    +k(253)  &
+    +k(214)  &
     +2.d0*k(4)*n(idx_E)  &
-    +k(213)  &
     -k(4)*n(idx_E)
 
 !d[H_dot]/d[HE]
@@ -11114,10 +11124,10 @@ pd(6,6) =  &
     -k(11)*n(idx_H2)  &
     -k(33)*n(idx_H)*n(idx_H)  &
     -k(9)*n(idx_Hj)  &
-    -k(252)  &
+    -k(253)  &
     -k(4)*n(idx_E)  &
-    -k(213)  &
-    +k(11)*n(idx_H2)
+    +k(11)*n(idx_H2)  &
+    -k(214)
 
 !d[H2_dot]/d[HE]
 pd(7,6) =  &
@@ -11133,24 +11143,24 @@ pd(20,6) =  &
 pd(21,6) =  &
     +k(9)*n(idx_Hj)  &
     +k(10)*n(idx_Hj)  &
-    +k(4)*n(idx_E)  &
-    +k(213)  &
-    +k(252)
+    +k(253)  &
+    +k(214)  &
+    +k(4)*n(idx_E)
 
 !d[E_dot]/d[H2]
 pd(1,7) =  &
-    +k(259)  &
+    +k(270)  &
+    +k(260)  &
     -k(22)*n(idx_E)  &
     +k(190)*n(idx_Ok)  &
-    +k(217)  &
-    +k(228)  &
+    +k(229)  &
     +k(22)*n(idx_E)  &
-    +k(269)  &
-    +k(187)*n(idx_Ck)
+    +k(187)*n(idx_Ck)  &
+    +k(218)
 
 !d[H-_dot]/d[H2]
 pd(2,7) =  &
-    +k(258)
+    +k(259)
 
 !d[C-_dot]/d[H2]
 pd(3,7) =  &
@@ -11169,21 +11179,21 @@ pd(5,7) =  &
     -2.d0*k(35)*n(idx_H)*n(idx_H)  &
     +2.d0*k(22)*n(idx_E)  &
     +k(100)*n(idx_Oj)  &
-    +2.d0*k(230)  &
+    +2.d0*k(258)  &
     +k(108)*n(idx_OHj)  &
     +k(84)*n(idx_H2j)  &
-    +k(228)  &
     +k(21)*n(idx_Hj)  &
     +k(89)*n(idx_Cj)  &
     +k(13)*n(idx_HEj)  &
+    +k(270)  &
     +2.d0*k(14)*n(idx_HEj)  &
     +2.d0*k(192)*n(idx_Hj)  &
     +k(69)*n(idx_O)  &
-    +k(269)  &
     +4.d0*k(32)*n(idx_H2)  &
-    +2.d0*k(257)  &
+    +2.d0*k(231)  &
     +3.d0*k(23)*n(idx_H)  &
     +k(55)*n(idx_C)  &
+    +k(229)  &
     +k(72)*n(idx_OH)  &
     +k(109)*n(idx_H2Oj)  &
     +k(91)*n(idx_CHj)
@@ -11202,8 +11212,10 @@ pd(7,7) =  &
     -k(57)*n(idx_CH)  &
     -k(55)*n(idx_C)  &
     -k(94)*n(idx_CH2j)  &
+    -k(260)  &
     -k(23)*n(idx_H)  &
     -k(84)*n(idx_H2j)  &
+    -k(270)  &
     -k(187)*n(idx_Ck)  &
     -k(35)*n(idx_H)*n(idx_H)  &
     +2.d0*k(35)*n(idx_H)*n(idx_H)  &
@@ -11211,28 +11223,26 @@ pd(7,7) =  &
     -k(196)*n(idx_C)  &
     -k(89)*n(idx_Cj)  &
     -k(200)*n(idx_Cj)  &
-    -k(230)  &
     -k(193)*n(idx_Hj)  &
+    -k(218)  &
     -k(22)*n(idx_E)  &
-    -k(228)  &
     -k(192)*n(idx_Hj)  &
-    -k(257)  &
     -k(11)*n(idx_HE)  &
     -k(14)*n(idx_HEj)  &
-    -k(217)  &
     -k(108)*n(idx_OHj)  &
     -k(80)*n(idx_O2)  &
     -k(12)*n(idx_HEj)  &
     -k(69)*n(idx_O)  &
-    -k(269)  &
     -k(109)*n(idx_H2Oj)  &
     -k(258)  &
     -k(21)*n(idx_Hj)  &
     +2.d0*k(32)*n(idx_H2)  &
     -k(72)*n(idx_OH)  &
+    -k(231)  &
     -k(91)*n(idx_CHj)  &
     -k(100)*n(idx_Oj)  &
     -4.d0*k(32)*n(idx_H2)  &
+    -k(229)  &
     +k(52)*n(idx_HOCj)  &
     -k(190)*n(idx_Ok)
 
@@ -11273,11 +11283,11 @@ pd(17,7) =  &
 
 !d[H+_dot]/d[H2]
 pd(20,7) =  &
-    +k(258)  &
+    +k(270)  &
     -k(193)*n(idx_Hj)  &
     -k(21)*n(idx_Hj)  &
-    +k(269)  &
-    +k(228)  &
+    +k(259)  &
+    +k(229)  &
     +k(192)*n(idx_Hj)  &
     -k(192)*n(idx_Hj)  &
     +k(13)*n(idx_HEj)
@@ -11291,10 +11301,10 @@ pd(21,7) =  &
 
 !d[H2+_dot]/d[H2]
 pd(22,7) =  &
+    +k(260)  &
     +k(21)*n(idx_Hj)  &
-    +k(217)  &
     -k(84)*n(idx_H2j)  &
-    +k(259)  &
+    +k(218)  &
     +k(12)*n(idx_HEj)
 
 !d[C+_dot]/d[H2]
@@ -11351,11 +11361,11 @@ pd(34,7) =  &
 !d[E_dot]/d[C]
 pd(1,8) =  &
     +k(183)*n(idx_Hk)  &
-    +k(216)  &
+    +k(261)  &
     +k(191)*n(idx_Ok)  &
     -k(194)*n(idx_E)  &
     +2.d0*k(41)*n(idx_E)  &
-    +k(260)  &
+    +k(217)  &
     -k(41)*n(idx_E)
 
 !d[H-_dot]/d[C]
@@ -11397,22 +11407,22 @@ pd(7,8) =  &
 !d[C_dot]/d[C]
 pd(8,8) =  &
     -k(87)*n(idx_H3j)  &
-    -k(216)  &
-    -k(260)  &
+    -k(278)*n(idx_Oj)  &
     -4.d0*k(197)*n(idx_C)  &
-    -4.d0*k(270)*n(idx_C)  &
+    -4.d0*k(272)*n(idx_C)  &
     -k(191)*n(idx_Ok)  &
+    -k(274)*n(idx_O)  &
     -k(194)*n(idx_E)  &
     -k(196)*n(idx_H2)  &
     -k(277)*n(idx_Oj)  &
     -k(273)*n(idx_O)  &
-    -k(272)*n(idx_O)  &
     -k(116)*n(idx_H3Oj)  &
+    -k(217)  &
     -k(49)*n(idx_HEj)  &
     -k(88)*n(idx_H3j)  &
+    -k(261)  &
     -k(58)*n(idx_CH)  &
     -k(46)*n(idx_Hj)  &
-    -k(276)*n(idx_Oj)  &
     -k(50)*n(idx_HEj)  &
     -k(73)*n(idx_OH)  &
     -k(120)*n(idx_O2j)  &
@@ -11433,11 +11443,11 @@ pd(8,8) =  &
 !d[O_dot]/d[C]
 pd(9,8) =  &
     +k(81)*n(idx_O2)  &
+    -k(274)*n(idx_O)  &
     +k(120)*n(idx_O2j)  &
     -k(198)*n(idx_O)  &
     +k(82)*n(idx_O2)  &
-    -k(273)*n(idx_O)  &
-    -k(272)*n(idx_O)
+    -k(273)*n(idx_O)
 
 !d[OH_dot]/d[C]
 pd(10,8) =  &
@@ -11452,7 +11462,7 @@ pd(11,8) =  &
     +k(191)*n(idx_Ok)  &
     +k(198)*n(idx_O)  &
     +k(126)*n(idx_HCOj)  &
-    +k(272)*n(idx_O)  &
+    +k(274)*n(idx_O)  &
     +k(82)*n(idx_O2)  &
     +k(273)*n(idx_O)
 
@@ -11470,7 +11480,7 @@ pd(13,8) =  &
 !d[C2_dot]/d[C]
 pd(14,8) =  &
     +k(58)*n(idx_CH)  &
-    +2.d0*k(270)*n(idx_C)  &
+    +2.d0*k(272)*n(idx_C)  &
     +2.d0*k(197)*n(idx_C)  &
     +2.d0*k(271)*n(idx_C)
 
@@ -11497,17 +11507,17 @@ pd(22,8) =  &
 !d[C+_dot]/d[C]
 pd(23,8) =  &
     +k(50)*n(idx_HEj)  &
-    +k(260)  &
     +k(121)*n(idx_O2j)  &
     +k(46)*n(idx_Hj)  &
-    +k(216)  &
+    +k(261)  &
     +k(48)*n(idx_HEj)  &
     +k(49)*n(idx_HEj)  &
-    +k(41)*n(idx_E)
+    +k(41)*n(idx_E)  &
+    +k(217)
 
 !d[O+_dot]/d[C]
 pd(24,8) =  &
-    -k(276)*n(idx_Oj)  &
+    -k(278)*n(idx_Oj)  &
     -k(277)*n(idx_Oj)
 
 !d[HCO+_dot]/d[C]
@@ -11533,8 +11543,8 @@ pd(29,8) =  &
 !d[CO+_dot]/d[C]
 pd(30,8) =  &
     +k(120)*n(idx_O2j)  &
-    +k(276)*n(idx_Oj)  &
-    +k(277)*n(idx_Oj)
+    +k(277)*n(idx_Oj)  &
+    +k(278)*n(idx_Oj)
 
 !d[H3O+_dot]/d[C]
 pd(34,8) =  &
@@ -11549,12 +11559,12 @@ pd(35,8) =  &
 pd(1,9) =  &
     -k(203)*n(idx_E)  &
     +k(60)*n(idx_CH)  &
-    +k(215)  &
     +2.d0*k(42)*n(idx_E)  &
+    +k(216)  &
     -k(42)*n(idx_E)  &
-    +k(253)  &
     +k(184)*n(idx_Hk)  &
-    +k(188)*n(idx_Ck)
+    +k(188)*n(idx_Ck)  &
+    +k(254)
 
 !d[H-_dot]/d[O]
 pd(2,9) =  &
@@ -11570,7 +11580,6 @@ pd(4,9) =  &
 
 !d[H_dot]/d[O]
 pd(5,9) =  &
-    -k(278)*n(idx_H)  &
     +2.d0*k(63)*n(idx_CH2)  &
     +k(44)*n(idx_Hj)  &
     +k(103)*n(idx_H3j)  &
@@ -11580,6 +11589,7 @@ pd(5,9) =  &
     +k(101)*n(idx_H2j)  &
     +k(76)*n(idx_OH)  &
     +k(69)*n(idx_H2)  &
+    -k(279)*n(idx_H)  &
     +k(75)*n(idx_OH)  &
     +k(59)*n(idx_CH)  &
     +k(65)*n(idx_CH2)
@@ -11598,38 +11608,37 @@ pd(7,9) =  &
 
 !d[C_dot]/d[O]
 pd(8,9) =  &
+    -k(274)*n(idx_C)  &
     -k(198)*n(idx_C)  &
     +k(67)*n(idx_C2)  &
     +k(68)*n(idx_C2)  &
     -k(273)*n(idx_C)  &
-    +k(61)*n(idx_CH)  &
-    -k(272)*n(idx_C)
+    +k(61)*n(idx_CH)
 
 !d[O_dot]/d[O]
 pd(9,9) =  &
+    -k(216)  &
     -k(203)*n(idx_E)  &
     -k(59)*n(idx_CH)  &
-    -k(274)*n(idx_Cj)  &
     -k(202)*n(idx_Cj)  &
-    -4.d0*k(280)*n(idx_O)  &
+    -k(279)*n(idx_H)  &
     -k(42)*n(idx_E)  &
-    -k(272)*n(idx_C)  &
     -k(198)*n(idx_C)  &
     -k(188)*n(idx_Ck)  &
     -k(45)*n(idx_HEj)  &
     -k(65)*n(idx_CH2)  &
+    -4.d0*k(281)*n(idx_O)  &
     -k(103)*n(idx_H3j)  &
     -k(184)*n(idx_Hk)  &
     -k(204)*n(idx_H)  &
     -k(201)*n(idx_Cj)  &
+    -k(276)*n(idx_Cj)  &
     -k(101)*n(idx_H2j)  &
     -k(92)*n(idx_CHj)  &
-    -k(278)*n(idx_H)  &
     -k(102)*n(idx_H3j)  &
     -k(273)*n(idx_C)  &
-    -k(253)  &
-    -k(215)  &
     -k(67)*n(idx_C2)  &
+    -k(274)*n(idx_C)  &
     -k(60)*n(idx_CH)  &
     -k(66)*n(idx_CH2)  &
     -k(61)*n(idx_CH)  &
@@ -11644,13 +11653,14 @@ pd(9,9) =  &
     -k(97)*n(idx_CH3j)  &
     -k(68)*n(idx_C2)  &
     -k(76)*n(idx_OH)  &
-    -k(64)*n(idx_CH2)
+    -k(64)*n(idx_CH2)  &
+    -k(254)
 
 !d[OH_dot]/d[O]
 pd(10,9) =  &
     +k(204)*n(idx_H)  &
     -k(75)*n(idx_OH)  &
-    +k(278)*n(idx_H)  &
+    +k(279)*n(idx_H)  &
     +k(66)*n(idx_CH2)  &
     -k(76)*n(idx_OH)  &
     +k(69)*n(idx_H2)  &
@@ -11659,9 +11669,9 @@ pd(10,9) =  &
 
 !d[CO_dot]/d[O]
 pd(11,9) =  &
+    +k(274)*n(idx_C)  &
     +k(63)*n(idx_CH2)  &
     +k(198)*n(idx_C)  &
-    +k(272)*n(idx_C)  &
     +k(68)*n(idx_C2)  &
     +k(67)*n(idx_C2)  &
     +k(273)*n(idx_C)  &
@@ -11696,8 +11706,8 @@ pd(15,9) =  &
 pd(17,9) =  &
     +k(76)*n(idx_OH)  &
     +k(75)*n(idx_OH)  &
-    +2.d0*k(205)*n(idx_O)  &
-    +2.d0*k(280)*n(idx_O)
+    +2.d0*k(281)*n(idx_O)  &
+    +2.d0*k(205)*n(idx_O)
 
 !d[H+_dot]/d[O]
 pd(20,9) =  &
@@ -11713,18 +11723,18 @@ pd(22,9) =  &
 
 !d[C+_dot]/d[O]
 pd(23,9) =  &
-    -k(274)*n(idx_Cj)  &
     -k(275)*n(idx_Cj)  &
     -k(202)*n(idx_Cj)  &
-    -k(201)*n(idx_Cj)
+    -k(201)*n(idx_Cj)  &
+    -k(276)*n(idx_Cj)
 
 !d[O+_dot]/d[O]
 pd(24,9) =  &
     +k(44)*n(idx_Hj)  &
-    +k(253)  &
+    +k(216)  &
     +k(45)*n(idx_HEj)  &
-    +k(215)  &
-    +k(42)*n(idx_E)
+    +k(42)*n(idx_E)  &
+    +k(254)
 
 !d[HOC+_dot]/d[O]
 pd(25,9) =  &
@@ -11752,9 +11762,9 @@ pd(29,9) =  &
 !d[CO+_dot]/d[O]
 pd(30,9) =  &
     +k(275)*n(idx_Cj)  &
+    +k(276)*n(idx_Cj)  &
     +k(202)*n(idx_Cj)  &
     +k(92)*n(idx_CHj)  &
-    +k(274)*n(idx_Cj)  &
     +k(201)*n(idx_Cj)
 
 !d[CH3+_dot]/d[O]
@@ -11773,7 +11783,7 @@ pd(33,9) =  &
 
 !d[E_dot]/d[OH]
 pd(1,10) =  &
-    +k(223)  &
+    +k(224)  &
     +k(185)*n(idx_Hk)
 
 !d[H-_dot]/d[OH]
@@ -11782,12 +11792,13 @@ pd(2,10) =  &
 
 !d[H_dot]/d[OH]
 pd(5,10) =  &
+    -k(280)*n(idx_H)  &
     +k(106)*n(idx_Cj)  &
     -k(70)*n(idx_H)  &
+    +k(223)  &
     +k(73)*n(idx_C)  &
     +k(141)*n(idx_Hj)  &
     +k(143)*n(idx_HEj)  &
-    +k(222)  &
     +k(75)*n(idx_O)  &
     +k(72)*n(idx_H2)  &
     -k(71)*n(idx_H)  &
@@ -11796,9 +11807,8 @@ pd(5,10) =  &
     +k(107)*n(idx_Cj)  &
     +k(76)*n(idx_O)  &
     -k(206)*n(idx_H)  &
-    -k(279)*n(idx_H)  &
     +k(140)*n(idx_Hj)  &
-    +k(264)  &
+    +k(265)  &
     +2.d0*k(51)*n(idx_H)  &
     +k(74)*n(idx_C)
 
@@ -11824,28 +11834,27 @@ pd(8,10) =  &
 pd(9,10) =  &
     -k(75)*n(idx_O)  &
     +2.d0*k(77)*n(idx_OH)  &
-    +k(222)  &
     +k(71)*n(idx_H)  &
+    +k(223)  &
     +k(70)*n(idx_H)  &
     -k(76)*n(idx_O)  &
-    +k(264)  &
+    +k(265)  &
     +k(51)*n(idx_H)
 
 !d[OH_dot]/d[OH]
 pd(10,10) =  &
+    -k(280)*n(idx_H)  &
     -k(143)*n(idx_HEj)  &
-    -k(279)*n(idx_H)  &
     -k(51)*n(idx_H)  &
     -4.d0*k(77)*n(idx_OH)  &
     -k(206)*n(idx_H)  &
     -k(140)*n(idx_Hj)  &
     -k(142)*n(idx_HEj)  &
+    -k(224)  &
     -k(71)*n(idx_H)  &
     -k(70)*n(idx_H)  &
     -k(141)*n(idx_Hj)  &
-    -k(222)  &
     -k(185)*n(idx_Hk)  &
-    -k(264)  &
     -k(76)*n(idx_O)  &
     -k(75)*n(idx_O)  &
     -k(104)*n(idx_H3j)  &
@@ -11853,6 +11862,7 @@ pd(10,10) =  &
     -k(223)  &
     -k(107)*n(idx_Cj)  &
     -k(106)*n(idx_Cj)  &
+    -k(265)  &
     -k(72)*n(idx_H2)  &
     -k(105)*n(idx_H3j)  &
     -k(73)*n(idx_C)
@@ -11865,8 +11875,8 @@ pd(11,10) =  &
 !d[H2O_dot]/d[OH]
 pd(16,10) =  &
     +k(206)*n(idx_H)  &
-    +k(279)*n(idx_H)  &
     +2.d0*k(77)*n(idx_OH)  &
+    +k(280)*n(idx_H)  &
     +k(72)*n(idx_H2)  &
     +k(185)*n(idx_Hk)
 
@@ -11907,9 +11917,9 @@ pd(30,10) =  &
 
 !d[OH+_dot]/d[OH]
 pd(32,10) =  &
+    +k(224)  &
     +k(141)*n(idx_Hj)  &
-    +k(140)*n(idx_Hj)  &
-    +k(223)
+    +k(140)*n(idx_Hj)
 
 !d[H2O+_dot]/d[OH]
 pd(33,10) =  &
@@ -11918,7 +11928,7 @@ pd(33,10) =  &
 
 !d[E_dot]/d[CO]
 pd(1,11) =  &
-    +k(255)
+    +k(256)
 
 !d[H_dot]/d[CO]
 pd(5,11) =  &
@@ -11939,15 +11949,15 @@ pd(7,11) =  &
 !d[C_dot]/d[CO]
 pd(8,11) =  &
     +k(83)*n(idx_H)  &
-    +k(229)  &
+    +k(255)  &
     +k(156)*n(idx_HEj)  &
-    +k(254)
+    +k(230)
 
 !d[O_dot]/d[CO]
 pd(9,11) =  &
-    +k(229)  &
-    +k(155)*n(idx_HEj)  &
-    +k(254)
+    +k(255)  &
+    +k(230)  &
+    +k(155)*n(idx_HEj)
 
 !d[OH_dot]/d[CO]
 pd(10,11) =  &
@@ -11960,14 +11970,14 @@ pd(11,11) =  &
     -k(124)*n(idx_H3j)  &
     -k(54)*n(idx_HOCj)  &
     -k(83)*n(idx_H)  &
+    -k(230)  &
     -k(123)*n(idx_H3j)  &
     -k(156)*n(idx_HEj)  &
     +k(54)*n(idx_HOCj)  &
     -k(53)*n(idx_HOCj)  &
-    -k(229)  &
+    -k(256)  &
     +k(53)*n(idx_HOCj)  &
     -k(155)*n(idx_HEj)  &
-    -k(254)  &
     -k(255)
 
 !d[HE+_dot]/d[CO]
@@ -12006,17 +12016,17 @@ pd(27,11) =  &
 
 !d[CO+_dot]/d[CO]
 pd(30,11) =  &
-    +k(255)
+    +k(256)
 
 !d[E_dot]/d[CH]
 pd(1,12) =  &
-    +k(220)  &
+    +k(221)  &
     +k(60)*n(idx_O)
 
 !d[H_dot]/d[CH]
 pd(5,12) =  &
-    +k(219)  &
-    +k(261)  &
+    +k(220)  &
+    +k(262)  &
     -k(56)*n(idx_H)  &
     +k(130)*n(idx_Hj)  &
     +k(59)*n(idx_O)  &
@@ -12031,9 +12041,9 @@ pd(7,12) =  &
 
 !d[C_dot]/d[CH]
 pd(8,12) =  &
-    +k(219)  &
     +k(61)*n(idx_O)  &
-    +k(261)  &
+    +k(220)  &
+    +k(262)  &
     +k(56)*n(idx_H)  &
     -k(58)*n(idx_C)
 
@@ -12053,16 +12063,16 @@ pd(11,12) =  &
 
 !d[CH_dot]/d[CH]
 pd(12,12) =  &
-    -k(220)  &
     -k(129)*n(idx_Hj)  &
     -k(60)*n(idx_O)  &
-    -k(261)  &
+    -k(262)  &
     -k(130)*n(idx_Hj)  &
+    -k(221)  &
     -k(59)*n(idx_O)  &
     -k(61)*n(idx_O)  &
     -k(56)*n(idx_H)  &
     -k(57)*n(idx_H2)  &
-    -k(219)  &
+    -k(220)  &
     -k(58)*n(idx_C)
 
 !d[CH2_dot]/d[CH]
@@ -12085,13 +12095,13 @@ pd(26,12) =  &
 !d[CH+_dot]/d[CH]
 pd(28,12) =  &
     +k(130)*n(idx_Hj)  &
-    +k(220)  &
+    +k(221)  &
     +k(129)*n(idx_Hj)
 
 !d[E_dot]/d[CH2]
 pd(1,13) =  &
-    +k(265)  &
-    +k(237)
+    +k(266)  &
+    +k(238)
 
 !d[H_dot]/d[CH2]
 pd(5,13) =  &
@@ -12099,7 +12109,7 @@ pd(5,13) =  &
     +k(137)*n(idx_HEj)  &
     +k(138)*n(idx_HEj)  &
     -k(62)*n(idx_H)  &
-    +k(236)  &
+    +k(237)  &
     +k(65)*n(idx_O)  &
     +2.d0*k(63)*n(idx_O)  &
     +k(134)*n(idx_Hj)
@@ -12138,14 +12148,13 @@ pd(11,13) =  &
 
 !d[CH_dot]/d[CH2]
 pd(12,13) =  &
-    +k(236)  &
+    +k(237)  &
     +k(66)*n(idx_O)  &
     +k(62)*n(idx_H)
 
 !d[CH2_dot]/d[CH2]
 pd(13,13) =  &
     -k(66)*n(idx_O)  &
-    -k(236)  &
     -k(237)  &
     -k(137)*n(idx_HEj)  &
     -k(136)*n(idx_HEj)  &
@@ -12154,8 +12163,9 @@ pd(13,13) =  &
     -k(132)*n(idx_Hj)  &
     -k(62)*n(idx_H)  &
     -k(135)*n(idx_HEj)  &
+    -k(238)  &
+    -k(266)  &
     -k(65)*n(idx_O)  &
-    -k(265)  &
     -k(63)*n(idx_O)  &
     -k(133)*n(idx_Hj)  &
     -k(131)*n(idx_Hj)  &
@@ -12193,10 +12203,10 @@ pd(28,13) =  &
 
 !d[CH2+_dot]/d[CH2]
 pd(29,13) =  &
-    +k(237)  &
-    +k(265)  &
+    +k(266)  &
     +k(133)*n(idx_Hj)  &
-    +k(134)*n(idx_Hj)
+    +k(134)*n(idx_Hj)  &
+    +k(238)
 
 !d[HE_dot]/d[C2]
 pd(6,14) =  &
@@ -12204,9 +12214,9 @@ pd(6,14) =  &
 
 !d[C_dot]/d[C2]
 pd(8,14) =  &
-    +2.d0*k(256)  &
+    +2.d0*k(257)  &
     +k(139)*n(idx_HEj)  &
-    +2.d0*k(221)  &
+    +2.d0*k(222)  &
     +k(99)*n(idx_Oj)  &
     +k(67)*n(idx_O)  &
     +k(68)*n(idx_O)
@@ -12223,11 +12233,11 @@ pd(11,14) =  &
 
 !d[C2_dot]/d[C2]
 pd(14,14) =  &
+    -k(222)  &
     -k(68)*n(idx_O)  &
     -k(99)*n(idx_Oj)  &
     -k(67)*n(idx_O)  &
-    -k(221)  &
-    -k(256)  &
+    -k(257)  &
     -k(139)*n(idx_HEj)
 
 !d[HE+_dot]/d[C2]
@@ -12248,39 +12258,39 @@ pd(30,14) =  &
 
 !d[E_dot]/d[HCO]
 pd(1,15) =  &
-    +k(268)
+    +k(269)
 
 !d[H_dot]/d[HCO]
 pd(5,15) =  &
-    +k(267)
+    +k(268)
 
 !d[CO_dot]/d[HCO]
 pd(11,15) =  &
-    +k(267)
+    +k(268)
 
 !d[HCO_dot]/d[HCO]
 pd(15,15) =  &
-    -k(268)  &
-    -k(267)
+    -k(269)  &
+    -k(268)
 
 !d[HCO+_dot]/d[HCO]
 pd(26,15) =  &
-    +k(268)
+    +k(269)
 
 !d[E_dot]/d[H2O]
 pd(1,16) =  &
-    +k(225)
+    +k(226)
 
 !d[H_dot]/d[H2O]
 pd(5,16) =  &
     +k(148)*n(idx_HEj)  &
     +k(113)*n(idx_Cj)  &
-    +k(266)  &
     +k(149)*n(idx_HEj)  &
     +k(114)*n(idx_Cj)  &
     +k(145)*n(idx_Hj)  &
     +k(144)*n(idx_Hj)  &
-    +k(224)  &
+    +k(225)  &
+    +k(267)  &
     +k(112)*n(idx_Cj)  &
     -k(78)*n(idx_H)
 
@@ -12305,9 +12315,9 @@ pd(8,16) =  &
 
 !d[OH_dot]/d[H2O]
 pd(10,16) =  &
-    +k(224)  &
+    +k(267)  &
     +k(78)*n(idx_H)  &
-    +k(266)  &
+    +k(225)  &
     +k(146)*n(idx_HEj)  &
     +k(147)*n(idx_HEj)
 
@@ -12319,16 +12329,16 @@ pd(11,16) =  &
 !d[H2O_dot]/d[H2O]
 pd(16,16) =  &
     -k(151)*n(idx_HEj)  &
-    -k(224)  &
     -k(127)*n(idx_HCOj)  &
     -k(115)*n(idx_Cj)  &
     -k(225)  &
     -k(144)*n(idx_Hj)  &
     -k(110)*n(idx_H3j)  &
     -k(148)*n(idx_HEj)  &
+    -k(267)  &
     -k(112)*n(idx_Cj)  &
     -k(150)*n(idx_HEj)  &
-    -k(266)  &
+    -k(226)  &
     -k(128)*n(idx_HCOj)  &
     -k(145)*n(idx_Hj)  &
     -k(146)*n(idx_HEj)  &
@@ -12390,7 +12400,7 @@ pd(33,16) =  &
     +k(151)*n(idx_HEj)  &
     +k(145)*n(idx_Hj)  &
     +k(144)*n(idx_Hj)  &
-    +k(225)
+    +k(226)
 
 !d[H3O+_dot]/d[H2O]
 pd(34,16) =  &
@@ -12401,8 +12411,8 @@ pd(34,16) =  &
 
 !d[E_dot]/d[O2]
 pd(1,17) =  &
-    +k(263)  &
-    +k(226)
+    +k(264)  &
+    +k(227)
 
 !d[H_dot]/d[O2]
 pd(5,17) =  &
@@ -12426,12 +12436,12 @@ pd(8,17) =  &
 !d[O_dot]/d[O2]
 pd(9,17) =  &
     +k(79)*n(idx_H)  &
-    +2.d0*k(262)  &
+    +2.d0*k(263)  &
     +k(81)*n(idx_C)  &
+    +2.d0*k(228)  &
     +k(117)*n(idx_Cj)  &
     +k(154)*n(idx_HEj)  &
-    +k(82)*n(idx_C)  &
-    +2.d0*k(227)
+    +k(82)*n(idx_C)
 
 !d[OH_dot]/d[O2]
 pd(10,17) =  &
@@ -12449,7 +12459,7 @@ pd(11,17) =  &
 pd(17,17) =  &
     -k(118)*n(idx_Cj)  &
     -k(263)  &
-    -k(262)  &
+    -k(264)  &
     -k(82)*n(idx_C)  &
     -k(79)*n(idx_H)  &
     -k(153)*n(idx_HEj)  &
@@ -12457,9 +12467,9 @@ pd(17,17) =  &
     -k(152)*n(idx_Hj)  &
     -k(80)*n(idx_H2)  &
     -k(117)*n(idx_Cj)  &
+    -k(228)  &
     -k(119)*n(idx_CH2j)  &
     -k(227)  &
-    -k(226)  &
     -k(154)*n(idx_HEj)
 
 !d[H+_dot]/d[O2]
@@ -12497,8 +12507,8 @@ pd(30,17) =  &
 pd(35,17) =  &
     +k(153)*n(idx_HEj)  &
     +k(152)*n(idx_Hj)  &
-    +k(263)  &
-    +k(226)
+    +k(264)  &
+    +k(227)
 
 !d[E_dot]/d[H+]
 pd(1,20) =  &
@@ -12678,7 +12688,7 @@ pd(1,21) =  &
     -k(7)*n(idx_E)  &
     -k(6)*n(idx_E)  &
     +2.d0*k(7)*n(idx_E)  &
-    +k(214)  &
+    +k(215)  &
     -k(5)*n(idx_E)
 
 !d[H-_dot]/d[HE+]
@@ -12807,12 +12817,12 @@ pd(21,21) =  &
     -k(6)*n(idx_E)  &
     -k(49)*n(idx_C)  &
     -k(148)*n(idx_H2O)  &
-    -k(214)  &
     +k(14)*n(idx_H2)  &
     -k(142)*n(idx_OH)  &
     -k(150)*n(idx_H2O)  &
     -k(50)*n(idx_C)  &
     -k(147)*n(idx_H2O)  &
+    -k(215)  &
     -k(138)*n(idx_CH2)  &
     -k(154)*n(idx_O2)  &
     -k(45)*n(idx_O)  &
@@ -12872,7 +12882,7 @@ pd(35,21) =  &
 !d[HE++_dot]/d[HE+]
 pd(36,21) =  &
     +k(7)*n(idx_E)  &
-    +k(214)
+    +k(215)
 
 !d[E_dot]/d[H2+]
 pd(1,22) =  &
@@ -12888,11 +12898,11 @@ pd(5,22) =  &
     +2.d0*k(30)*n(idx_E)  &
     -k(20)*n(idx_H)  &
     +k(84)*n(idx_H2)  &
-    +k(231)  &
     +k(101)*n(idx_O)  &
     +k(31)*n(idx_Hk)  &
     +k(86)*n(idx_C)  &
-    +2.d0*k(29)*n(idx_E)
+    +2.d0*k(29)*n(idx_E)  &
+    +k(232)
 
 !d[H2_dot]/d[H2+]
 pd(7,22) =  &
@@ -12911,15 +12921,15 @@ pd(9,22) =  &
 !d[H+_dot]/d[H2+]
 pd(20,22) =  &
     +k(20)*n(idx_H)  &
-    +k(231)
+    +k(232)
 
 !d[H2+_dot]/d[H2+]
 pd(22,22) =  &
     -k(86)*n(idx_C)  &
     -k(20)*n(idx_H)  &
-    -k(231)  &
     -k(29)*n(idx_E)  &
     -k(30)*n(idx_E)  &
+    -k(232)  &
     -k(84)*n(idx_H2)  &
     -k(31)*n(idx_Hk)  &
     -k(101)*n(idx_O)
@@ -12970,8 +12980,8 @@ pd(8,23) =  &
 pd(9,23) =  &
     -k(201)*n(idx_O)  &
     +k(117)*n(idx_O2)  &
+    -k(276)*n(idx_O)  &
     -k(202)*n(idx_O)  &
-    -k(274)*n(idx_O)  &
     -k(275)*n(idx_O)
 
 !d[OH_dot]/d[C+]
@@ -13001,6 +13011,7 @@ pd(20,23) =  &
 
 !d[C+_dot]/d[C+]
 pd(23,23) =  &
+    -k(276)*n(idx_O)  &
     -k(200)*n(idx_H2)  &
     -k(38)*n(idx_E)  &
     -k(199)*n(idx_H)  &
@@ -13016,7 +13027,6 @@ pd(23,23) =  &
     -k(202)*n(idx_O)  &
     -k(113)*n(idx_H2O)  &
     -k(106)*n(idx_OH)  &
-    -k(274)*n(idx_O)  &
     -k(115)*n(idx_H2O)  &
     -k(89)*n(idx_H2)  &
     -k(118)*n(idx_O2)
@@ -13048,8 +13058,8 @@ pd(30,23) =  &
     +k(201)*n(idx_O)  &
     +k(107)*n(idx_OH)  &
     +k(202)*n(idx_O)  &
+    +k(276)*n(idx_O)  &
     +k(117)*n(idx_O2)  &
-    +k(274)*n(idx_O)  &
     +k(106)*n(idx_OH)  &
     +k(275)*n(idx_O)
 
@@ -13075,7 +13085,7 @@ pd(7,24) =  &
 pd(8,24) =  &
     +k(99)*n(idx_C2)  &
     -k(277)*n(idx_C)  &
-    -k(276)*n(idx_C)
+    -k(278)*n(idx_C)
 
 !d[O_dot]/d[O+]
 pd(9,24) =  &
@@ -13097,14 +13107,14 @@ pd(24,24) =  &
     -k(43)*n(idx_H)  &
     -k(99)*n(idx_C2)  &
     -k(100)*n(idx_H2)  &
-    -k(276)*n(idx_C)  &
+    -k(278)*n(idx_C)  &
     -k(277)*n(idx_C)  &
     -k(40)*n(idx_E)
 
 !d[CO+_dot]/d[O+]
 pd(30,24) =  &
-    +k(276)*n(idx_C)  &
     +k(99)*n(idx_C2)  &
+    +k(278)*n(idx_C)  &
     +k(277)*n(idx_C)
 
 !d[OH+_dot]/d[O+]
@@ -13199,15 +13209,16 @@ pd(1,27) =  &
 
 !d[H_dot]/d[H3+]
 pd(5,27) =  &
-    +k(233)  &
     +k(88)*n(idx_C)  &
     +k(103)*n(idx_O)  &
+    +k(234)  &
     +3.d0*k(162)*n(idx_E)  &
     -k(85)*n(idx_H)  &
     +k(161)*n(idx_E)
 
 !d[H2_dot]/d[H3+]
 pd(7,27) =  &
+    +k(233)  &
     +k(87)*n(idx_C)  &
     +k(122)*n(idx_CO)  &
     +k(125)*n(idx_CO)  &
@@ -13219,8 +13230,7 @@ pd(7,27) =  &
     +k(105)*n(idx_OH)  &
     +k(110)*n(idx_H2O)  &
     +k(161)*n(idx_E)  &
-    +k(85)*n(idx_H)  &
-    +k(232)
+    +k(85)*n(idx_H)
 
 !d[C_dot]/d[H3+]
 pd(8,27) =  &
@@ -13251,11 +13261,11 @@ pd(16,27) =  &
 
 !d[H+_dot]/d[H3+]
 pd(20,27) =  &
-    +k(232)
+    +k(233)
 
 !d[H2+_dot]/d[H3+]
 pd(22,27) =  &
-    +k(233)  &
+    +k(234)  &
     +k(85)*n(idx_H)
 
 !d[HOC+_dot]/d[H3+]
@@ -13282,10 +13292,10 @@ pd(27,27) =  &
     -k(161)*n(idx_E)  &
     -k(111)*n(idx_H2O)  &
     -k(162)*n(idx_E)  &
-    -k(232)  &
     -k(102)*n(idx_O)  &
     -k(104)*n(idx_OH)  &
     -k(105)*n(idx_OH)  &
+    -k(234)  &
     -k(85)*n(idx_H)
 
 !d[CH+_dot]/d[H3+]
@@ -13329,7 +13339,7 @@ pd(7,28) =  &
 
 !d[C_dot]/d[CH+]
 pd(8,28) =  &
-    +k(235)  &
+    +k(236)  &
     +k(163)*n(idx_E)
 
 !d[O_dot]/d[CH+]
@@ -13338,7 +13348,7 @@ pd(9,28) =  &
 
 !d[H+_dot]/d[CH+]
 pd(20,28) =  &
-    +k(235)
+    +k(236)
 
 !d[C+_dot]/d[CH+]
 pd(23,28) =  &
@@ -13349,7 +13359,7 @@ pd(28,28) =  &
     -k(91)*n(idx_H2)  &
     -k(92)*n(idx_O)  &
     -k(90)*n(idx_H)  &
-    -k(235)  &
+    -k(236)  &
     -k(163)*n(idx_E)
 
 !d[CH2+_dot]/d[CH+]
@@ -13373,7 +13383,7 @@ pd(5,29) =  &
     +2.d0*k(166)*n(idx_E)  &
     +k(164)*n(idx_E)  &
     +k(95)*n(idx_O)  &
-    +k(238)
+    +k(239)
 
 !d[H2_dot]/d[CH2+]
 pd(7,29) =  &
@@ -13410,7 +13420,7 @@ pd(26,29) =  &
 !d[CH+_dot]/d[CH2+]
 pd(28,29) =  &
     +k(93)*n(idx_H)  &
-    +k(238)
+    +k(239)
 
 !d[CH2+_dot]/d[CH2+]
 pd(29,29) =  &
@@ -13419,8 +13429,8 @@ pd(29,29) =  &
     -k(166)*n(idx_E)  &
     -k(93)*n(idx_H)  &
     -k(94)*n(idx_H2)  &
+    -k(239)  &
     -k(165)*n(idx_E)  &
-    -k(238)  &
     -k(119)*n(idx_O2)
 
 !d[CH3+_dot]/d[CH2+]
@@ -13464,15 +13474,15 @@ pd(1,31) =  &
 
 !d[H_dot]/d[CH3+]
 pd(5,31) =  &
+    +k(240)  &
     -k(96)*n(idx_H)  &
     +2.d0*k(169)*n(idx_E)  &
-    +k(239)  &
     +k(167)*n(idx_E)
 
 !d[H2_dot]/d[CH3+]
 pd(7,31) =  &
+    +k(241)  &
     +k(96)*n(idx_H)  &
-    +k(240)  &
     +k(168)*n(idx_E)  &
     +k(97)*n(idx_O)  &
     +k(98)*n(idx_O)
@@ -13501,19 +13511,19 @@ pd(26,31) =  &
 
 !d[CH+_dot]/d[CH3+]
 pd(28,31) =  &
-    +k(240)
+    +k(241)
 
 !d[CH2+_dot]/d[CH3+]
 pd(29,31) =  &
     +k(96)*n(idx_H)  &
-    +k(239)
+    +k(240)
 
 !d[CH3+_dot]/d[CH3+]
 pd(31,31) =  &
     -k(97)*n(idx_O)  &
     -k(169)*n(idx_E)  &
+    -k(241)  &
     -k(167)*n(idx_E)  &
-    -k(239)  &
     -k(98)*n(idx_O)  &
     -k(240)  &
     -k(96)*n(idx_H)  &
@@ -13534,18 +13544,18 @@ pd(7,32) =  &
 
 !d[O_dot]/d[OH+]
 pd(9,32) =  &
-    +k(242)  &
+    +k(243)  &
     +k(170)*n(idx_E)
 
 !d[H+_dot]/d[OH+]
 pd(20,32) =  &
-    +k(242)
+    +k(243)
 
 !d[OH+_dot]/d[OH+]
 pd(32,32) =  &
     -k(170)*n(idx_E)  &
     -k(108)*n(idx_H2)  &
-    -k(242)
+    -k(243)
 
 !d[H2O+_dot]/d[OH+]
 pd(33,32) =  &
@@ -13561,41 +13571,41 @@ pd(1,33) =  &
 pd(5,33) =  &
     +2.d0*k(173)*n(idx_E)  &
     +k(172)*n(idx_E)  &
-    +k(246)  &
-    +k(109)*n(idx_H2)
+    +k(109)*n(idx_H2)  &
+    +k(247)
 
 !d[H2_dot]/d[H2O+]
 pd(7,33) =  &
+    +k(246)  &
     -k(109)*n(idx_H2)  &
-    +k(245)  &
     +k(171)*n(idx_E)
 
 !d[O_dot]/d[H2O+]
 pd(9,33) =  &
     +k(173)*n(idx_E)  &
-    +k(243)  &
+    +k(244)  &
     +k(171)*n(idx_E)
 
 !d[OH_dot]/d[H2O+]
 pd(10,33) =  &
     +k(172)*n(idx_E)  &
-    +k(244)
+    +k(245)
 
 !d[H+_dot]/d[H2O+]
 pd(20,33) =  &
-    +k(244)
+    +k(245)
 
 !d[H2+_dot]/d[H2O+]
 pd(22,33) =  &
-    +k(243)
+    +k(244)
 
 !d[O+_dot]/d[H2O+]
 pd(24,33) =  &
-    +k(245)
+    +k(246)
 
 !d[OH+_dot]/d[H2O+]
 pd(32,33) =  &
-    +k(246)
+    +k(247)
 
 !d[H2O+_dot]/d[H2O+]
 pd(33,33) =  &
@@ -13605,8 +13615,8 @@ pd(33,33) =  &
     -k(245)  &
     -k(244)  &
     -k(172)*n(idx_E)  &
-    -k(246)  &
-    -k(243)
+    -k(247)  &
+    -k(246)
 
 !d[H3O+_dot]/d[H2O+]
 pd(34,33) =  &
@@ -13621,7 +13631,7 @@ pd(1,34) =  &
 
 !d[H_dot]/d[H3O+]
 pd(5,34) =  &
-    +k(249)  &
+    +k(250)  &
     +k(175)*n(idx_E)  &
     +2.d0*k(174)*n(idx_E)  &
     +k(176)*n(idx_E)
@@ -13630,8 +13640,8 @@ pd(5,34) =  &
 pd(7,34) =  &
     +k(116)*n(idx_C)  &
     +k(175)*n(idx_E)  &
-    +k(250)  &
-    +k(177)*n(idx_E)
+    +k(177)*n(idx_E)  &
+    +k(251)
 
 !d[C_dot]/d[H3O+]
 pd(8,34) =  &
@@ -13643,22 +13653,22 @@ pd(9,34) =  &
 
 !d[OH_dot]/d[H3O+]
 pd(10,34) =  &
-    +k(248)  &
+    +k(249)  &
     +k(174)*n(idx_E)  &
     +k(177)*n(idx_E)
 
 !d[H2O_dot]/d[H3O+]
 pd(16,34) =  &
-    +k(176)*n(idx_E)  &
-    +k(247)
+    +k(248)  &
+    +k(176)*n(idx_E)
 
 !d[H+_dot]/d[H3O+]
 pd(20,34) =  &
-    +k(247)
+    +k(248)
 
 !d[H2+_dot]/d[H3O+]
 pd(22,34) =  &
-    +k(248)
+    +k(249)
 
 !d[HCO+_dot]/d[H3O+]
 pd(26,34) =  &
@@ -13666,21 +13676,21 @@ pd(26,34) =  &
 
 !d[OH+_dot]/d[H3O+]
 pd(32,34) =  &
-    +k(250)
+    +k(251)
 
 !d[H2O+_dot]/d[H3O+]
 pd(33,34) =  &
-    +k(249)
+    +k(250)
 
 !d[H3O+_dot]/d[H3O+]
 pd(34,34) =  &
     -k(248)  &
-    -k(250)  &
     -k(116)*n(idx_C)  &
     -k(177)*n(idx_E)  &
     -k(175)*n(idx_E)  &
     -k(174)*n(idx_E)  &
-    -k(247)  &
+    -k(250)  &
+    -k(251)  &
     -k(176)*n(idx_E)  &
     -k(249)
 
@@ -13738,7 +13748,7 @@ implicit none
 
 ! *************************************************************
 !  This file has been generated with:
-!  KROME 14.08.dev on 2018-08-24 14:18:11
+!  KROME 14.08.dev on 2018-08-27 13:38:19
 !  Changeset be164d7
 !  see http://kromepackage.org
 !
@@ -13835,7 +13845,7 @@ integer,parameter::krome_idx_heat_custom = 10
 integer,parameter::krome_idx_heat_zcie = 11
 integer,parameter::krome_nheats = 11
 
-integer,parameter::krome_nrea=280
+integer,parameter::krome_nrea=281
 integer,parameter::krome_nmols=36
 integer,parameter::krome_nspec=40
 integer,parameter::krome_natoms=5
@@ -16118,7 +16128,7 @@ contains
 
 ! *************************************************************
 !  This file has been generated with:
-!  KROME 14.08.dev on 2018-08-24 14:18:11
+!  KROME 14.08.dev on 2018-08-27 13:38:19
 !  Changeset be164d7
 !  see http://kromepackage.org
 !
@@ -16157,7 +16167,7 @@ integer,parameter::meth=2 !1=adam, 2=BDF
 integer::neq(1),itol,itask,istate,iopt,lrw,liw,mf
 integer::iwork(562)
 real*8::atol(nspec),rtol(nspec)
-real*8::rwork(3960)
+real*8::rwork(3957)
 logical::got_error,equil
 
 !****************************
@@ -16280,7 +16290,7 @@ real*8::tloc,n(nspec),mass(nspec),ni(nspec)
 real*8::dt,xin
 integer::iwork(562)
 real*8::atol(nspec),rtol(nspec)
-real*8::rwork(3960)
+real*8::rwork(3957)
 real*8::ertol,eatol,max_time,t_tot,ntot_tol,err_species
 logical::converged
 

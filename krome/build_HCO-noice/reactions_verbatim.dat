@@ -204,6 +204,7 @@ O + E -> O-
 O + H -> OH
 O + O -> O2
 OH + H -> H2O
+H + H -> H2
 H -> H+ + E
 HE -> HE+ + E
 HE+ -> HE++ + E

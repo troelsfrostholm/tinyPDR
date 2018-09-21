@@ -204,6 +204,7 @@ O + E -> O-
 O + H -> OH
 O + O -> O2
 OH + H -> H2O
+H + H -> H2
 CO -> CO_ice
 CO_ice -> CO
 H2O -> H2O_ice
