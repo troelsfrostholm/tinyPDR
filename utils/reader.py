@@ -17,7 +17,7 @@ class Run:
 
   def getMolecules(self, itime=None):
     mols = self.data[:,:,self.offset_mol:self.offset_mol+self.nmols]
-    if itime:
+    if not itime==None:
       return mols[itime,:,:]
     return mols
 
@@ -29,31 +29,31 @@ class Run:
 
   def getTime(self, itime=None):
     time = self.data[:,:,0]
-    if itime:
+    if not itime==None:
       return time[itime,:]
     return time
 
   def getR(self, itime=None):
     r = self.data[:,:,1]
-    if itime:
+    if not itime==None:
       return r[itime,:]
     return r
 
   def getAv(self, itime=None):
     Av = self.data[:,:,2]
-    if itime:
+    if not itime==None:
       return Av[itime,:]
     return Av
 
   def getTgas(self, itime=None):
     Tgas = self.data[:,:,3]
-    if itime:
+    if not itime==None:
       return Tgas[itime,:]
     return Tgas
 
   def getTdust(self, itime=None):
     Tdust = self.data[:,:,4]
-    if itime:
+    if not itime==None:
       return Tdust[itime,:]
     return Tdust
 
