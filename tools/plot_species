@@ -24,6 +24,7 @@ if len(sys.argv) > 2:
 
 info = I.KromeInfo()
 abundances = run.getMolecules(itime=itime)
+print abundances
 axis = run.getR(itime=itime)
 
 ntot = np.sum(abundances, axis=1)

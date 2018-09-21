@@ -8,9 +8,10 @@ exec = tinyPDR
 lib = -llapack
 
 #Krome build folder
-KROME_BUILD=/Users/troels/Code/forks/krome/build
-#KROME_BUILD=../krome/HCO
-
+#KROME_BUILD=/Users/troels/Code/forks/krome/build
+#KROME_BUILD=../krome/build_HCO-ice-dust-table
+#KROME_BUILD=../krome/build_HCO-noice
+KROME_BUILD=/Users/troels/Code/forks/krome/build_HCO-heatcool
 #Shielding functions folder
 SHIELDING_DIR=../shielding
 

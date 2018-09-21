@@ -8,7 +8,7 @@ contains
 
   subroutine dump_header
     use parameters, only : ngrid, ntime, outputdir
-    use krome_user, only : krome_nmols, krome_nPhotoBins, krome_nrea
+    use krome_user, only : krome_nmols, krome_nPhotoBins, krome_nrea, krome_get_cooling_array, krome_get_cooling_names_header
     implicit none
     integer :: unit
 
@@ -30,7 +30,7 @@ contains
     use grid, only : r, n, nHtot, Tgas, Tdust, Av, dr, tau
     implicit none
     real*8, intent(in) :: t
-    integer :: i, unit
+    integer :: i, unit, unit_heatcool
 
     open(newunit=unit,file=trim(outfile), access='append', status='old')
     do i=1,ngrid
@@ -39,6 +39,24 @@ contains
     write(unit,*)
     close(unit)
 
+  end subroutine
+
+  subroutine dump_cooling(t)
+    use parameters, only : ngrid, pc, outputdir
+    use krome_user, only : krome_nmols, krome_nPhotoBins, krome_nrea, krome_get_cooling_array, krome_get_cooling_names_header,krome_get_cooling_array, krome_get_cooling_names_header
+    use grid, only : r, n, nHtot, Tgas, Tdust, Av, dr, tau
+    implicit none
+    integer :: unit, i
+    character(len=128) :: outfile
+    real*8::t
+    outfile = trim(outputdir)//"/cooling.dat"
+    open(newunit=unit,file=trim(outfile), status='replace', action="write")
+    write(unit,*) krome_get_cooling_names_header()
+    do i=1,ngrid
+      write(unit,'(200E17.8e3)') r(i)/pc,Av(i),nHtot(i),krome_get_cooling_array(n(:,i),Tgas(i))
+    end do
+    write(unit,*)
+    close(unit)
   end subroutine
 
 end module

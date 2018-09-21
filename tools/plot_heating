@@ -1,0 +1,31 @@
+#!/usr/local/bin/python
+import numpy as np
+import matplotlib.pyplot as plt
+
+filename = "heating.dat"
+figpath = "plots/heating.pdf"
+with open(filename, 'r') as f:
+  header = f.readline().split()
+  data = np.loadtxt(f)
+
+ngrid = data.shape[0]
+print header, len(header)
+print "data shape", data.shape
+
+r = data[:,0]
+Av = data[:,1]
+nHtot = data[:,2]
+oheatcool = 3 # Offset to indices for heating rates
+nheatcool = data.shape[1] - oheatcool
+
+for i in xrange(nheatcool):
+  ii = i + oheatcool
+  print ii
+  series = data[:,ii]/nHtot[i]**2
+  process = header[i]
+  if np.any(series > 0.0):
+    plt.loglog(Av, series, label=process)
+
+plt.ylim(1e-31,1e-23)
+plt.legend()
+plt.savefig(figpath)

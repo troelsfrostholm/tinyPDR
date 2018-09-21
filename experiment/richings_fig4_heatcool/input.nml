@@ -1,0 +1,23 @@
+&PARAMS
+ngrid=512
+tend=1d10
+ntime=100
+outputdir='.'
+!photobin_limits=5.0d0,11.26d0,13.6d0,24.6d0,54.4d0,1d2
+photobin_limits=5.0d0, 11.26d0, 13.6d0,  16.49839974d0, 24.6d0, 31.4339111d0, 54.4d0, 1d2
+extinction_type="single direction left"
+initcond='file'
+rmax=1d22
+rmin=1d12
+grid_type='log'
+!sedfile='black87_eV.dat'
+sedfile='black87_eV.interp'
+opacityfile='kabs_draine_Rv31.dat'
+!print_fluxes_for='E','C+','HE+','OH','CO','H+'
+/
+
+&INITCOND
+!       H       He   H2      C       O             Fe      Si     Mg
+!x=4*0d0,0.33333,1d-1,0.33333,2.46d-4,4.9d-4,8*0d0,2.82d-5,3.47d-5,3.47d-5,16*0d0
+x=4*0d0,0.33333,1d-1,0.33333,2.46d-4,4.9d-4,27*0d0
+/

@@ -11,7 +11,7 @@ contains
 #endif
     use krome_constants, only : ev_to_erg
     use richtings_dissociation_rates, only : S_H2, S_H2_d, S_CO, S_CO_d, gamma_H2_thin, gamma_CO_thin
-    use parameters, only : d2g, ngrid, extinction_type, rmin, grid_type, print_fluxes_for, print_fluxes_for_ids, nprintfluxesfor, pc, spy, h, pi, sigma
+    use parameters, only : d2g, ngrid, extinction_type, rmin, grid_type, print_fluxes_for, print_fluxes_for_ids, nprintfluxesfor, pc, spy, h, pi, sigma, pc, outputdir
     use grid, only : n, nHtot, Tgas, Tdust, tau, r, dr, Av
     use rt, only : j0
     use extinction, only : extinction_single_direction_left, extinction_single_direction_right, extinction_spherical_cloud_uniform_incidence
@@ -28,7 +28,8 @@ contains
     real(kind=8) :: N_H2_max, N_CO_max, N_Htot_max, T_col_max, tau_H2_0, tau_CO_0, Tgas_ss, mu_H2_0, mu_CO_0
     integer :: i, ibin, iflux
     real*8::fluxes(krome_nrea)
-    integer :: unit
+    integer :: unit, unit_heating
+    character(len=128) :: outfile
 
     real(kind=8) :: G0, Av_f
 
@@ -183,6 +184,10 @@ contains
 
     open(newunit=unit,file=trim(outfile_fluxes), access='append', action="write")
 
+    outfile = trim(outputdir)//"/heating.dat"
+    open(newunit=unit_heating,file=trim(outfile), status='replace', action="write")
+    write(unit_heating,*) krome_get_heating_names_header()
+
     do i=1,ngrid
       ! Set flux in Krome
       call krome_set_photoBinJ(j(:,i))
@@ -213,6 +218,8 @@ contains
       fluxes = krome_get_flux(n(:,i), Tgas(i))
       write(unit,*) t/spy,r(i)/pc,Av(i),fluxes(:)
 
+      write(unit_heating,'(200E17.8e3)') r(i)/pc,Av(i),nHtot(i),krome_get_heating_array(nn,Tgas(i))
+
       call krome(nn,Tgas(i),dt)
       n(:,i) = nn
 #ifdef USE_DUST_TABLE
@@ -222,6 +229,7 @@ contains
     end do
 
     close(unit)
+    close(unit_heating)
 
   end subroutine
 end module
