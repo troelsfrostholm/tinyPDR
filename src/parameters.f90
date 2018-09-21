@@ -3,6 +3,7 @@ module parameters
   implicit none
 
   real*8, parameter :: fav = 1d0/4d-22
+  !real*8, parameter :: fav = 1.8d21
   real*8, parameter :: pc = 3.085d18 !1 pc in cm
   real*8, parameter :: spy = krome_seconds_per_year !s
   real*8, parameter :: h = 4.13566766d-15 ! plancks constant in eV s

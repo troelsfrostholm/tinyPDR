@@ -65,7 +65,7 @@ krome_nmols          = 36   !number of chemical species
 krome_nspec          = 40   !number of species including Tgas,CR,...
 krome_ndust          = 0    !number of dust bins (total)
 krome_ndustTypes     = 0    !number of dust types
-krome_nPhotoBins     = 100  !number of radiation bins
+krome_nPhotoBins     = 7    !number of radiation bins
 krome_nPhotoRates    = 17   !number of photochemical reactions
 
 

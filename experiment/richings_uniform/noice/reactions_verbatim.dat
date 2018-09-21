@@ -204,21 +204,11 @@ O + E -> O-
 O + H -> OH
 O + O -> O2
 OH + H -> H2O
-FE + SI+ -> FE+ + SI
-SI+ + MG -> SI + MG+
-C+ + SI -> C + SI+
-C+ + MG -> C + MG+
 H + H -> H2
-MG+ + E -> MG
-FE+ + E -> FE
-SI+ + E -> SI
 H -> H+ + E
 HE -> HE+ + E
 HE+ -> HE++ + E
 O -> O+ + E
-MG -> MG+ + E
-FE -> FE+ + E
-SI -> SI+ + E
 C -> C+ + E
 H2 -> H2+ + E
 H- -> H + E
@@ -273,9 +263,6 @@ H2O -> OH + H
 HCO -> CO + H
 HCO -> HCO+ + E
 H2 -> H + H+ + E
-MG -> MG+ + E
-FE -> FE+ + E
-SI -> SI+ + E
 C + C -> C2
 C + C -> C2
 C + O -> CO
