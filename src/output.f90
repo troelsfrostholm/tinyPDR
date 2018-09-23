@@ -8,7 +8,7 @@ contains
 
   subroutine dump_header
     use parameters, only : ngrid, ntime, outputdir
-    use krome_user, only : krome_nmols, krome_nPhotoBins, krome_nrea, krome_get_cooling_array, krome_get_cooling_names_header
+    use krome_user, only : krome_nmols, krome_nPhotoBins, krome_nrea
     implicit none
     integer :: unit
 
@@ -47,6 +47,7 @@ contains
     close(unit)
   end subroutine
 
+#ifdef USE_COOLING
   subroutine dump_cooling(t)
     use parameters, only : ngrid, pc, outputdir
     use krome_user, only : krome_nmols, krome_nPhotoBins, krome_nrea, krome_get_cooling_names_header
@@ -63,7 +64,9 @@ contains
     end do
     close(unit)
   end subroutine
+#endif
 
+#ifdef USE_HEATING
   subroutine dump_heating(t)
     use parameters, only : ngrid, pc, outputdir
     use krome_user, only : krome_nmols, krome_nPhotoBins, krome_nrea, krome_get_heating_names_header
@@ -80,5 +83,6 @@ contains
     end do
     close(unit)
   end subroutine
+#endif
 
 end module

@@ -206,8 +206,12 @@ contains
       call krome_set_user_G0(G0)
 
       fluxes(:,i) = krome_get_flux(nn, Tgas(i))
+#ifdef USE_HEATING
       heating(:,i) = krome_get_heating_array(nn,Tgas(i))
+#endif
+#ifdef USE_COOLING
       cooling(:,i) = krome_get_cooling_array(nn,Tgas(i))
+#endif
 
       call krome(nn,Tgas(i),dt)
       n(:,i) = nn

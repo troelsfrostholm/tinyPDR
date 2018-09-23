@@ -28,9 +28,12 @@ contains
     allocate(Av(ngrid))
     allocate(tau(krome_nPhotoBins,ngrid))
     allocate(fluxes(krome_nrea, ngrid))
+#ifdef USE_HEATING
     allocate(heating(krome_nheats, ngrid))
+#endif
+#ifdef USE_COOLING
     allocate(cooling(krome_ncools, ngrid))
-
+#endif
     ! Initialize arrays to zero
     r(:) = 0d0
     n(:,:) = 0d0
@@ -40,8 +43,12 @@ contains
     Av(:) = 0d0
     tau(:,:) = 0d0
     fluxes(:,:) = 0d0
+#ifdef USE_HEATING
     heating(:,:) = 0d0
+#endif
+#ifdef USE_COOLING
     cooling(:,:) = 0d0
+#endif
 
     select case(trim(grid_type))
       case("uniform")
@@ -58,7 +65,13 @@ contains
   subroutine cleanup_grid
     implicit none
 
-    deallocate(r, n, nHtot, Tgas, Av, tau, fluxes, heating, cooling)
+    deallocate(r, n, nHtot, Tgas, Av, tau, fluxes)
+#ifdef USE_HEATING
+    deallocate(heating)
+#endif
+#ifdef USE_COOLING
+    deallocate(cooling)
+#endif
   end subroutine
 
   ! Builds a centered uniform grid

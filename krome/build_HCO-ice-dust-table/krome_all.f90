@@ -5,7 +5,7 @@ module krome_commons
 
   ! *************************************************************
   !  This file has been generated with:
-  !  KROME 14.08.dev on 2018-09-21 11:48:42
+  !  KROME 14.08.dev on 2018-09-23 16:14:15
   !  Changeset 097d98a
   !  see http://kromepackage.org
   !
@@ -233,18 +233,6 @@ module krome_commons
   !stores the last evaluation of the rates in the fex
   real*8::last_coe(nrea)
   !$omp threadprivate(last_coe)
-
-  !data for CO cooling
-  integer,parameter::coolCOn1=40
-  integer,parameter::coolCOn2=40
-  integer,parameter::coolCOn3=40
-  real*8::coolCOx1(coolCOn1),coolCOx2(coolCOn2),coolCOx3(coolCOn3)
-  real*8::coolCOixd1(coolCOn1-1),coolCOixd2(coolCOn2-1),coolCOixd3(coolCOn3-1)
-  real*8::coolCOy(coolCOn1,coolCOn2,coolCOn3)
-  real*8::coolCOx1min,coolCOx1max
-  real*8::coolCOx2min,coolCOx2max
-  real*8::coolCOx3min,coolCOx3max
-  real*8::coolCOdvn1,coolCOdvn2,coolCOdvn3
 
   !xsecs from file variables
   !xsec for C -> C+ + E
@@ -1897,7 +1885,7 @@ contains
 
   ! *************************************************************
   !  This file has been generated with:
-  !  KROME 14.08.dev on 2018-09-21 11:48:42
+  !  KROME 14.08.dev on 2018-09-23 16:14:15
   !  Changeset 097d98a
   !  see http://kromepackage.org
   !
@@ -2471,7 +2459,7 @@ contains
 
   ! *************************************************************
   !  This file has been generated with:
-  !  KROME 14.08.dev on 2018-09-21 11:48:42
+  !  KROME 14.08.dev on 2018-09-23 16:14:15
   !  Changeset 097d98a
   !  see http://kromepackage.org
   !
@@ -3556,7 +3544,7 @@ contains
 
     !CO_ice -> CO
     k(211) = small + (krate_nonthermal_evaporation(idx_CO,1.78d0&
-        *user_G0, user_Av, user_crate, #1d-3))
+        *user_G0, user_Av, user_crate, 1d-3))
 
     !H -> H+ + E
     k(212) = small + (photoBinRates(1))
@@ -6020,7 +6008,6 @@ do j=1,nPhotoBins
       !approx bin integral
       kk = photoBinJTab(i,j)*Jval/E*dE
       photoBinRates(i) = photoBinRates(i) + kk
-      photoBinHeats(i) = photoBinHeats(i) + kk*(E-Eth)
     end if
   end do
 end do
@@ -6030,9 +6017,6 @@ GHabing_thin = GHabing_thin * 4d0 * pi / (1.6d-3) * iplanck_eV * eV_to_erg
 
 !converts to 1/s
 photoBinRates(:) = 4d0*pi*photoBinRates(:) * iplanck_eV
-
-!converts to erg/s
-photoBinHeats(:) = 4d0*pi*photoBinHeats(:) * iplanck_eV * eV_to_erg
 
 end subroutine calc_photoBins_thick
 
@@ -6768,7 +6752,7 @@ end module KROME_coolingGH
 module KROME_cooling
 ! *************************************************************
 !  This file has been generated with:
-!  KROME 14.08.dev on 2018-09-21 11:48:42
+!  KROME 14.08.dev on 2018-09-23 16:14:15
 !  Changeset 097d98a
 !  see http://kromepackage.org
 !
@@ -6781,15 +6765,9 @@ module KROME_cooling
 !  KROME is provided "as it is", without any warranty.
 ! *************************************************************
 integer,parameter::coolTab_n=int(1e2)
-integer,parameter::nZrate=50
+integer,parameter::nZrate=0
 real*8::coolTab(nZrate,coolTab_n),coolTab_logTlow, coolTab_logTup
 real*8::coolTab_T(coolTab_n),inv_coolTab_T(coolTab_n-1),inv_coolTab_idx
-real*8::pop_level_CI(3)
-real*8::pop_level_CII(2)
-real*8::pop_level_OI(3)
-!$omp threadprivate(pop_level_CI)
-!$omp threadprivate(pop_level_CII)
-!$omp threadprivate(pop_level_OI)
 contains
 
 !*******************
@@ -6817,182 +6795,11 @@ f2 = 1d0
 !returns cooling in erg/cm3/s
 cools(:) = 0d0
 
-cools(idx_cool_H2) = cooling_H2(n(:), Tgas)
-
-cools(idx_cool_dust) = cooling_dust(n(:), Tgas)
-
-cools(idx_cool_CO) = cooling_CO(n(:), Tgas)
-
-cools(idx_cool_Z) = f2 * ( cooling_Z(n(:), Tgas)  )
-
-cools(idx_cool_compton) = f2 * cooling_compton(n(:), Tgas)
-
-cools(idx_cool_cont) = f2 * cooling_continuum(n(:), Tgas)
-
 cools(idx_cool_custom) = cooling_custom(n(:),Tgas)
 
 get_cooling_array(:) = cools(:)
 
 end function get_cooling_array
-
-!***************************
-!CO cooling: courtesy of K.Omukai (Nov2014)
-! method: Neufeld+Kaufman 1993 (bit.ly/1vnjcXV, see eqn.5).
-! see also Omukai+2010 (bit.ly/1HIaGcn)
-! H and H2 collisions
-function cooling_CO(n,inTgas)
-use krome_commons
-use krome_subs
-use krome_getphys
-implicit none
-integer,parameter::imax=coolCOn1
-integer,parameter::jmax=coolCOn2
-integer,parameter::kmax=coolCOn3
-integer::i,j,k
-real*8,parameter::eps=1d-5
-real*8::cooling_CO,n(:),inTgas
-real*8::v1,v2,v3,prev1,prev2,cH
-real*8::vv1,vv2,vv3,vv4,vv12,vv34,xLd
-real*8::x1(imax),x2(jmax),x3(kmax)
-real*8::ixd1(imax-1),ixd2(jmax-1),ixd3(kmax-1)
-real*8::v1min,v1max,v2min,v2max,v3min,v3max
-
-!local copy of limits
-v1min = coolCOx1min
-v1max = coolCOx1max
-v2min = coolCOx2min
-v2max = coolCOx2max
-v3min = coolCOx3min
-v3max = coolCOx3max
-
-!local copy of variables arrays
-x1(:) = coolCOx1(:)
-x2(:) = coolCOx2(:)
-x3(:) = coolCOx3(:)
-
-ixd1(:) = coolCOixd1(:)
-ixd2(:) = coolCOixd2(:)
-ixd3(:) = coolCOixd3(:)
-
-!local variables
-v3 = num2col(n(idx_CO),n(:)) !CO column density
-cH = n(idx_H) + n(idx_H2)
-if (n(idx_H) < 0. .or. n(idx_H2) < 0.) then
-cH = n_global(idx_H) + n_global(idx_H2)
-! Set red flag if not due to small excursion in n_H2
-! Only relevant for low temperatures, bc otherwise H is ionised
-! And CO cooling only relevant at high densities
-if (abs(n(idx_H2)) / (abs(n(idx_H)) + 1d-40) > 1d-6 .and. &
-    inTgas < 5d4 .and. &
-    abs(n(idx_H)) > abs(n(idx_Hj)) .and. sum(n(1:nmols)) > 100.) &
-    red_flag = ibset(red_flag,5)
-endif
-
-v2 = cH
-v1 = inTgas !Tgas
-
-!logs of variables
-v1 = log10(v1)
-v2 = log10(v2)
-v3 = log10(v3)
-
-!default value erg/s/cm3
-cooling_CO = 0d0
-
-!check limits
-if(v1>=v1max) v1 = v1max*(1d0-eps)
-if(v2>=v2max) v2 = v2max*(1d0-eps)
-if(v3>=v3max) v3 = v3max*(1d0-eps)
-
-if(v1<v1min) return
-if(v2<v2min) return
-if(v3<v3min) return
-
-!gets position of variable in the array
-i = (v1-v1min)*coolCOdvn1+1
-j = (v2-v2min)*coolCOdvn2+1
-k = (v3-v3min)*coolCOdvn3+1
-
-!precompute shared variables
-prev1 = (v1-x1(i))*ixd1(i)
-prev2 = (v2-x2(j))*ixd2(j)
-
-!linear interpolation on x1 for x2,x3
-vv1 = prev1 * (coolCOy(k,j,i+1) - &
-    coolCOy(k,j,i)) + coolCOy(k,j,i)
-!linear interpolation on x1 for x2+dx2,x3
-vv2 = prev1 * (coolCOy(k,j+1,i+1) - &
-    coolCOy(k,j+1,i)) + coolCOy(k,j+1,i)
-!linear interpolation on x2 for x3
-vv12 = prev2 * (vv2 - vv1) + vv1
-
-!linear interpolation on x1 for x2,x3+dx3
-vv3 = prev1 * (coolCOy(k+1,j,i+1) - &
-    coolCOy(k+1,j,i)) + coolCOy(k+1,j,i)
-!linear interpolation on x1 for x2+dx2,x3+dx3
-vv4 = prev1 * (coolCOy(k+1,j+1,i+1) - &
-    coolCOy(k+1,j+1,i)) + coolCOy(k+1,j+1,i)
-!linear interpolation on x2 for x3+dx3
-vv34 = prev2 * (vv4 - vv3) + vv3
-
-!linear interpolation on x3
-xLd = (v3-x3(k))*ixd3(k)*(vv34 - &
-    vv12) + vv12
-
-!CO cooling in erg/s/cm3
-cooling_CO = 1d1**xLd * cH * n(idx_CO)
-
-end function cooling_CO
-
-!************************
-subroutine init_coolingCO()
-use krome_commons
-implicit none
-integer::ios,iout(3),i
-real*8::rout(4)
-
-if (krome_mpi_rank<=1) print *,"load CO cooling..."
-open(33,file="coolCO.dat",status="old",iostat=ios)
-!check if file exists
-if(ios.ne.0) then
-print *,"ERROR: problems loading coolCO.dat!"
-stop
-end if
-
-do
-read(33,*,iostat=ios) iout(:),rout(:) !read line
-if(ios<0) exit !eof
-if(ios/=0) cycle !skip blanks
-coolCOx1(iout(1)) = rout(1)
-coolCOx2(iout(2)) = rout(2)
-coolCOx3(iout(3)) = rout(3)
-coolCOy(iout(3),iout(2),iout(1)) = rout(4)
-end do
-
-!store inverse of the differences
-! to speed up interpolation
-do i=1,coolCOn1-1
-coolCOixd1(i) = 1d0/(coolCOx1(i+1)-coolCOx1(i))
-end do
-do i=1,coolCOn2-1
-coolCOixd2(i) = 1d0/(coolCOx2(i+1)-coolCOx2(i))
-end do
-do i=1,coolCOn3-1
-coolCOixd3(i) = 1d0/(coolCOx3(i+1)-coolCOx3(i))
-end do
-
-coolCOx1min = minval(coolCOx1)
-coolCOx1max = maxval(coolCOx1)
-coolCOx2min = minval(coolCOx2)
-coolCOx2max = maxval(coolCOx2)
-coolCOx3min = minval(coolCOx3)
-coolCOx3max = maxval(coolCOx3)
-
-coolCOdvn1 = (coolCOn1-1)/(coolCOx1max-coolCOx1min)
-coolCOdvn2 = (coolCOn2-1)/(coolCOx2max-coolCOx2min)
-coolCOdvn3 = (coolCOn3-1)/(coolCOx3max-coolCOx3min)
-
-end subroutine init_coolingCO
 
 !*****************************
 function cooling_custom(n,Tgas)
@@ -7049,1017 +6856,6 @@ real*8::coolingChem,n(:),Tgas
 coolingChem = 0.d0
 
 end function coolingChem
-
-!**********************************
-function cooling_Continuum(n,Tgas)
-!cooling from continuum for a thin gas (no opacity)
-!see Omukai+2000 for details
-use krome_commons
-use krome_constants
-use krome_subs
-use krome_getphys
-implicit none
-real*8::n(:),Tgas,cooling_Continuum,kgas,rhogas
-real*8::lj,tau,beta,m(nspec)
-
-m(:) = get_mass()
-rhogas = sum(n(1:nmols)*m(1:nmols)) !g/cm3
-kgas = kpla(n(:),Tgas) !planck opacity cm2/g (Omukai+2000)
-lj = get_jeans_length(n(:), Tgas) !cm
-tau = lj * kgas * rhogas + 1d-40 !opacity
-beta = min(1.d0,tau**(-2)) !beta escape (always <1.)
-cooling_Continuum = 4.d0 * stefboltz_erg * Tgas**4 &
-    * kgas * rhogas * beta !erg/s/cm3
-
-end function cooling_Continuum
-
-!*******************************
-function cooling_compton(n, Tgas)
-!compton cooling erg/cm3/s from Cen1992
-use krome_user_commons
-use krome_commons
-real*8::cooling_compton,n(:),Tgas
-
-!note that redhsift is a common variable and
-! should be provided by the user, otherwise the default is zero
-cooling_compton = 5.65d-36 * (1.d0 + phys_zredshift)**4 &
-    * (Tgas - 2.73d0 * (1.d0 + phys_zredshift)) * n(idx_e) !erg/s/cm3
-
-end function cooling_compton
-
-!****************************
-function cooling_dust(n,Tgas)
-use krome_commons
-use krome_subs
-use krome_fit
-use krome_getphys
-implicit none
-real*8::n(:),Tgas,ntot,cooling_dust,coolFit
-real*8::logn,logt
-
-ntot = sum(n(1:nmols))
-Tgas = n(idx_Tgas)
-
-logn = log10(ntot)
-logt = log10(Tgas)
-!cooling fit from tables
-coolFit = fit_anytab2D_linlog(dust_tab_ngas(:), dust_tab_Tgas(:), &
-    dust_tab_cool(:,:), dust_mult_ngas, dust_mult_Tgas, &
-    logn, logt)
-
-cooling_dust = get_mu(n) * coolFit * ntot * ntot
-
-end function cooling_dust
-
-!*****************
-!sigmoid function with x0 shift and s steepness
-function sigmoid(x,x0,s)
-implicit none
-real*8::sigmoid,x,x0,s
-
-sigmoid = 1d1/(1d1+exp(-s*(x-x0)))
-
-end function sigmoid
-
-!*******************
-!window function for H2 cooling to smooth limits
-function wCool(logTgas,logTmin,logTmax)
-implicit none
-real*8::wCool,logTgas,logTmin,logTmax,x
-
-x = (logTgas-logTmin)/(logTmax-logTmin)
-wCool = 1d1**(2d2*(sigmoid(x,-2d-1,5d1)*sigmoid(-x,-1.2d0,5d1)-1d0))
-if(wCool<1d-199) wCool = 0d0
-if(wCool>1d0) then
-print *,"ERROR: wCool>1"
-stop
-end if
-
-end function wCool
-
-!ALL THE COOLING FUNCTIONS ARE FROM GLOVER & ABEL, MNRAS 388, 1627, 2008
-!FOR LOW DENSITY REGIME: CONSIDER AN ORTHO-PARA RATIO OF 3:1
-!UPDATED TO THE DATA REPORTED BY GLOVER 2015, MNRAS
-!EACH SINGLE FUNCTION IS IN erg/s
-!FINAL UNITS = erg/cm3/s
-!*******************************
-function cooling_H2(n, Tgas)
-use krome_commons
-use krome_subs
-use krome_getphys
-real*8::n(:),Tgas
-real*8::temp,logt3,logt,cool,cooling_H2,T3
-real*8::LDL,HDLR,HDLV,HDL
-real*8::logt32,logt33,logt34,logt35,logt36,logt37,logt38
-real*8::dump14,fH2H,fH2e,fH2H2,fH2Hp,fH2He,w14,w24
-integer::i
-character*16::names(nspec)
-
-temp = Tgas
-cooling_H2 = 0d0
-!if(temp<2d0) return
-
-T3 = temp * 1.d-3
-logt3 = log10(T3)
-logt = log10(temp)
-cool = 0d0
-
-logt32 = logt3 * logt3
-logt33 = logt32 * logt3
-logt34 = logt33 * logt3
-logt35 = logt34 * logt3
-logt36 = logt35 * logt3
-logt37 = logt36 * logt3
-logt38 = logt37 * logt3
-
-w14 = wCool(logt, 1d0, 4d0)
-w24 = wCool(logt, 2d0, 4d0)
-
-!//H2-H
-if(temp<=1d2) then
-fH2H = 1.d1**(-16.818342D0 +3.7383713D1*logt3 &
-    +5.8145166D1*logt32 +4.8656103D1*logt33 &
-    +2.0159831D1*logt34 +3.8479610D0*logt35 )*n(idx_H)
-elseif(temp>1d2 .and. temp<=1d3) then
-fH2H = 1.d1**(-2.4311209D1 +3.5692468D0*logt3 &
-    -1.1332860D1*logt32 -2.7850082D1*logt33 &
-    -2.1328264D1*logt34 -4.2519023D0*logt35)*n(idx_H)
-elseif(temp>1.d3.and.temp<=6d3) then
-fH2H = 1d1**(-2.4311209D1 +4.6450521D0*logt3 &
-    -3.7209846D0*logt32 +5.9369081D0*logt33 &
-    -5.5108049D0*logt34 +1.5538288D0*logt35)*n(idx_H)
-else
-fH2H = 1.862314467912518E-022*wCool(logt,1d0,log10(6d3))*n(idx_H)
-end if
-cool = cool + fH2H
-
-!//H2-Hp
-if(temp>1d1.and.temp<=1d4) then
-fH2Hp = 1d1**(-2.2089523d1 +1.5714711d0*logt3 &
-    +0.015391166d0*logt32 -0.23619985d0*logt33 &
-    -0.51002221d0*logt34 +0.32168730d0*logt35)*n(idx_Hj)
-else
-fH2Hp = 1.182509139382060E-021*n(idx_Hj)*w14
-endif
-cool = cool + fH2Hp
-
-!//H2-H2
-fH2H2 = w24*1d1**(-2.3962112D1 +2.09433740D0*logt3 &
-    -.77151436D0*logt32 +.43693353D0*logt33 &
-    -.14913216D0*logt34 -.033638326D0*logt35)*n(idx_H2) !&
-    cool = cool + fH2H2
-
-!//H2-e
-fH2e = 0d0
-if(temp<=5d2) then
-fH2e = 1d1**(min(-2.1928796d1 + 1.6815730d1*logt3 &
-    +9.6743155d1*logt32 +3.4319180d2*logt33 &
-    +7.3471651d2*logt34 +9.8367576d2*logt35 &
-    +8.0181247d2*logt36 +3.6414446d2*logt37 &
-    +7.0609154d1*logt38,3d1))*n(idx_e)
-elseif(temp>5d2)  then
-fH2e = 1d1**(-2.2921189D1 +1.6802758D0*logt3 &
-    +.93310622D0*logt32 +4.0406627d0*logt33 &
-    -4.7274036d0*logt34 -8.8077017d0*logt35 &
-    +8.9167183*logt36 + 6.4380698*logt37 &
-    -6.3701156*logt38)*n(idx_e)
-end if
-cool = cool + fH2e*w24
-
-!//H2-He
-if(temp>1d1.and.temp<=1d4)then
-fH2He = 1d1**(-2.3689237d1 +2.1892372d0*logt3&
-    -.81520438d0*logt32 +.29036281d0*logt33 -.16596184d0*logt34 &
-    +.19191375d0*logt35)*n(idx_He)
-else
-fH2He = 1.002560385050777E-022*n(idx_He)*w14
-endif
-cool = cool + fH2He
-
-!check error
-if(cool>1.d30) then
-print *,"ERROR: cooling >1.d30 erg/s/cm3"
-print *,"cool (erg/s/cm3): ",cool
-names(:) = get_names()
-do i=1,size(n)
-print '(I3,a18,E11.3)',i,names(i),n(i)
-end do
-stop
-end if
-
-!this to avoid negative, overflow and useless calculations below
-if(cool<=0d0) then
-cooling_H2 = 0d0
-return
-end if
-
-!high density limit from HM79, GP98 below Tgas = 2d3
-!UPDATED USING GLOVER 2015 for high temperature corrections, MNRAS
-!IN THE HIGH DENSITY REGIME LAMBDA_H2 = LAMBDA_H2(LTE) = HDL
-!the following mix of functions ensures the right behaviour
-! at low (T<10 K) and high temperatures (T>2000 K) by
-! using both the original Hollenbach and the new Glover data
-! merged in a smooth way.
-if(temp.lt.2d3)then
-HDLR = ((9.5e-22*t3**3.76)/(1.+0.12*t3**2.1)*exp(-(0.13/t3)**3)+&
-    3.e-24*exp(-0.51/t3)) !erg/s
-HDLV = (6.7e-19*exp(-5.86/t3) + 1.6e-18*exp(-11.7/t3)) !erg/s
-HDL  = HDLR + HDLV !erg/s
-elseif(temp>=2d3 .and. temp<=1d4)then
-HDL = 1d1**(-2.0584225d1 + 5.0194035*logt3 &
-    -1.5738805*logt32 -4.7155769*logt33 &
-    +2.4714161*logt34 +5.4710750*logt35 &
-    -3.9467356*logt36 -2.2148338*logt37 &
-    +1.8161874*logt38)
-else
-dump14 = 1d0 / (1d0 + exp(min((temp-3d4)*2d-4,3d2)))
-HDL = 5.531333679406485E-019*dump14
-endif
-
-LDL = cool !erg/s
-if (HDL==0.) then
-cooling_H2 = 0.d0
-else
-cooling_H2 = n(idx_H2)/(1.d0/HDL+1.d0/LDL)  !erg/cm3/s
-endif
-
-end function cooling_H2
-
-!*********************************************
-!function for linear interpolation of f(x), using xval(:)
-! and the corresponding yval(:) as reference values
-! note: slow function, use only for initializations
-function flin(xval,yval,x)
-implicit none
-real*8::xval(:),yval(:),x,flin
-integer::i,n
-logical::found
-found = .false.
-n = size(xval)
-x = max(x,xval(1)) !set lower bound
-x = min(x,xval(n)) !set upper bound
-!loop to find interval (slow)
-do i=2,n
-if(x.le.xval(i)) then
-!linear fit
-flin = (yval(i) - yval(i-1)) / (xval(i) - xval(i-1)) * &
-    (x - xval(i-1)) + yval(i-1)
-found = .true. !found flag
-exit
-end if
-end do
-if(.not.found) flin = yval(n)
-
-end function flin
-
-!************************
-!dump the level populations in a file
-subroutine dump_cooling_pop(Tgas,nfile)
-implicit none
-integer::nfile,i
-real*8::Tgas
-
-!pop_level_CI(3)
-do i=1,size(pop_level_CI)
-write(nfile,'(a8,I5,3E17.8e3)') "CI", i, Tgas, pop_level_CI(i), sum(pop_level_CI(:))
-end do
-
-!pop_level_CII(2)
-do i=1,size(pop_level_CII)
-write(nfile,'(a8,I5,3E17.8e3)') "CII", i, Tgas, pop_level_CII(i), sum(pop_level_CII(:))
-end do
-
-!pop_level_OI(3)
-do i=1,size(pop_level_OI)
-write(nfile,'(a8,I5,3E17.8e3)') "OI", i, Tgas, pop_level_OI(i), sum(pop_level_OI(:))
-end do
-
-write(nfile,*)
-
-end subroutine dump_cooling_pop
-
-!***********************
-!metal cooling as in Maio et al. 2007
-! loaded from data file
-function cooling_Z(n,inTgas)
-use krome_commons
-use krome_constants
-implicit none
-real*8::n(:), inTgas, cool, cooling_Z, k(nZrate), Tgas
-
-Tgas = inTgas
-k(:) = coolingZ_rate_tabs(Tgas)
-
-cool = 0d0
-cool = cool + coolingCI(n(:),inTgas,k(:))
-cool = cool + coolingCII(n(:),inTgas,k(:))
-cool = cool + coolingOI(n(:),inTgas,k(:))
-
-cooling_Z = cool * boltzmann_erg
-
-end function cooling_Z
-
-!********************************
-function coolingZ_rates(inTgas)
-use krome_commons
-use krome_subs
-use krome_fit
-implicit none
-real*8::inTgas,coolingZ_rates(nZrate),k(nZrate)
-real*8::Tgas,invT,logTgas
-integer::i
-real*8::T2,invTgas,lnT
-
-Tgas = inTgas
-invT = 1d0/Tgas
-logTgas = log10(Tgas)
-
-T2 = Tgas*1d-2
-invTgas = 1d0/Tgas
-lnT = log(Tgas)
-
-if(Tgas.ge.1d4) return
-
-!1->0, CI - H
-k(1) = 1.6d-10*(T2)**(.14)
-
-!2->0, CI - H
-k(2) = 9.2d-11*(T2)**(.26)
-
-!2->1, CI - H
-k(3) = 2.9d-10*(T2)**(.26)
-
-!1->0, CI - H+
-k(4) = (9.6D-11 -1.8D-14*Tgas +1.9D-18*Tgas**2) *Tgas**(.45)
-
-if(Tgas > 5d3) k(4) = 8.9D-10*Tgas**(.117)
-
-!2->0, CI - H+
-k(5) = (3.1D-12 -6.D-16*Tgas +3.9d-20*Tgas**2) *Tgas
-
-if(Tgas > 5d3) k(5) = 2.3D-9*Tgas**(.0965)
-
-!2->1, CI - H+
-k(6) = (1.D-10 -2.2D-14*Tgas +1.7D-18*Tgas**2) *Tgas**(.70)
-
-if(Tgas > 5d3) k(6) = 9.2D-9*Tgas**(.0535)
-
-!1->0, CI - e
-k(7) = 2.88D-6*Tgas**(-.5)*EXP(-9.25141 -7.73782D-1*lnT +3.61184D-1*lnT**2 -1.50892D-2*lnT**3 -6.56325D-4*lnT**4)
-
-if(Tgas > 1D3) k(7) = 2.88D-6*Tgas**(-.5) *EXP(-4.446D2 -2.27913D2*lnT +4.2595D1*lnT**2 -3.4762*lnT**3 +1.0508D-1*lnT**4)
-
-!2->0, CI - e
-k(8) = 1.73D-6*Tgas**(-.5)*EXP(-7.69735 -1.30743*lnT +.697638*lnT**2 -.111338*lnT**3 +.705277D-2*lnT**4)
-
-if(Tgas > 1D3) k(8) = 1.73D-6*Tgas**(-.5)*EXP(3.50609D2 -1.87474D2*lnT +3.61803D1*lnT**2 -3.03283*lnT**3 +9.38138D-2*lnT**4)
-
-!2->1, CI - e
-k(9) = 1.73D-6*Tgas**(-.5)*EXP(-7.4387 -.57443*lnT +.358264*lnT**2 -4.18166D-2*lnT**3 +2.35272D-3*lnT**4)
-
-if(Tgas > 1D3) k(9) = 1.73D-6*Tgas**(-.5)*EXP(3.86186D2 -2.02192D2*lnT +3.85049D1*lnT**2 -3.19268*lnT**3 +9.78573D-2*lnT**4)
-
-!1->0, CI - H2or
-k(10) = 8.7d-11 -6.6d-11*exp(-Tgas/218.3) + 6.6d-11*exp(-2.*Tgas/218.3)
-
-!2->0, CI - H2or
-k(11) = 1.2d-10 -6.1d-11*exp(-Tgas/387.3)
-
-!2->1, CI - H2or
-k(12) = 2.9d-10 -1.9d-10*exp(-Tgas/348.9)
-
-!1->0, CI - H2pa
-k(13) = 7.9D-11 -8.7D-11*EXP(-Tgas/126.4) + 1.3D-10*EXP(-2.*Tgas/126.4)
-
-!2->0, CI - H2pa
-k(14) = 1.1D-10 -8.6D-11*EXP(-Tgas/223.) + 8.7D-11*EXP(-2.*Tgas/223.)
-
-!2->1, CI - H2pa
-k(15) = 2.7D-10 -2.6D-10*EXP(-Tgas/250.7) + 1.8D-10*EXP(-2.*Tgas/250.7)
-
-!1->0, OI - H
-k(16) = 9.2D-11*(T2)**(.67)
-
-!2->0, OI - H
-k(17) = 4.3D-11*(T2)**(.80)
-
-!2->1, OI - H
-k(18) = 1.1D-10*(T2)**(.44)
-
-!1->0, OI - H+
-k(19) = 6.38D-11*Tgas**(.4)
-
-if(Tgas > 194.) k(19) = 7.75D-12*Tgas**(.8)
-
-if(Tgas > 3686.) k(19) = 2.65D-10*Tgas**(.37)
-
-!2->0, OI - H
-k(20) = 6.1D-13*Tgas**(1.1)
-
-if(Tgas > 511.) k(20) = 2.12D-12*Tgas**(.9)
-
-if(Tgas > 7510.) k(20) = 4.49D-10*Tgas**(.3)
-
-!2->1, OI - H
-k(21) = 2.03D-11*Tgas**(.56)
-
-if(Tgas > 2090.) k(21) = 3.43D-10*Tgas**(.19)
-
-!1->0, OI - e
-k(22) = 5.12D-10*Tgas**(-.075)
-
-!2->0, OI - e
-k(23) = 4.86D-10*Tgas**(-.026)
-
-!2->1, OI - e
-k(24) = 1.08D-14*Tgas**(.926)
-
-!1->0, CII - e
-k(25) = 2.8D-7*(Tgas/1d2)**(-.5)
-
-!1->0, CII - H
-k(26) = 8D-10*(Tgas/1d2)**(.07)
-
-!2<-0, CI - H2or
-k(27) = k(11) * 5.0d0 * exp(-6.300000d+01 * invT)
-
-!1<-0, CI - e
-k(28) = k(7) * 3.0d0 * exp(-2.400000d+01 * invT)
-
-!2<-0, CI - e
-k(29) = k(8) * 5.0d0 * exp(-6.300000d+01 * invT)
-
-!1<-0, CI - H2or
-k(30) = k(10) * 3.0d0 * exp(-2.400000d+01 * invT)
-
-!1<-0, CI - H2pa
-k(31) = k(13) * 3.0d0 * exp(-2.400000d+01 * invT)
-
-!2<-0, CI - H2pa
-k(32) = k(14) * 5.0d0 * exp(-6.300000d+01 * invT)
-
-!1<-0, CI - H+
-k(33) = k(4) * 3.0d0 * exp(-2.400000d+01 * invT)
-
-!2<-1, CI - e
-k(34) = k(9) * 1.66666666667d0 * exp(-3.900000d+01 * invT)
-
-!2<-1, CI - H
-k(35) = k(3) * 1.66666666667d0 * exp(-3.900000d+01 * invT)
-
-!2<-0, CI - H
-k(36) = k(2) * 5.0d0 * exp(-6.300000d+01 * invT)
-
-!2<-1, CI - H+
-k(37) = k(6) * 1.66666666667d0 * exp(-3.900000d+01 * invT)
-
-!2<-1, CI - H2pa
-k(38) = k(15) * 1.66666666667d0 * exp(-3.900000d+01 * invT)
-
-!2<-1, CI - H2or
-k(39) = k(12) * 1.66666666667d0 * exp(-3.900000d+01 * invT)
-
-!1<-0, CI - H
-k(40) = k(1) * 3.0d0 * exp(-2.400000d+01 * invT)
-
-!2<-0, CI - H+
-k(41) = k(5) * 5.0d0 * exp(-6.300000d+01 * invT)
-
-!1<-0, CII - e
-k(42) = k(25) * 2.0d0 * exp(-9.120000d+01 * invT)
-
-!1<-0, CII - H
-k(43) = k(26) * 2.0d0 * exp(-9.120000d+01 * invT)
-
-!1<-0, OI - H
-k(44) = k(16) * 0.6d0 * exp(-2.300000d+02 * invT)
-
-!1<-0, OI - e
-k(45) = k(22) * 0.6d0 * exp(-2.300000d+02 * invT)
-
-!2<-1, OI - e
-k(46) = k(24) * 0.333333333333d0 * exp(-1.000000d+02 * invT)
-
-!2<-1, OI - H
-k(47) = k(21) * 0.333333333333d0 * exp(-1.000000d+02 * invT)
-
-!2<-0, OI - H
-k(48) = k(20) * 0.2d0 * exp(-3.300000d+02 * invT)
-
-!1<-0, OI - H+
-k(49) = k(19) * 0.6d0 * exp(-2.300000d+02 * invT)
-
-!2<-0, OI - e
-k(50) = k(23) * 0.2d0 * exp(-3.300000d+02 * invT)
-
-coolingZ_rates(:) = k(:)
-
-!check rates > 1
-if(maxval(k)>1d0) then
-print *,"ERROR: found rate >1d0 in coolingZ_rates!"
-print *," Tgas =",Tgas
-do i=1,nZrate
-if(k(i)>1d0) print *,i,k(i)
-end do
-stop
-end if
-
-!check rates <0
-if(minval(k)<0d0) then
-print *,"ERROR: found rate <0d0 in coolingZ_rates!"
-print *," Tgas =",Tgas
-do i=1,nZrate
-if(k(i)<0d0) print *,i,k(i)
-end do
-stop
-end if
-
-end function coolingZ_rates
-
-!**********************
-function coolingZ_rate_tabs(inTgas)
-use krome_commons
-implicit none
-real*8::inTgas,Tgas,coolingZ_rate_tabs(nZrate),k(nZrate)
-integer::idx,j
-Tgas = inTgas
-
-idx = (log10(Tgas)-coolTab_logTlow) * inv_coolTab_idx + 1
-
-idx = max(idx,1)
-idx = min(idx,coolTab_n-1)
-
-do j=1,nZrate
-k(j) = (Tgas-coolTab_T(idx)) * inv_coolTab_T(idx) * &
-    (coolTab(j,idx+1)-coolTab(j,idx)) + coolTab(j,idx)
-k(j) = max(k(j), 0d0)
-end do
-
-coolingZ_rate_tabs(:) = k(:)
-
-end function coolingZ_rate_tabs
-
-!**********************
-subroutine coolingZ_init_tabs()
-use krome_commons
-implicit none
-integer::j,jmax,idx
-real*8::Tgas,Tgasold
-
-jmax = coolTab_n !size of the cooling tables (number of saples)
-
-!note: change upper and lower limit for rate tables here
-coolTab_logTlow = log10(2d0)
-coolTab_logTup = log10(1d8)
-
-!pre compute this value since used jmax times
-inv_coolTab_idx = (jmax-1) / (coolTab_logTup-coolTab_logTlow)
-
-!loop over the jmax interpolation points
-do j=1,jmax
-!compute Tgas for the given point
-Tgas = 1d1**((j-1)*(coolTab_logTup-coolTab_logTlow) &
-    /(jmax-1) + coolTab_logTlow)
-!produce cooling rates for the given Tgas
-coolTab(:,j) = coolingZ_rates(Tgas)
-!store Tgas into the array
-coolTab_T(j) = Tgas
-!save 1/dT since it is known
-if(j>1) inv_coolTab_T(j-1) = 1d0 / (Tgas-Tgasold)
-Tgasold = Tgas
-end do
-
-end subroutine coolingZ_init_tabs
-
-!*******************************
-!this subroutine solves a non linear system
-! with the equations stored in fcn function
-! and a dummy jacobian jcn
-subroutine nleq_wrap(x)
-use krome_user_commons
-integer,parameter::nmax=100 !problem size
-integer,parameter::liwk=nmax+50 !size integer workspace
-integer,parameter::lrwk=(nmax+13)*nmax+60 !real workspace
-integer,parameter::luprt=6 !logical unit verbose output
-integer::neq,iopt(50),ierr,niw,nrw,iwk(liwk),ptype,i
-real*8::x(:),xscal(nmax),rtol,rwk(lrwk),idamp,mdamp,xi(size(x)),minx
-real*8::store_invdvdz
-neq = size(x)
-niw = neq+50
-nrw = (neq+13)*neq+60
-
-ptype = 2 !initial problem type, 2=mildly non-linear
-rtol = 1d-5 !realtive tolerance
-xi(:) = x(:) !store initial guess
-idamp = 1d-4 !initial damp (when ptype>=4, else default)
-mdamp = 1d-8 !minimum damp (when ptype>=4, else default)
-ierr = 0
-
-!iterate until ierr==0 and non-negative solutions
-do
-if(ptype>50) then
-print *,"ERROR in nleq1: can't find a solution after attempt",ptype
-stop
-end if
-
-x(:) = xi(:) !restore initial guess
-
-!if damping error or negative solutions
-! prepares initial guess with the thin case
-if(ptype>7.and.(ierr==3.or.ierr==0)) then
-rtol = 1d-5
-iwk(:) = 0
-iopt(:) = 0
-rwk(:) = 0d0
-xscal(:) = 0d0
-store_invdvdz = krome_invdvdz !store global variable
-krome_invdvdz = 0d0 !this sets beta to 1
-if(ierr.ne.0) then
-  print *,"ERROR in nleq for thin approx",ierr
-  stop
-end if
-krome_invdvdz = store_invdvdz !restore global variable
-end if
-xscal(:) = 0d0 !scaling factor
-rtol = 1d-5 !relative tolerance
-iwk(:) = 0 !default iwk
-iwk(31) = int(1e8) !max iterations
-iopt(:) = 0 !default iopt
-iopt(31) = min(ptype,4) !problem type
-rwk(:) = 0d0 !default rwk
-!reduce damps if damping error
-if(ptype>4.and.ierr==3) then
-idamp = idamp * 1d-1 !reduce idamp
-mdamp = mdamp * 1d-1 !reduce mdamp
-end if
-!if problem is extremely nonlinear use custom damps
-if(ptype>4) then
-rwk(21) = idamp !copy idamp to solver
-rwk(22) = mdamp !copy mdamp to solver
-end if
-
-!check for errors
-if(ierr.ne.0) then
-!print *,"error",ierr
-!problem with damping factor and/or problem type
-if(ierr==3) then
-  ptype = ptype + 1 !change the problem type (non-linearity)
-elseif(ierr==5) then
-  xi(:) = x(:)
-else
-  !other type of error hence stop
-  print *,"ERROR in nleq1, ierr:",ierr
-  print *,"solutions found so far:"
-  do i=1,size(x)
-    print *,i,x(i)
-  end do
-  stop
-end if
-else
-!if succesful search for negative results
-minx = minval(x) !minimum value
-!if minimum value is positive OK
-if(minx.ge.0d0) then
-  exit
-else
-  !if negative values are small set to zero
-  if(abs(minx)/maxval(x)<rtol) then
-    do i=1,neq
-      x(i) = max(x(i),0d0)
-    end do
-    exit
-  else
-    !if large negative values increase non-linearity
-    ptype = ptype + 1
-  end if
-end if
-end if
-end do
-end subroutine nleq_wrap
-
-!***************************
-subroutine fcn(n,x,f,ierr)
-implicit none
-integer::n,ierr
-real*8::x(n),f(n)
-
-end subroutine fcn
-
-!**********************************
-!dummy jacobian for non linear equation solver
-subroutine jcn()
-
-end subroutine jcn
-
-!************************************
-function coolingCI(n,inTgas,k)
-use krome_commons
-use krome_photo
-use krome_subs
-implicit none
-integer::i, hasnegative, nmax
-real*8::coolingCI,n(:),inTgas,k(:)
-real*8::A(3,3),Ain(3,3)
-real*8::B(3),tmp(3)
-real*8::coll_H2or
-real*8::coll_Hj
-real*8::coll_e
-real*8::coll_H2pa
-real*8::coll_H
-
-!colliders should be >0
-coll_H2or = max(n(idx_H2) * phys_orthoParaRatio / (phys_orthoParaRatio+1d0), 0d0)
-coll_Hj = max(n(idx_Hj), 0d0)
-coll_e = max(n(idx_e), 0d0)
-coll_H2pa = max(n(idx_H2) / (phys_orthoParaRatio+1d0), 0d0)
-coll_H = max(n(idx_H), 0d0)
-
-!deafault cooling value
-coolingCI = 0d0
-
-if(n(idx_C)<1d-15) return
-
-A(:,:) = 0d0
-
-A(1,1) = 1d0
-A(2,1) = + k(30) * coll_H2or &
-    + k(33) * coll_Hj &
-    + k(28) * coll_e &
-    + k(31) * coll_H2pa &
-    + k(40) * coll_H
-A(3,1) = + k(41) * coll_Hj &
-    + k(32) * coll_H2pa &
-    + k(27) * coll_H2or &
-    + k(29) * coll_e &
-    + k(36) * coll_H
-A(2,2) = - k(13) * coll_H2pa &
-    - k(1) * coll_H &
-    - k(7) * coll_e &
-    - k(10) * coll_H2or &
-    - k(4) * coll_Hj &
-    - 7.900000d-08 &
-    - k(38) * coll_H2pa &
-    - k(39) * coll_H2or &
-    - k(34) * coll_e &
-    - k(37) * coll_Hj &
-    - k(35) * coll_H
-A(3,3) = - k(11) * coll_H2or &
-    - k(14) * coll_H2pa &
-    - k(2) * coll_H &
-    - k(5) * coll_Hj &
-    - k(8) * coll_e &
-    - 2.100000d-14 &
-    - k(9) * coll_e &
-    - k(6) * coll_Hj &
-    - k(15) * coll_H2pa &
-    - k(3) * coll_H &
-    - k(12) * coll_H2or &
-    - 2.700000d-07
-A(1,2) = 1d0
-A(3,2) = + k(38) * coll_H2pa &
-    + k(39) * coll_H2or &
-    + k(34) * coll_e &
-    + k(37) * coll_Hj &
-    + k(35) * coll_H
-A(1,3) = 1d0
-A(2,3) = + k(9) * coll_e &
-    + k(6) * coll_Hj &
-    + k(15) * coll_H2pa &
-    + k(3) * coll_H &
-    + k(12) * coll_H2or &
-    + 2.700000d-07
-
-!build matrix B
-B(:) = 0d0
-B(1) = n(idx_C)
-
-Ain(:,:) = A(:,:)
-
-call mylin3(A(:,:), B(:))
-
-!store population
-pop_level_CI(:) = B(:)
-!sanitize negative values
-hasnegative = 0
-do i=1,3
-if(B(i)<0d0) then
-if(abs(B(i)/n(idx_C))>1d-10) then
-  hasnegative = 1
-else
-  B(i) = 1d-40
-end if
-end if
-end do
-
-!check if B has negative values
-if(hasnegative>0)then
-print *,"ERROR: minval(B)<0d0 in coolingCI"
-print *,"ntot_CI =", n(idx_C)
-print *,"Tgas =", inTgas
-print *,"B(:) unrolled:"
-do i=1,size(B)
-print *, i, B(i)
-end do
-print *,"A(:,:) min/max:"
-do i=1,size(B)
-print *, i, minval(Ain(i,:)), maxval(Ain(i,:))
-end do
-
-print *,"A(:,:)"
-do i=1,size(B)
-tmp(:) = Ain(i,:)
-print '(I5,99E17.8)', i, tmp(:)
-end do
-stop
-end if
-
-coolingCI = B(2) * (7.900000d-08) * 2.400000d+01 &
-    + B(3) * (2.700000d-07) * 3.900000d+01 &
-    + B(3) * (2.100000d-14) * 6.300000d+01
-
-end function coolingCI
-
-!************************************
-function coolingCII(n,inTgas,k)
-use krome_commons
-use krome_photo
-use krome_subs
-implicit none
-integer::i, hasnegative, nmax
-real*8::coolingCII,n(:),inTgas,k(:)
-real*8::A(2,2),Ain(2,2)
-real*8::B(2),tmp(2)
-real*8::coll_e
-real*8::coll_H
-
-!colliders should be >0
-coll_e = max(n(idx_e), 0d0)
-coll_H = max(n(idx_H), 0d0)
-
-!deafault cooling value
-coolingCII = 0d0
-
-if(n(idx_Cj)<1d-15) return
-
-A(:,:) = 0d0
-
-A(1,1) = 1d0
-A(2,1) = + k(42) * coll_e &
-    + k(43) * coll_H
-A(2,2) = - k(25) * coll_e &
-    - k(26) * coll_H &
-    - 2.400000d-06
-A(1,2) = 1d0
-
-!build matrix B
-B(:) = 0d0
-B(1) = n(idx_Cj)
-
-Ain(:,:) = A(:,:)
-
-call mylin2(A(:,:), B(:))
-
-!store population
-pop_level_CII(:) = B(:)
-!sanitize negative values
-hasnegative = 0
-do i=1,2
-if(B(i)<0d0) then
-if(abs(B(i)/n(idx_Cj))>1d-10) then
-  hasnegative = 1
-else
-  B(i) = 1d-40
-end if
-end if
-end do
-
-!check if B has negative values
-if(hasnegative>0)then
-print *,"ERROR: minval(B)<0d0 in coolingCII"
-print *,"ntot_CII =", n(idx_Cj)
-print *,"Tgas =", inTgas
-print *,"B(:) unrolled:"
-do i=1,size(B)
-print *, i, B(i)
-end do
-print *,"A(:,:) min/max:"
-do i=1,size(B)
-print *, i, minval(Ain(i,:)), maxval(Ain(i,:))
-end do
-
-print *,"A(:,:)"
-do i=1,size(B)
-tmp(:) = Ain(i,:)
-print '(I5,99E17.8)', i, tmp(:)
-end do
-stop
-end if
-
-coolingCII = B(2) * (2.400000d-06) * 9.120000d+01
-
-end function coolingCII
-
-!************************************
-function coolingOI(n,inTgas,k)
-use krome_commons
-use krome_photo
-use krome_subs
-implicit none
-integer::i, hasnegative, nmax
-real*8::coolingOI,n(:),inTgas,k(:)
-real*8::A(3,3),Ain(3,3)
-real*8::B(3),tmp(3)
-real*8::coll_e
-real*8::coll_H
-real*8::coll_Hj
-
-!colliders should be >0
-coll_e = max(n(idx_e), 0d0)
-coll_H = max(n(idx_H), 0d0)
-coll_Hj = max(n(idx_Hj), 0d0)
-
-!deafault cooling value
-coolingOI = 0d0
-
-if(n(idx_O)<1d-15) return
-
-A(:,:) = 0d0
-
-A(1,1) = 1d0
-A(2,1) = + k(45) * coll_e &
-    + k(44) * coll_H &
-    + k(49) * coll_Hj
-A(3,1) = + k(50) * coll_e &
-    + k(48) * coll_H
-A(2,2) = - k(22) * coll_e &
-    - k(19) * coll_Hj &
-    - k(16) * coll_H &
-    - 8.900000d-05 &
-    - k(47) * coll_H &
-    - k(46) * coll_e
-A(3,3) = - k(23) * coll_e &
-    - k(20) * coll_H &
-    - 1.800000d-05 &
-    - k(24) * coll_e &
-    - k(21) * coll_H &
-    - 1.300000d-10
-A(1,2) = 1d0
-A(3,2) = + k(47) * coll_H &
-    + k(46) * coll_e
-A(1,3) = 1d0
-A(2,3) = + k(24) * coll_e &
-    + k(21) * coll_H &
-    + 1.300000d-10
-
-!build matrix B
-B(:) = 0d0
-B(1) = n(idx_O)
-
-Ain(:,:) = A(:,:)
-
-call mylin3(A(:,:), B(:))
-
-!store population
-pop_level_OI(:) = B(:)
-!sanitize negative values
-hasnegative = 0
-do i=1,3
-if(B(i)<0d0) then
-if(abs(B(i)/n(idx_O))>1d-10) then
-  hasnegative = 1
-else
-  B(i) = 1d-40
-end if
-end if
-end do
-
-!check if B has negative values
-if(hasnegative>0)then
-print *,"ERROR: minval(B)<0d0 in coolingOI"
-print *,"ntot_OI =", n(idx_O)
-print *,"Tgas =", inTgas
-print *,"B(:) unrolled:"
-do i=1,size(B)
-print *, i, B(i)
-end do
-print *,"A(:,:) min/max:"
-do i=1,size(B)
-print *, i, minval(Ain(i,:)), maxval(Ain(i,:))
-end do
-
-print *,"A(:,:)"
-do i=1,size(B)
-tmp(:) = Ain(i,:)
-print '(I5,99E17.8)', i, tmp(:)
-end do
-stop
-end if
-
-coolingOI = B(2) * (8.900000d-05) * 2.300000d+02 &
-    + B(3) * (1.800000d-05) * 3.300000d+02 &
-    + B(3) * (1.300000d-10) * 1.000000d+02
-
-end function coolingOI
 
 !***********************
 subroutine mylin2(a,b)
@@ -8129,8 +6925,6 @@ cool_HD = 0.d0
 cool_atomic = 0.d0
 cool_Z = 0.d0
 cool_dH = 0.d0
-cool_H2 = cooling_H2(n(:),Tgas)
-cool_Z = cooling_Z(n(:),Tgas)
 cool_tot = cool_H2 + cool_atomic + cool_HD + cool_Z + cool_dH
 cool_totGP = cool_H2GP + cool_atomic + cool_HD + cool_Z + cool_dH
 write(33,'(99E12.3e3)') Tgas, cool_tot, cool_totGP, cool_H2, &
@@ -8162,7 +6956,7 @@ contains
 
 ! *************************************************************
 !  This file has been generated with:
-!  KROME 14.08.dev on 2018-09-21 11:48:42
+!  KROME 14.08.dev on 2018-09-23 16:14:15
 !  Changeset 097d98a
 !  see http://kromepackage.org
 !
@@ -8197,19 +6991,7 @@ real*8::smooth,f1,f2
 
 heats(:) = 0.d0
 
-heats(idx_heat_chem) = heatingChem(n(:), Tgas, k(:), nH2dust)
-
-heats(idx_heat_photo) = photo_heating(n(:))
-
-heats(idx_heat_photoAv) = heat_photoAv(n(:),Tgas,k(:))
-
-heats(idx_heat_CR) = heat_CR(n(:),Tgas,k(:))
-
-heats(idx_heat_dust) = heat_photoDust(n(:),Tgas)
-
 f2 = 1.
-
-heats(idx_heat_photoAv) = f2 * heats(idx_heat_photoAv)
 
 heats(idx_heat_custom) = heat_custom(n(:),Tgas)
 
@@ -8229,260 +7011,6 @@ heat_custom = 0d0
 
 end function heat_custom
 
-!***************************
-function heat_photoDust(n,Tgas)
-!photoelectric effect from dust in erg/s/cm3
-!see Bakes&Tielens 1994 with a slight modification of Wolfire 2003
-!on the amount of absorbed ultraviolet energy.
-!This is for the local interstellar Habing flux and
-!without considering the recombination (which at this
-!radiation flux is indeed negligible)
-use krome_commons
-use krome_subs
-use krome_getphys
-implicit none
-real*8::heat_photoDust,n(:),Tgas,ntot,eps
-real*8::Ghab,z,psi
-
-ntot = get_Hnuclei(n(:))
-Ghab = 1.69d0 !habing flux, 1.69 is Draine78
-Ghab  = user_G0
-Ghab  = Ghab * exp(-2.5*user_av)
-if(n(idx_e)>0d0) then
-psi = Ghab * sqrt(Tgas) / n(idx_e)
-else
-psi = 1d99
-end if
-eps = 4.9d-2 / (1d0 + 4d-3 * psi**.73) + &
-    3.7d-2 * (Tgas * 1d-4)**.7 / (1d0 + 2d-4 * psi)
-z = 1d1**get_metallicityC(n(:)) !metallicty wrt solar
-heat_photoDust = 1.3d-24*eps*Ghab*ntot*z
-
-end function heat_photoDust
-
-!******************************
-function heat_photoAv(n,Tgas,k)
-!heating from photoreactions using rate approximation (erg/s/cm3)
-use krome_commons
-use krome_user_commons
-use krome_subs
-use krome_getphys
-implicit none
-real*8::heat_photoAv,n(:),Tgas,k(:)
-real*8::ncrn,ncrd1,ncrd2,yH,yH2,ncr,h2heatfac,dd,Rdiss
-
-dd = get_Hnuclei(n(:))
-ncrn  = 1.0d6*(Tgas**(-0.5d0))
-ncrd1 = 1.6d0*exp(-(4.0d2/Tgas)**2)
-ncrd2 = 1.4d0*exp(-1.2d4/(Tgas+1.2d3))
-
-yH = n(idx_H)/dd   !dimensionless
-yH2= n(idx_H2)/dd  !dimensionless
-
-ncr = ncrn/(ncrd1*yH+ncrd2*yH2)      !1/cm3
-h2heatfac = 1.0d0/(1.0d0+ncr/dd)     !dimensionless
-
-Rdiss = k(230)
-
-!photodissociation H2 heating
-heat_photoAv = 6.4d-13*Rdiss*n(idx_H2)
-
-!UV photo-pumping H2
-heat_photoAv = heat_photoAv + 2.7d-11*Rdiss*h2heatfac*n(idx_H2)
-
-end function heat_photoAv
-
-!***************************
-function heat_CR(n,Tgas,k)
-!heating from cosmic rays erg/s/cm3
-use krome_commons
-implicit none
-real*8::heat_CR,n(:),Tgas,Hfact,k(:)
-real*8::logH2,QH2,QH,QHe,ev2erg
-
-ev2erg = 1.60217662d-12
-Hfact = 2d1*ev2erg !erg
-
-!precompute log10(H2)
-logH2 = log10(max(n(idx_H2),1d-40))
-
-!init heating
-heat_CR = 0d0
-
-!heating per H ionization (eV)
-QH = 4.3d0 * ev2erg
-
-!heating per He ionization, same as H following Glassgold+2012
-QHe = QH
-
-!automatically generated fit function
-! for H2 ionization, units: eV
-! data from arXiv:1502.03380
-if(n(idx_H2)>1d10) then
-QH2 = 18.0217195233
-else if((n(idx_H2).ge.1.03660174949e-05).and.(n(idx_H2)<1d5)) then
-QH2 = 1.45108491351*logH2 + 7.23277032061
-else if(n(idx_H2)<1.03660174949e-05) then
-QH2 = 0d0
-else
-QH2 = 9.14621986426 &
-    - 0.443120145068*logH2 &
-    + 0.60127161756*logH2**2 &
-    - 0.0710284101055*logH2**3 &
-    + 0.00242079494592*logH2**4
-end if
-
-!convert eV to erg
-QH2 = QH2 * ev2erg
-
-!H -> H+ + E
-heat_CR = heat_CR + k(251) * n(idx_H) * QH
-
-!HE -> HE+ + E
-heat_CR = heat_CR + k(252) * n(idx_HE) * QHe
-
-!O -> O+ + E
-heat_CR = heat_CR + k(253) * n(idx_O) * Hfact
-
-!CO -> C + O
-heat_CR = heat_CR + k(254) * n(idx_CO) * Hfact
-
-!CO -> CO+ + E
-heat_CR = heat_CR + k(255) * n(idx_CO) * Hfact
-
-!C2 -> C + C
-heat_CR = heat_CR + k(256) * n(idx_C2) * Hfact
-
-!H2 -> H + H
-heat_CR = heat_CR + k(257) * n(idx_H2) * Hfact
-
-!H2 -> H+ + H-
-heat_CR = heat_CR + k(258) * n(idx_H2) * Hfact
-
-!H2 -> H2+ + E
-heat_CR = heat_CR + k(259) * n(idx_H2) * QH2
-
-!C -> C+ + E
-heat_CR = heat_CR + k(260) * n(idx_C) * Hfact
-
-!CH -> C + H
-heat_CR = heat_CR + k(261) * n(idx_CH) * Hfact
-
-!O2 -> O + O
-heat_CR = heat_CR + k(262) * n(idx_O2) * Hfact
-
-!O2 -> O2+ + E
-heat_CR = heat_CR + k(263) * n(idx_O2) * Hfact
-
-!OH -> O + H
-heat_CR = heat_CR + k(264) * n(idx_OH) * Hfact
-
-!CH2 -> CH2+ + E
-heat_CR = heat_CR + k(265) * n(idx_CH2) * Hfact
-
-!H2O -> OH + H
-heat_CR = heat_CR + k(266) * n(idx_H2O) * Hfact
-
-!HCO -> CO + H
-heat_CR = heat_CR + k(267) * n(idx_HCO) * Hfact
-
-!HCO -> HCO+ + E
-heat_CR = heat_CR + k(268) * n(idx_HCO) * Hfact
-
-!H2 -> H + H+ + E
-heat_CR = heat_CR + k(269) * n(idx_H2) * Hfact
-
-end function heat_CR
-
-!**************************
-function photo_heating(n)
-!photo heating in erg/cm3/s using bin-based
-! approach. Terms are computed in the
-! krome_photo module
-use krome_commons
-use krome_constants
-implicit none
-real*8::photo_heating,n(:)
-
-photo_heating = 0.d0
-photo_heating = photoBinHeats(1) * n(idx_H) &
-    + photoBinHeats(2) * n(idx_HE) &
-    + photoBinHeats(3) * n(idx_HEj) &
-    + photoBinHeats(4) * n(idx_O) &
-    + photoBinHeats(5) * n(idx_C) &
-    + photoBinHeats(6) * n(idx_H2) &
-    + photoBinHeats(7) * n(idx_Hk) &
-    + photoBinHeats(8) * n(idx_CH) &
-    + photoBinHeats(9) * n(idx_CH) &
-    + photoBinHeats(10) * n(idx_C2) &
-    + photoBinHeats(11) * n(idx_OH) &
-    + photoBinHeats(12) * n(idx_OH) &
-    + photoBinHeats(13) * n(idx_H2O) &
-    + photoBinHeats(14) * n(idx_H2O) &
-    + photoBinHeats(15) * n(idx_O2) &
-    + photoBinHeats(16) * n(idx_O2) &
-    + photoBinHeats(17) * n(idx_H2)
-
-end function photo_heating
-
-!H2 FORMATION HEATING and other exo/endothermic
-! processes (including H2 on dust) in erg/cm3/s
-!krome builds the heating/cooling term according
-! to the chemical network employed
-!*******************************
-function heatingChem(n, Tgas, k, nH2dust)
-use krome_constants
-use krome_commons
-use krome_dust
-use krome_subs
-use krome_getphys
-implicit none
-real*8::heatingChem, n(:), Tgas,k(:),nH2dust
-real*8::h2heatfac,HChem,yH,yH2
-real*8::ncr,ncrn,ncrd1,ncrd2,dd,n2H,small,nmax
-dd = get_Hnuclei(n(:))
-
-!replace small according to the desired enviroment
-! and remove nmax if needed
-nmax = maxval(n(1:nmols))
-small = 1d-40/(nmax*nmax*nmax)
-
-heatingChem = 0.d0
-
-ncrn  = 1.0d6*(Tgas**(-0.5d0))
-ncrd1 = 1.6d0*exp(-(4.0d2/Tgas)**2)
-ncrd2 = 1.4d0*exp(-1.2d4/(Tgas+1.2d3))
-
-yH = n(idx_H)/dd   !dimensionless
-yH2= n(idx_H2)/dd  !dimensionless
-
-ncr = ncrn/(ncrd1*yH+ncrd2*yH2)      !1/cm3
-h2heatfac = 1.0d0/(1.0d0+ncr/dd)     !dimensionless
-
-HChem = 0.d0 !inits chemical heating
-n2H = n(idx_H) * n(idx_H)
-
-!H- + H -> H2 + E (heating)
-HChem = HChem + k(17) * (3.53d0*h2heatfac*n(idx_Hk)*n(idx_H))
-!H2+ + H -> H2 + H+ (heating)
-HChem = HChem + k(20) * (1.83d0*h2heatfac*n(idx_H2j)*n(idx_H))
-!H2 + E -> H + H + E (cooling)
-HChem = HChem + k(22) * (-4.48d0*n(idx_H2)*n(idx_E))
-!H2 + H -> H + H + H (cooling)
-HChem = HChem + k(23) * (-4.48d0*n(idx_H2)*n(idx_H))
-!H2 + H2 -> H2 + H + H (cooling)
-HChem = HChem + k(32) * (-4.48d0*n(idx_H2)*n(idx_H2))
-!H + H + H -> H2 + H (heating)
-HChem = HChem + k(34) * (4.48d0*h2heatfac*n(idx_H)*n(idx_H)*n(idx_H))
-!H2 + H + H -> H2 + H2 (heating)
-HChem = HChem + k(35) * (4.48d0*h2heatfac*n(idx_H2)*n(idx_H)*n(idx_H))
-
-HChem = HChem + nH2dust * (4.2d0*h2heatfac + 0.2d0)
-
-heatingChem = HChem * eV_to_erg  !erg/cm3/s
-
-end function heatingChem
-
 end module KROME_heating
 
 !############### MODULE ##############
@@ -8491,7 +7019,7 @@ contains
 
 ! *************************************************************
 !  This file has been generated with:
-!  KROME 14.08.dev on 2018-09-21 11:48:42
+!  KROME 14.08.dev on 2018-09-23 16:14:15
 !  Changeset 097d98a
 !  see http://kromepackage.org
 !
@@ -9639,12 +8167,6 @@ dn(idx_Tgas) = 0.d0
 !dummy
 dn(idx_dummy) = 0.d0
 
-krome_gamma = gamma_index(n(:))
-
-dn(idx_Tgas) = (heating(n(:), Tgas, k(:), nH2dust) &
-    - cooling(n(:), Tgas)  ) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-
 last_coe(:) = k(:)
 
 end subroutine fex
@@ -9666,8 +8188,6 @@ real*8::nn(neq),dn0,dn1,dnn,nH2dust,dn(neq),krome_gamma
 
 nH2dust = 0.d0
 Tgas = n(idx_Tgas)
-
-krome_gamma = gamma_index(n(:))
 
 k(:) = last_coe(:) !get rate coefficients
 
@@ -9864,17 +8384,6 @@ pdj(35) =  &
 pdj(36) =  &
     +k(7)*n(idx_HEj)  &
     -k(15)*n(idx_HEjj)
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(1)*1d-3
-if(dnn>0.d0) then
-nn(1) = n(1) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pdj(idx_Tgas) = (dn1-dn0)/dnn
-end if
-
 elseif(j==2) then
 pdj(1) =  &
     +k(184)*n(idx_O)  &
@@ -9935,17 +8444,6 @@ pdj(21) =  &
 pdj(22) =  &
     -k(31)*n(idx_H2j)  &
     +k(28)*n(idx_Hj)
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(2)*1d-3
-if(dnn>0.d0) then
-nn(2) = n(2) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pdj(idx_Tgas) = (dn1-dn0)/dnn
-end if
-
 elseif(j==3) then
 pdj(1) =  &
     +k(234)  &
@@ -9976,17 +8474,6 @@ pdj(13) =  &
     +k(187)*n(idx_H2)
 pdj(20) =  &
     -k(158)*n(idx_Hj)
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(3)*1d-3
-if(dnn>0.d0) then
-nn(3) = n(3) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pdj(idx_Tgas) = (dn1-dn0)/dnn
-end if
-
 elseif(j==4) then
 pdj(1) =  &
     +k(241)  &
@@ -10017,17 +8504,6 @@ pdj(16) =  &
     +k(190)*n(idx_H2)
 pdj(20) =  &
     -k(159)*n(idx_Hj)
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(4)*1d-3
-if(dnn>0.d0) then
-nn(4) = n(4) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pdj(idx_Tgas) = (dn1-dn0)/dnn
-end if
-
 elseif(j==5) then
 pdj(1) =  &
     +k(189)*n(idx_Ok)  &
@@ -10192,17 +8668,6 @@ pdj(30) =  &
     -k(157)*n(idx_COj)
 pdj(31) =  &
     -k(96)*n(idx_CH3j)
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(5)*1d-3
-if(dnn>0.d0) then
-nn(5) = n(5) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pdj(idx_Tgas) = (dn1-dn0)/dnn
-end if
-
 elseif(j==6) then
 pdj(1) =  &
     +k(252)  &
@@ -10236,17 +8701,6 @@ pdj(21) =  &
     +k(4)*n(idx_E)  &
     +k(213)  &
     +k(252)
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(6)*1d-3
-if(dnn>0.d0) then
-nn(6) = n(6) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pdj(idx_Tgas) = (dn1-dn0)/dnn
-end if
-
 elseif(j==7) then
 pdj(1) =  &
     +k(259)  &
@@ -10403,17 +8857,6 @@ pdj(33) =  &
     +k(108)*n(idx_OHj)
 pdj(34) =  &
     +k(109)*n(idx_H2Oj)
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(7)*1d-3
-if(dnn>0.d0) then
-nn(7) = n(7) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pdj(idx_Tgas) = (dn1-dn0)/dnn
-end if
-
 elseif(j==8) then
 pdj(1) =  &
     +k(183)*n(idx_Hk)  &
@@ -10558,17 +9001,6 @@ pdj(34) =  &
 pdj(35) =  &
     -k(120)*n(idx_O2j)  &
     -k(121)*n(idx_O2j)
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(8)*1d-3
-if(dnn>0.d0) then
-nn(8) = n(8) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pdj(idx_Tgas) = (dn1-dn0)/dnn
-end if
-
 elseif(j==9) then
 pdj(1) =  &
     -k(203)*n(idx_E)  &
@@ -10736,17 +9168,6 @@ pdj(32) =  &
     +k(101)*n(idx_H2j)
 pdj(33) =  &
     +k(103)*n(idx_H3j)
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(9)*1d-3
-if(dnn>0.d0) then
-nn(9) = n(9) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pdj(idx_Tgas) = (dn1-dn0)/dnn
-end if
-
 elseif(j==10) then
 pdj(1) =  &
     +k(223)  &
@@ -10855,17 +9276,6 @@ pdj(32) =  &
 pdj(33) =  &
     +k(104)*n(idx_H3j)  &
     +k(105)*n(idx_H3j)
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(10)*1d-3
-if(dnn>0.d0) then
-nn(10) = n(10) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pdj(idx_Tgas) = (dn1-dn0)/dnn
-end if
-
 elseif(j==11) then
 pdj(1) =  &
     +k(255)
@@ -10929,17 +9339,6 @@ pdj(27) =  &
     -k(123)*n(idx_H3j)
 pdj(30) =  &
     +k(255)
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(11)*1d-3
-if(dnn>0.d0) then
-nn(11) = n(11) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pdj(idx_Tgas) = (dn1-dn0)/dnn
-end if
-
 elseif(j==12) then
 pdj(1) =  &
     +k(220)  &
@@ -10995,17 +9394,6 @@ pdj(28) =  &
     +k(130)*n(idx_Hj)  &
     +k(220)  &
     +k(129)*n(idx_Hj)
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(12)*1d-3
-if(dnn>0.d0) then
-nn(12) = n(12) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pdj(idx_Tgas) = (dn1-dn0)/dnn
-end if
-
 elseif(j==13) then
 pdj(1) =  &
     +k(265)  &
@@ -11087,17 +9475,6 @@ pdj(29) =  &
     +k(265)  &
     +k(133)*n(idx_Hj)  &
     +k(134)*n(idx_Hj)
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(13)*1d-3
-if(dnn>0.d0) then
-nn(13) = n(13) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pdj(idx_Tgas) = (dn1-dn0)/dnn
-end if
-
 elseif(j==14) then
 pdj(6) =  &
     +k(139)*n(idx_HEj)
@@ -11129,17 +9506,6 @@ pdj(24) =  &
     -k(99)*n(idx_Oj)
 pdj(30) =  &
     +k(99)*n(idx_Oj)
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(14)*1d-3
-if(dnn>0.d0) then
-nn(14) = n(14) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pdj(idx_Tgas) = (dn1-dn0)/dnn
-end if
-
 elseif(j==15) then
 pdj(1) =  &
     +k(268)
@@ -11152,17 +9518,6 @@ pdj(15) =  &
     -k(267)
 pdj(26) =  &
     +k(268)
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(15)*1d-3
-if(dnn>0.d0) then
-nn(15) = n(15) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pdj(idx_Tgas) = (dn1-dn0)/dnn
-end if
-
 elseif(j==16) then
 pdj(1) =  &
     +k(225)
@@ -11262,17 +9617,6 @@ pdj(34) =  &
     +k(110)*n(idx_H3j)  &
     +k(128)*n(idx_HCOj)  &
     +k(127)*n(idx_HCOj)
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(16)*1d-3
-if(dnn>0.d0) then
-nn(16) = n(16) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pdj(idx_Tgas) = (dn1-dn0)/dnn
-end if
-
 elseif(j==17) then
 pdj(1) =  &
     +k(263)  &
@@ -11341,41 +9685,8 @@ pdj(35) =  &
     +k(152)*n(idx_Hj)  &
     +k(263)  &
     +k(226)
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(17)*1d-3
-if(dnn>0.d0) then
-nn(17) = n(17) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pdj(idx_Tgas) = (dn1-dn0)/dnn
-end if
-
 elseif(j==18) then
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(18)*1d-3
-if(dnn>0.d0) then
-nn(18) = n(18) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pdj(idx_Tgas) = (dn1-dn0)/dnn
-end if
-
 elseif(j==19) then
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(19)*1d-3
-if(dnn>0.d0) then
-nn(19) = n(19) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pdj(idx_Tgas) = (dn1-dn0)/dnn
-end if
-
 elseif(j==20) then
 pdj(1) =  &
     -k(3)*n(idx_E)  &
@@ -11500,17 +9811,6 @@ pdj(33) =  &
     +k(145)*n(idx_H2O)
 pdj(35) =  &
     +k(152)*n(idx_O2)
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(20)*1d-3
-if(dnn>0.d0) then
-nn(20) = n(20) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pdj(idx_Tgas) = (dn1-dn0)/dnn
-end if
-
 elseif(j==21) then
 pdj(1) =  &
     -k(7)*n(idx_E)  &
@@ -11667,17 +9967,6 @@ pdj(35) =  &
 pdj(36) =  &
     +k(7)*n(idx_E)  &
     +k(214)
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(21)*1d-3
-if(dnn>0.d0) then
-nn(21) = n(21) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pdj(idx_Tgas) = (dn1-dn0)/dnn
-end if
-
 elseif(j==22) then
 pdj(1) =  &
     -k(29)*n(idx_E)  &
@@ -11719,17 +10008,6 @@ pdj(28) =  &
     +k(86)*n(idx_C)
 pdj(32) =  &
     +k(101)*n(idx_O)
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(22)*1d-3
-if(dnn>0.d0) then
-nn(22) = n(22) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pdj(idx_Tgas) = (dn1-dn0)/dnn
-end if
-
 elseif(j==23) then
 pdj(1) =  &
     -k(37)*n(idx_E)  &
@@ -11816,17 +10094,6 @@ pdj(30) =  &
     +k(275)*n(idx_O)
 pdj(33) =  &
     +k(115)*n(idx_H2O)
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(23)*1d-3
-if(dnn>0.d0) then
-nn(23) = n(23) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pdj(idx_Tgas) = (dn1-dn0)/dnn
-end if
-
 elseif(j==24) then
 pdj(1) =  &
     -k(39)*n(idx_E)  &
@@ -11862,17 +10129,6 @@ pdj(30) =  &
     +k(277)*n(idx_C)
 pdj(32) =  &
     +k(100)*n(idx_H2)
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(24)*1d-3
-if(dnn>0.d0) then
-nn(24) = n(24) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pdj(idx_Tgas) = (dn1-dn0)/dnn
-end if
-
 elseif(j==25) then
 pdj(1) =  &
     -k(182)*n(idx_E)
@@ -11896,17 +10152,6 @@ pdj(26) =  &
     +k(54)*n(idx_CO)  &
     +k(52)*n(idx_H2)  &
     +k(53)*n(idx_CO)
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(25)*1d-3
-if(dnn>0.d0) then
-nn(25) = n(25) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pdj(idx_Tgas) = (dn1-dn0)/dnn
-end if
-
 elseif(j==26) then
 pdj(1) =  &
     -k(180)*n(idx_E)  &
@@ -11937,17 +10182,6 @@ pdj(28) =  &
 pdj(34) =  &
     +k(127)*n(idx_H2O)  &
     +k(128)*n(idx_H2O)
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(26)*1d-3
-if(dnn>0.d0) then
-nn(26) = n(26) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pdj(idx_Tgas) = (dn1-dn0)/dnn
-end if
-
 elseif(j==27) then
 pdj(1) =  &
     -k(162)*n(idx_E)  &
@@ -12032,17 +10266,6 @@ pdj(33) =  &
 pdj(34) =  &
     +k(110)*n(idx_H2O)  &
     +k(111)*n(idx_H2O)
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(27)*1d-3
-if(dnn>0.d0) then
-nn(27) = n(27) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pdj(idx_Tgas) = (dn1-dn0)/dnn
-end if
-
 elseif(j==28) then
 pdj(1) =  &
     -k(163)*n(idx_E)
@@ -12073,17 +10296,6 @@ pdj(29) =  &
     +k(91)*n(idx_H2)
 pdj(30) =  &
     +k(92)*n(idx_O)
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(28)*1d-3
-if(dnn>0.d0) then
-nn(28) = n(28) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pdj(idx_Tgas) = (dn1-dn0)/dnn
-end if
-
 elseif(j==29) then
 pdj(1) =  &
     -k(164)*n(idx_E)  &
@@ -12128,17 +10340,6 @@ pdj(29) =  &
     -k(119)*n(idx_O2)
 pdj(31) =  &
     +k(94)*n(idx_H2)
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(29)*1d-3
-if(dnn>0.d0) then
-nn(29) = n(29) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pdj(idx_Tgas) = (dn1-dn0)/dnn
-end if
-
 elseif(j==30) then
 pdj(1) =  &
     -k(179)*n(idx_E)
@@ -12155,17 +10356,6 @@ pdj(20) =  &
 pdj(30) =  &
     -k(179)*n(idx_E)  &
     -k(157)*n(idx_H)
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(30)*1d-3
-if(dnn>0.d0) then
-nn(30) = n(30) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pdj(idx_Tgas) = (dn1-dn0)/dnn
-end if
-
 elseif(j==31) then
 pdj(1) =  &
     -k(167)*n(idx_E)  &
@@ -12208,17 +10398,6 @@ pdj(31) =  &
     -k(240)  &
     -k(96)*n(idx_H)  &
     -k(168)*n(idx_E)
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(31)*1d-3
-if(dnn>0.d0) then
-nn(31) = n(31) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pdj(idx_Tgas) = (dn1-dn0)/dnn
-end if
-
 elseif(j==32) then
 pdj(1) =  &
     -k(170)*n(idx_E)
@@ -12238,17 +10417,6 @@ pdj(32) =  &
     -k(242)
 pdj(33) =  &
     +k(108)*n(idx_H2)
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(32)*1d-3
-if(dnn>0.d0) then
-nn(32) = n(32) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pdj(idx_Tgas) = (dn1-dn0)/dnn
-end if
-
 elseif(j==33) then
 pdj(1) =  &
     -k(171)*n(idx_E)  &
@@ -12289,17 +10457,6 @@ pdj(33) =  &
     -k(243)
 pdj(34) =  &
     +k(109)*n(idx_H2)
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(33)*1d-3
-if(dnn>0.d0) then
-nn(33) = n(33) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pdj(idx_Tgas) = (dn1-dn0)/dnn
-end if
-
 elseif(j==34) then
 pdj(1) =  &
     -k(177)*n(idx_E)  &
@@ -12347,17 +10504,6 @@ pdj(34) =  &
     -k(247)  &
     -k(176)*n(idx_E)  &
     -k(249)
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(34)*1d-3
-if(dnn>0.d0) then
-nn(34) = n(34) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pdj(idx_Tgas) = (dn1-dn0)/dnn
-end if
-
 elseif(j==35) then
 pdj(1) =  &
     -k(178)*n(idx_E)
@@ -12377,17 +10523,6 @@ pdj(35) =  &
     -k(121)*n(idx_C)  &
     -k(120)*n(idx_C)  &
     -k(178)*n(idx_E)
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(35)*1d-3
-if(dnn>0.d0) then
-nn(35) = n(35) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pdj(idx_Tgas) = (dn1-dn0)/dnn
-end if
-
 elseif(j==36) then
 pdj(1) =  &
     -k(15)*n(idx_E)
@@ -12395,32 +10530,11 @@ pdj(21) =  &
     +k(15)*n(idx_E)
 pdj(36) =  &
     -k(15)*n(idx_E)
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(36)*1d-3
-if(dnn>0.d0) then
-nn(36) = n(36) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pdj(idx_Tgas) = (dn1-dn0)/dnn
-end if
-
 elseif(j==37) then
-pdj(39) = 0.d0
 elseif(j==38) then
-pdj(39) = 0.d0
 elseif(j==39) then
-!use fex to compute temperature-dependent Jacobian
-dnn = n(idx_Tgas)*1d-3
-nn(:) = n(:)
-nn(idx_Tgas) = n(idx_Tgas) + dnn
-call fex(neq,tt,nn(:),dn(:))
-do i=1,neq-1
-pdj(i) = dn(i) / dnn
-end do
+
 elseif(j==40) then
-pdj(39) = 0.d0
 end if
 
 return
@@ -12699,18 +10813,6 @@ pd(36,1) =  &
     +k(7)*n(idx_HEj)  &
     -k(15)*n(idx_HEjj)
 
-!d[Tgas_dot]/d[E]
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(1)*1d-3
-if(dnn>0.d0) then
-nn(1) = n(1) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pd(idx_Tgas,1) = (dn1-dn0)/dnn
-end if
-
 !d[E_dot]/d[H-]
 pd(1,2) =  &
     +k(184)*n(idx_O)  &
@@ -12796,18 +10898,6 @@ pd(22,2) =  &
     -k(31)*n(idx_H2j)  &
     +k(28)*n(idx_Hj)
 
-!d[Tgas_dot]/d[H-]
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(2)*1d-3
-if(dnn>0.d0) then
-nn(2) = n(2) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pd(idx_Tgas,2) = (dn1-dn0)/dnn
-end if
-
 !d[E_dot]/d[C-]
 pd(1,3) =  &
     +k(234)  &
@@ -12857,18 +10947,6 @@ pd(13,3) =  &
 pd(20,3) =  &
     -k(158)*n(idx_Hj)
 
-!d[Tgas_dot]/d[C-]
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(3)*1d-3
-if(dnn>0.d0) then
-nn(3) = n(3) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pd(idx_Tgas,3) = (dn1-dn0)/dnn
-end if
-
 !d[E_dot]/d[O-]
 pd(1,4) =  &
     +k(241)  &
@@ -12917,18 +10995,6 @@ pd(16,4) =  &
 !d[H+_dot]/d[O-]
 pd(20,4) =  &
     -k(159)*n(idx_Hj)
-
-!d[Tgas_dot]/d[O-]
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(4)*1d-3
-if(dnn>0.d0) then
-nn(4) = n(4) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pd(idx_Tgas,4) = (dn1-dn0)/dnn
-end if
 
 !d[E_dot]/d[H]
 pd(1,5) =  &
@@ -13143,18 +11209,6 @@ pd(30,5) =  &
 pd(31,5) =  &
     -k(96)*n(idx_CH3j)
 
-!d[Tgas_dot]/d[H]
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(5)*1d-3
-if(dnn>0.d0) then
-nn(5) = n(5) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pd(idx_Tgas,5) = (dn1-dn0)/dnn
-end if
-
 !d[E_dot]/d[HE]
 pd(1,6) =  &
     +k(252)  &
@@ -13198,18 +11252,6 @@ pd(21,6) =  &
     +k(4)*n(idx_E)  &
     +k(213)  &
     +k(252)
-
-!d[Tgas_dot]/d[HE]
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(6)*1d-3
-if(dnn>0.d0) then
-nn(6) = n(6) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pd(idx_Tgas,6) = (dn1-dn0)/dnn
-end if
 
 !d[E_dot]/d[H2]
 pd(1,7) =  &
@@ -13422,18 +11464,6 @@ pd(33,7) =  &
 pd(34,7) =  &
     +k(109)*n(idx_H2Oj)
 
-!d[Tgas_dot]/d[H2]
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(7)*1d-3
-if(dnn>0.d0) then
-nn(7) = n(7) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pd(idx_Tgas,7) = (dn1-dn0)/dnn
-end if
-
 !d[E_dot]/d[C]
 pd(1,8) =  &
     +k(183)*n(idx_Hk)  &
@@ -13630,18 +11660,6 @@ pd(34,8) =  &
 pd(35,8) =  &
     -k(120)*n(idx_O2j)  &
     -k(121)*n(idx_O2j)
-
-!d[Tgas_dot]/d[C]
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(8)*1d-3
-if(dnn>0.d0) then
-nn(8) = n(8) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pd(idx_Tgas,8) = (dn1-dn0)/dnn
-end if
 
 !d[E_dot]/d[O]
 pd(1,9) =  &
@@ -13869,18 +11887,6 @@ pd(32,9) =  &
 pd(33,9) =  &
     +k(103)*n(idx_H3j)
 
-!d[Tgas_dot]/d[O]
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(9)*1d-3
-if(dnn>0.d0) then
-nn(9) = n(9) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pd(idx_Tgas,9) = (dn1-dn0)/dnn
-end if
-
 !d[E_dot]/d[OH]
 pd(1,10) =  &
     +k(223)  &
@@ -14026,18 +12032,6 @@ pd(33,10) =  &
     +k(104)*n(idx_H3j)  &
     +k(105)*n(idx_H3j)
 
-!d[Tgas_dot]/d[OH]
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(10)*1d-3
-if(dnn>0.d0) then
-nn(10) = n(10) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pd(idx_Tgas,10) = (dn1-dn0)/dnn
-end if
-
 !d[E_dot]/d[CO]
 pd(1,11) =  &
     +k(255)
@@ -14130,18 +12124,6 @@ pd(27,11) =  &
 pd(30,11) =  &
     +k(255)
 
-!d[Tgas_dot]/d[CO]
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(11)*1d-3
-if(dnn>0.d0) then
-nn(11) = n(11) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pd(idx_Tgas,11) = (dn1-dn0)/dnn
-end if
-
 !d[E_dot]/d[CH]
 pd(1,12) =  &
     +k(220)  &
@@ -14221,18 +12203,6 @@ pd(28,12) =  &
     +k(130)*n(idx_Hj)  &
     +k(220)  &
     +k(129)*n(idx_Hj)
-
-!d[Tgas_dot]/d[CH]
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(12)*1d-3
-if(dnn>0.d0) then
-nn(12) = n(12) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pd(idx_Tgas,12) = (dn1-dn0)/dnn
-end if
 
 !d[E_dot]/d[CH2]
 pd(1,13) =  &
@@ -14344,18 +12314,6 @@ pd(29,13) =  &
     +k(133)*n(idx_Hj)  &
     +k(134)*n(idx_Hj)
 
-!d[Tgas_dot]/d[CH2]
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(13)*1d-3
-if(dnn>0.d0) then
-nn(13) = n(13) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pd(idx_Tgas,13) = (dn1-dn0)/dnn
-end if
-
 !d[HE_dot]/d[C2]
 pd(6,14) =  &
     +k(139)*n(idx_HEj)
@@ -14404,18 +12362,6 @@ pd(24,14) =  &
 pd(30,14) =  &
     +k(99)*n(idx_Oj)
 
-!d[Tgas_dot]/d[C2]
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(14)*1d-3
-if(dnn>0.d0) then
-nn(14) = n(14) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pd(idx_Tgas,14) = (dn1-dn0)/dnn
-end if
-
 !d[E_dot]/d[HCO]
 pd(1,15) =  &
     +k(268)
@@ -14436,18 +12382,6 @@ pd(15,15) =  &
 !d[HCO+_dot]/d[HCO]
 pd(26,15) =  &
     +k(268)
-
-!d[Tgas_dot]/d[HCO]
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(15)*1d-3
-if(dnn>0.d0) then
-nn(15) = n(15) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pd(idx_Tgas,15) = (dn1-dn0)/dnn
-end if
 
 !d[E_dot]/d[H2O]
 pd(1,16) =  &
@@ -14581,18 +12515,6 @@ pd(34,16) =  &
     +k(128)*n(idx_HCOj)  &
     +k(127)*n(idx_HCOj)
 
-!d[Tgas_dot]/d[H2O]
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(16)*1d-3
-if(dnn>0.d0) then
-nn(16) = n(16) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pd(idx_Tgas,16) = (dn1-dn0)/dnn
-end if
-
 !d[E_dot]/d[O2]
 pd(1,17) =  &
     +k(263)  &
@@ -14693,42 +12615,6 @@ pd(35,17) =  &
     +k(152)*n(idx_Hj)  &
     +k(263)  &
     +k(226)
-
-!d[Tgas_dot]/d[O2]
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(17)*1d-3
-if(dnn>0.d0) then
-nn(17) = n(17) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pd(idx_Tgas,17) = (dn1-dn0)/dnn
-end if
-
-!d[Tgas_dot]/d[CO_total]
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(18)*1d-3
-if(dnn>0.d0) then
-nn(18) = n(18) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pd(idx_Tgas,18) = (dn1-dn0)/dnn
-end if
-
-!d[Tgas_dot]/d[H2O_total]
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(19)*1d-3
-if(dnn>0.d0) then
-nn(19) = n(19) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pd(idx_Tgas,19) = (dn1-dn0)/dnn
-end if
 
 !d[E_dot]/d[H+]
 pd(1,20) =  &
@@ -14902,18 +12788,6 @@ pd(33,20) =  &
 !d[O2+_dot]/d[H+]
 pd(35,20) =  &
     +k(152)*n(idx_O2)
-
-!d[Tgas_dot]/d[H+]
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(20)*1d-3
-if(dnn>0.d0) then
-nn(20) = n(20) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pd(idx_Tgas,20) = (dn1-dn0)/dnn
-end if
 
 !d[E_dot]/d[HE+]
 pd(1,21) =  &
@@ -15116,18 +12990,6 @@ pd(36,21) =  &
     +k(7)*n(idx_E)  &
     +k(214)
 
-!d[Tgas_dot]/d[HE+]
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(21)*1d-3
-if(dnn>0.d0) then
-nn(21) = n(21) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pd(idx_Tgas,21) = (dn1-dn0)/dnn
-end if
-
 !d[E_dot]/d[H2+]
 pd(1,22) =  &
     -k(29)*n(idx_E)  &
@@ -15189,18 +13051,6 @@ pd(28,22) =  &
 !d[OH+_dot]/d[H2+]
 pd(32,22) =  &
     +k(101)*n(idx_O)
-
-!d[Tgas_dot]/d[H2+]
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(22)*1d-3
-if(dnn>0.d0) then
-nn(22) = n(22) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pd(idx_Tgas,22) = (dn1-dn0)/dnn
-end if
 
 !d[E_dot]/d[C+]
 pd(1,23) =  &
@@ -15323,18 +13173,6 @@ pd(30,23) =  &
 pd(33,23) =  &
     +k(115)*n(idx_H2O)
 
-!d[Tgas_dot]/d[C+]
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(23)*1d-3
-if(dnn>0.d0) then
-nn(23) = n(23) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pd(idx_Tgas,23) = (dn1-dn0)/dnn
-end if
-
 !d[E_dot]/d[O+]
 pd(1,24) =  &
     -k(39)*n(idx_E)  &
@@ -15389,18 +13227,6 @@ pd(30,24) =  &
 pd(32,24) =  &
     +k(100)*n(idx_H2)
 
-!d[Tgas_dot]/d[O+]
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(24)*1d-3
-if(dnn>0.d0) then
-nn(24) = n(24) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pd(idx_Tgas,24) = (dn1-dn0)/dnn
-end if
-
 !d[E_dot]/d[HOC+]
 pd(1,25) =  &
     -k(182)*n(idx_E)
@@ -15434,18 +13260,6 @@ pd(26,25) =  &
     +k(54)*n(idx_CO)  &
     +k(52)*n(idx_H2)  &
     +k(53)*n(idx_CO)
-
-!d[Tgas_dot]/d[HOC+]
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(25)*1d-3
-if(dnn>0.d0) then
-nn(25) = n(25) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pd(idx_Tgas,25) = (dn1-dn0)/dnn
-end if
 
 !d[E_dot]/d[HCO+]
 pd(1,26) =  &
@@ -15493,18 +13307,6 @@ pd(28,26) =  &
 pd(34,26) =  &
     +k(127)*n(idx_H2O)  &
     +k(128)*n(idx_H2O)
-
-!d[Tgas_dot]/d[HCO+]
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(26)*1d-3
-if(dnn>0.d0) then
-nn(26) = n(26) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pd(idx_Tgas,26) = (dn1-dn0)/dnn
-end if
 
 !d[E_dot]/d[H3+]
 pd(1,27) =  &
@@ -15625,18 +13427,6 @@ pd(34,27) =  &
     +k(110)*n(idx_H2O)  &
     +k(111)*n(idx_H2O)
 
-!d[Tgas_dot]/d[H3+]
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(27)*1d-3
-if(dnn>0.d0) then
-nn(27) = n(27) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pd(idx_Tgas,27) = (dn1-dn0)/dnn
-end if
-
 !d[E_dot]/d[CH+]
 pd(1,28) =  &
     -k(163)*n(idx_E)
@@ -15685,18 +13475,6 @@ pd(29,28) =  &
 !d[CO+_dot]/d[CH+]
 pd(30,28) =  &
     +k(92)*n(idx_O)
-
-!d[Tgas_dot]/d[CH+]
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(28)*1d-3
-if(dnn>0.d0) then
-nn(28) = n(28) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pd(idx_Tgas,28) = (dn1-dn0)/dnn
-end if
 
 !d[E_dot]/d[CH2+]
 pd(1,29) =  &
@@ -15765,18 +13543,6 @@ pd(29,29) =  &
 pd(31,29) =  &
     +k(94)*n(idx_H2)
 
-!d[Tgas_dot]/d[CH2+]
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(29)*1d-3
-if(dnn>0.d0) then
-nn(29) = n(29) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pd(idx_Tgas,29) = (dn1-dn0)/dnn
-end if
-
 !d[E_dot]/d[CO+]
 pd(1,30) =  &
     -k(179)*n(idx_E)
@@ -15805,18 +13571,6 @@ pd(20,30) =  &
 pd(30,30) =  &
     -k(179)*n(idx_E)  &
     -k(157)*n(idx_H)
-
-!d[Tgas_dot]/d[CO+]
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(30)*1d-3
-if(dnn>0.d0) then
-nn(30) = n(30) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pd(idx_Tgas,30) = (dn1-dn0)/dnn
-end if
 
 !d[E_dot]/d[CH3+]
 pd(1,31) =  &
@@ -15881,18 +13635,6 @@ pd(31,31) =  &
     -k(96)*n(idx_H)  &
     -k(168)*n(idx_E)
 
-!d[Tgas_dot]/d[CH3+]
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(31)*1d-3
-if(dnn>0.d0) then
-nn(31) = n(31) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pd(idx_Tgas,31) = (dn1-dn0)/dnn
-end if
-
 !d[E_dot]/d[OH+]
 pd(1,32) =  &
     -k(170)*n(idx_E)
@@ -15924,18 +13666,6 @@ pd(32,32) =  &
 !d[H2O+_dot]/d[OH+]
 pd(33,32) =  &
     +k(108)*n(idx_H2)
-
-!d[Tgas_dot]/d[OH+]
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(32)*1d-3
-if(dnn>0.d0) then
-nn(32) = n(32) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pd(idx_Tgas,32) = (dn1-dn0)/dnn
-end if
 
 !d[E_dot]/d[H2O+]
 pd(1,33) =  &
@@ -15997,18 +13727,6 @@ pd(33,33) =  &
 !d[H3O+_dot]/d[H2O+]
 pd(34,33) =  &
     +k(109)*n(idx_H2)
-
-!d[Tgas_dot]/d[H2O+]
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(33)*1d-3
-if(dnn>0.d0) then
-nn(33) = n(33) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pd(idx_Tgas,33) = (dn1-dn0)/dnn
-end if
 
 !d[E_dot]/d[H3O+]
 pd(1,34) =  &
@@ -16082,18 +13800,6 @@ pd(34,34) =  &
     -k(176)*n(idx_E)  &
     -k(249)
 
-!d[Tgas_dot]/d[H3O+]
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(34)*1d-3
-if(dnn>0.d0) then
-nn(34) = n(34) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pd(idx_Tgas,34) = (dn1-dn0)/dnn
-end if
-
 !d[E_dot]/d[O2+]
 pd(1,35) =  &
     -k(178)*n(idx_E)
@@ -16126,18 +13832,6 @@ pd(35,35) =  &
     -k(120)*n(idx_C)  &
     -k(178)*n(idx_E)
 
-!d[Tgas_dot]/d[O2+]
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(35)*1d-3
-if(dnn>0.d0) then
-nn(35) = n(35) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pd(idx_Tgas,35) = (dn1-dn0)/dnn
-end if
-
 !d[E_dot]/d[HE++]
 pd(1,36) =  &
     -k(15)*n(idx_E)
@@ -16150,156 +13844,6 @@ pd(21,36) =  &
 pd(36,36) =  &
     -k(15)*n(idx_E)
 
-!d[Tgas_dot]/d[HE++]
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(36)*1d-3
-if(dnn>0.d0) then
-nn(36) = n(36) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pd(idx_Tgas,36) = (dn1-dn0)/dnn
-end if
-
-!d[Tgas_dot]/d[CR]
-pd(39,37) = 0.d0
-
-!d[Tgas_dot]/d[g]
-pd(39,38) = 0.d0
-
-!d[E_dot]/d[Tgas]
-pd(1,39) = 0.d0
-
-!d[H-_dot]/d[Tgas]
-pd(2,39) = 0.d0
-
-!d[C-_dot]/d[Tgas]
-pd(3,39) = 0.d0
-
-!d[O-_dot]/d[Tgas]
-pd(4,39) = 0.d0
-
-!d[H_dot]/d[Tgas]
-pd(5,39) = 0.d0
-
-!d[HE_dot]/d[Tgas]
-pd(6,39) = 0.d0
-
-!d[H2_dot]/d[Tgas]
-pd(7,39) = 0.d0
-
-!d[C_dot]/d[Tgas]
-pd(8,39) = 0.d0
-
-!d[O_dot]/d[Tgas]
-pd(9,39) = 0.d0
-
-!d[OH_dot]/d[Tgas]
-pd(10,39) = 0.d0
-
-!d[CO_dot]/d[Tgas]
-pd(11,39) = 0.d0
-
-!d[CH_dot]/d[Tgas]
-pd(12,39) = 0.d0
-
-!d[CH2_dot]/d[Tgas]
-pd(13,39) = 0.d0
-
-!d[C2_dot]/d[Tgas]
-pd(14,39) = 0.d0
-
-!d[HCO_dot]/d[Tgas]
-pd(15,39) = 0.d0
-
-!d[H2O_dot]/d[Tgas]
-pd(16,39) = 0.d0
-
-!d[O2_dot]/d[Tgas]
-pd(17,39) = 0.d0
-
-!d[CO_total_dot]/d[Tgas]
-pd(18,39) = 0.d0
-
-!d[H2O_total_dot]/d[Tgas]
-pd(19,39) = 0.d0
-
-!d[H+_dot]/d[Tgas]
-pd(20,39) = 0.d0
-
-!d[HE+_dot]/d[Tgas]
-pd(21,39) = 0.d0
-
-!d[H2+_dot]/d[Tgas]
-pd(22,39) = 0.d0
-
-!d[C+_dot]/d[Tgas]
-pd(23,39) = 0.d0
-
-!d[O+_dot]/d[Tgas]
-pd(24,39) = 0.d0
-
-!d[HOC+_dot]/d[Tgas]
-pd(25,39) = 0.d0
-
-!d[HCO+_dot]/d[Tgas]
-pd(26,39) = 0.d0
-
-!d[H3+_dot]/d[Tgas]
-pd(27,39) = 0.d0
-
-!d[CH+_dot]/d[Tgas]
-pd(28,39) = 0.d0
-
-!d[CH2+_dot]/d[Tgas]
-pd(29,39) = 0.d0
-
-!d[CO+_dot]/d[Tgas]
-pd(30,39) = 0.d0
-
-!d[CH3+_dot]/d[Tgas]
-pd(31,39) = 0.d0
-
-!d[OH+_dot]/d[Tgas]
-pd(32,39) = 0.d0
-
-!d[H2O+_dot]/d[Tgas]
-pd(33,39) = 0.d0
-
-!d[H3O+_dot]/d[Tgas]
-pd(34,39) = 0.d0
-
-!d[O2+_dot]/d[Tgas]
-pd(35,39) = 0.d0
-
-!d[HE++_dot]/d[Tgas]
-pd(36,39) = 0.d0
-
-!d[CR_dot]/d[Tgas]
-pd(37,39) = 0.d0
-
-!d[g_dot]/d[Tgas]
-pd(38,39) = 0.d0
-
-!d[Tgas_dot]/d[Tgas]
-dn0 = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-nn(:) = n(:)
-dnn = n(39)*1d-3
-if(dnn>0.d0) then
-nn(39) = n(39) + dnn
-dn1 = (heating(nn(:), Tgas, k(:), nH2dust) - cooling(nn(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-pd(idx_Tgas,39) = (dn1-dn0)/dnn
-end if
-
-!d[dummy_dot]/d[Tgas]
-pd(40,39) = 0.d0
-
-!d[Tgas_dot]/d[dummy]
-pd(39,40) = 0.d0
-
 end subroutine jex
 
 end module krome_ode
@@ -16310,7 +13854,7 @@ implicit none
 
 ! *************************************************************
 !  This file has been generated with:
-!  KROME 14.08.dev on 2018-09-21 11:48:42
+!  KROME 14.08.dev on 2018-09-23 16:14:15
 !  Changeset 097d98a
 !  see http://kromepackage.org
 !
@@ -16733,72 +14277,6 @@ implicit none
 real*8 :: krome_get_Tfloor
 krome_get_Tfloor = phys_Tfloor
 end function krome_get_Tfloor
-
-!*******************
-function krome_coolingCI(xin,inTgas)
-use krome_commons
-use krome_subs
-use krome_cooling
-use krome_constants
-real*8 :: xin(nmols)
-real*8 :: inTgas
-real*8 :: krome_coolingCI
-real*8::n(nspec),k(nZrate)
-n(:) = 0d0
-n(idx_Tgas) = inTgas
-n(1:nmols) = xin(:)
-k(:) = coolingZ_rate_tabs(inTgas)
-krome_coolingCI = coolingCI(n(:),n(idx_Tgas),k(:)) *  boltzmann_erg
-end function krome_coolingCI
-
-!*******************
-function krome_coolingCII(xin,inTgas)
-use krome_commons
-use krome_subs
-use krome_cooling
-use krome_constants
-real*8 :: xin(nmols)
-real*8 :: inTgas
-real*8 :: krome_coolingCII
-real*8::n(nspec),k(nZrate)
-n(:) = 0d0
-n(idx_Tgas) = inTgas
-n(1:nmols) = xin(:)
-k(:) = coolingZ_rate_tabs(inTgas)
-krome_coolingCII = coolingCII(n(:),n(idx_Tgas),k(:)) *  boltzmann_erg
-end function krome_coolingCII
-
-!*******************
-function krome_coolingOI(xin,inTgas)
-use krome_commons
-use krome_subs
-use krome_cooling
-use krome_constants
-real*8 :: xin(nmols)
-real*8 :: inTgas
-real*8 :: krome_coolingOI
-real*8::n(nspec),k(nZrate)
-n(:) = 0d0
-n(idx_Tgas) = inTgas
-n(1:nmols) = xin(:)
-k(:) = coolingZ_rate_tabs(inTgas)
-krome_coolingOI = coolingOI(n(:),n(idx_Tgas),k(:)) *  boltzmann_erg
-end function krome_coolingOI
-
-!***************************
-!dump the population of the Z cooling levels
-! in the nfile file unit, using xvar as
-! independent variable. alias of
-! dump_cooling_pop subroutine
-subroutine krome_popcool_dump(xvar,nfile)
-use krome_cooling
-implicit none
-real*8 :: xvar
-integer :: nfile
-
-call dump_cooling_pop(xvar,nfile)
-
-end subroutine krome_popcool_dump
 
 !************************************
 ! when using 3D variables set the value of the 3rd dimension
@@ -18167,18 +15645,6 @@ real*8 :: x(nmols)
 real*8 :: Tgas,dt
 real*8::n(nspec),nH2dust,dTgas,k(nrea),krome_gamma
 
-nH2dust = 0d0
-n(:) = 0d0
-n(idx_Tgas) = Tgas
-n(1:nmols) = x(:)
-k(:) = coe_tab(n(:)) !compute coefficients
-krome_gamma = gamma_index(n(:))
-
-dTgas = (heating(n(:), Tgas, k(:), nH2dust) - cooling(n(:), Tgas)) &
-    * (krome_gamma - 1.d0) / boltzmann_erg / sum(n(1:nmols))
-
-Tgas = Tgas + dTgas*dt !update gas
-
 end subroutine krome_thermo
 
 !*************************
@@ -18223,73 +15689,6 @@ nH2dust = 0d0
 krome_get_heating_array(:) = get_heating_array(n(:),Tgas,k(:),nH2dust)
 
 end function krome_get_heating_array
-
-!*************************
-!get cooling (erg/cm3/s) for x(:) species array
-! and Tgas
-function krome_get_cooling(x,inTgas)
-use krome_cooling
-use krome_commons
-implicit none
-real*8 :: inTgas
-real*8 :: x(nmols), krome_get_cooling
-real*8::Tgas,n(nspec)
-n(1:nmols) = x(:)
-Tgas = inTgas
-n(idx_Tgas) = Tgas
-krome_get_cooling = cooling(n,Tgas)
-end function krome_get_cooling
-
-!*****************************
-! get an array containing individual coolings (erg/cm3/s)
-! the array has size krome_ncools. see heatcool.gps
-! for index list
-function krome_get_cooling_array(x,inTgas)
-use krome_cooling
-use krome_commons
-implicit none
-real*8::n(nspec),Tgas
-real*8 :: x(nmols),krome_get_cooling_array(ncools)
-real*8,value :: inTgas
-
-n(:) = 0d0
-n(1:nmols) = x(:)
-n(idx_Tgas) = inTgas
-!#KROME_Tdust_copy
-Tgas = inTgas
-krome_get_cooling_array(:) = get_cooling_array(n(:),Tgas)
-
-end function krome_get_cooling_array
-
-!******************
-!alias of plot_cool
-subroutine krome_plot_cooling(n)
-use krome_cooling
-implicit none
-real*8 :: n(krome_nmols)
-
-call plot_cool(n(:))
-
-end subroutine krome_plot_cooling
-
-!****************
-!alias for dumping cooling in the unit nfile_in
-subroutine krome_dump_cooling(n,Tgas,nfile_in)
-use krome_cooling
-use krome_commons
-implicit none
-real*8 :: n(nmols)
-real*8 :: Tgas
-real*8::x(nspec)
-integer, optional :: nfile_in
-integer::nfile
-nfile = 31
-x(:) = 0.d0
-x(1:nmols) = n(:)
-if(present(nfile_in)) nfile = nfile_in
-call dump_cool(x(:),Tgas,nfile)
-
-end subroutine krome_dump_cooling
 
 !************************
 !conserve the total amount of nucleii,
@@ -18866,7 +16265,7 @@ contains
 
 ! *************************************************************
 !  This file has been generated with:
-!  KROME 14.08.dev on 2018-09-21 11:48:42
+!  KROME 14.08.dev on 2018-09-23 16:14:15
 !  Changeset 097d98a
 !  see http://kromepackage.org
 !
@@ -18903,7 +16302,7 @@ integer:: ierr
 !DLSODES variables
 integer,parameter::meth=2 !1=adam, 2=BDF
 integer::neq(1),itol,itask,istate,iopt,lrw,liw,mf
-integer::iwork(641)
+integer::iwork(562)
 real*8::atol(nspec),rtol(nspec)
 real*8::rwork(3960)
 logical::got_error,equil
@@ -19026,7 +16425,7 @@ real*8 :: x(nmols)
 real*8 :: rhogas
 real*8::tloc,n(nspec),mass(nspec),ni(nspec)
 real*8::dt,xin
-integer::iwork(641)
+integer::iwork(562)
 real*8::atol(nspec),rtol(nspec)
 real*8::rwork(3960)
 real*8::ertol,eatol,max_time,t_tot,ntot_tol,err_species
@@ -19332,13 +16731,7 @@ krome_thermo_toggle = 1
 !load arrays with ractants/products indexes
 call load_arrays()
 
-!initialize cooling tabel for metals
-call coolingZ_init_tabs()
-
 call init_dust_tabs()
-
-!initialize CO cooling
-call init_coolingCO()
 
 !initialize the table for exp(-a/T) function
 call init_exp_table()

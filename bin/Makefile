@@ -9,9 +9,9 @@ lib = -llapack
 
 #Krome build folder
 #KROME_BUILD=/Users/troels/Code/forks/krome/build
-#KROME_BUILD=../krome/build_HCO-ice-dust-table
+KROME_BUILD=../krome/build_HCO-ice-dust-table
 #KROME_BUILD=../krome/build_HCO-noice
-KROME_BUILD=/Users/troels/Code/forks/krome/build_HCO-heatcool
+#KROME_BUILD=/Users/troels/Code/forks/krome/build_HCO-heatcool
 #Shielding functions folder
 SHIELDING_DIR=../shielding
 
@@ -26,8 +26,11 @@ switchDBG = -fbacktrace -g -O0 -ffpe-trap=zero,overflow,invalid -fbounds-check -
 switchDustTable = -DUSE_DUST_TABLE
 #switchDustTable=
 
+#switchCooling = -DUSE_COOLING
+#switchHeating = -DUSE_HEATING
+
 #default switch
-switch = $(switchDBG) $(switchDustTable)
+switch = $(switchDBG) $(switchDustTable) $(switchCooling) $(switchHeating)
 
 #no warning switch (for DLSODES)
 nowarnIfort = -nowarn

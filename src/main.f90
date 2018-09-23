@@ -29,7 +29,7 @@ contains
 
   subroutine run
     use parameters, only : tend, ntime
-    use output, only : dump_snapshot, dump_cooling, dump_heating
+    use output
     use solver, only : step
     implicit none
     integer :: itime
@@ -43,8 +43,12 @@ contains
       t = t + dt
     end do
     call dump_snapshot(t)
-    call dump_cooling(t)
+#ifdef USE_HEATING
     call dump_heating(t)
+#endif
+#ifdef USE_COOLING
+    call dump_cooling(t)
+#endif
 
   end subroutine
 
