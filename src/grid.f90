@@ -8,13 +8,16 @@ module grid
   real*8, allocatable :: Tdust(:)       ! Dust temperature
   real*8, allocatable :: Av(:)          ! Visual extinction
   real*8, allocatable :: tau(:,:)       ! Optical depth
+  real*8, allocatable :: fluxes(:,:)    ! Chemical fluxes
+  real*8, allocatable :: heating(:,:)   ! Heating rates
+  real*8, allocatable :: cooling(:,:)   ! Cooling rates
   real*8              :: dr             ! Cell size
 
 contains
 
   subroutine init_grid
     use parameters, only : ngrid, grid_type
-    use krome_user, only : krome_nmols, krome_nPhotoBins
+    use krome_user, only : krome_nmols, krome_nPhotoBins, krome_nrea, krome_nheats, krome_ncools
     implicit none
 
     allocate(r(ngrid))
@@ -24,6 +27,9 @@ contains
     allocate(Tdust(ngrid))
     allocate(Av(ngrid))
     allocate(tau(krome_nPhotoBins,ngrid))
+    allocate(fluxes(krome_nrea, ngrid))
+    allocate(heating(krome_nheats, ngrid))
+    allocate(cooling(krome_ncools, ngrid))
 
     ! Initialize arrays to zero
     r(:) = 0d0
@@ -33,6 +39,9 @@ contains
     Tdust(:) = 0d0
     Av(:) = 0d0
     tau(:,:) = 0d0
+    fluxes(:,:) = 0d0
+    heating(:,:) = 0d0
+    cooling(:,:) = 0d0
 
     select case(trim(grid_type))
       case("uniform")
@@ -49,7 +58,7 @@ contains
   subroutine cleanup_grid
     implicit none
 
-    deallocate(r, n, nHtot, Tgas, Av, tau)
+    deallocate(r, n, nHtot, Tgas, Av, tau, fluxes, heating, cooling)
   end subroutine
 
   ! Builds a centered uniform grid

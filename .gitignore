@@ -15,3 +15,5 @@ bin/tinyPDR
 shielding/test_richings
 fluxes.dat
 output.dat
+heating.dat
+cooling.dat
