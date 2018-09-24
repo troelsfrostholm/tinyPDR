@@ -1,0 +1,15 @@
+&PARAMS
+ngrid=256
+tend=1d6
+ntime=100
+outputdir='.'
+photobin_limits=5.0d0,11.26d0,13.6d0,24.6d0,54.4d0,1d2
+extinction_type="spherical uniform"
+initcond='MC_in_ISM'
+/
+
+&INITCOND
+Av_max = 10.0
+n0=1d-2
+n1=1d3
+/
