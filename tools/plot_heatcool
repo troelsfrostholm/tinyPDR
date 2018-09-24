@@ -1,0 +1,71 @@
+#!/usr/local/bin/python
+import sys
+import argparse
+import numpy as np
+import matplotlib.pyplot as plt
+
+llim=None
+ulim=None
+pc = 3.08567758e18
+
+parser = argparse.ArgumentParser(description="Plots heating rates")
+parser.add_argument('--ylow', type=float)
+parser.add_argument('--yhigh', type=float)
+parser.add_argument('--logx', action='store_true')
+parser.add_argument('--xaxis', type=str, default='r', choices=['r', 'Av', 'N'])
+parser.add_argument('--series', type=str, default='heating', choices=['heating', 'cooling'])
+parser.add_argument('--reverse_xaxis', action='store_true')
+
+args = parser.parse_args()
+
+if len(sys.argv) > 2:
+  ulim = float(sys.argv[2])
+
+filename = args.series+".dat"
+figpath = "plots/"+args.series+".pdf"
+# filename = "heating.dat"
+# figpath = "plots/heating.pdf"
+with open(filename, 'r') as f:
+  header = f.readline().split()
+  data = np.loadtxt(f)
+
+ngrid = data.shape[0]
+r = data[:,0]
+Av = data[:,1]
+nHtot = data[:,2]
+dr = r[1:] - r[:-1]
+dr = np.append(dr,[dr[-1]])
+dr *= pc
+NHtot = np.cumsum(nHtot*dr) - 0.5*dr*nHtot
+oheatcool = 3 # Offset to indices for heating rates
+nheatcool = data.shape[1] - oheatcool
+
+if args.xaxis=="r":
+  xaxis = r
+elif args.xaxis=="Av":
+  xaxis = Av
+elif args.xaxis=="N":
+  xaxis = NHtot
+
+if args.reverse_xaxis:
+  xaxis = np.max(xaxis) - xaxis
+
+if args.logx:
+  pltfun = plt.loglog
+else:
+  pltfun = plt.semilogy
+
+for i in xrange(nheatcool):
+  ii = i + oheatcool
+  series = data[:,ii]/nHtot[:]**2
+  process = header[i]
+  if np.any(series > 0.0):
+    pltfun(xaxis, series, label=process)
+
+if args.ylow != None:
+  plt.ylim(bottom=args.ylow)
+if args.yhigh != None:
+  plt.ylim(top=args.yhigh)
+
+plt.legend()
+plt.savefig(figpath)
