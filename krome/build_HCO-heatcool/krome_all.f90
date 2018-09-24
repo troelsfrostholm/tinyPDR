@@ -5,7 +5,7 @@ module krome_commons
 
   ! *************************************************************
   !  This file has been generated with:
-  !  KROME 14.08.dev on 2018-09-21 11:51:18
+  !  KROME 14.08.dev on 2018-09-24 12:00:23
   !  Changeset 097d98a
   !  see http://kromepackage.org
   !
@@ -1897,7 +1897,7 @@ contains
 
   ! *************************************************************
   !  This file has been generated with:
-  !  KROME 14.08.dev on 2018-09-21 11:51:18
+  !  KROME 14.08.dev on 2018-09-24 12:00:23
   !  Changeset 097d98a
   !  see http://kromepackage.org
   !
@@ -2471,7 +2471,7 @@ contains
 
   ! *************************************************************
   !  This file has been generated with:
-  !  KROME 14.08.dev on 2018-09-21 11:51:18
+  !  KROME 14.08.dev on 2018-09-24 12:00:23
   !  Changeset 097d98a
   !  see http://kromepackage.org
   !
@@ -6768,7 +6768,7 @@ end module KROME_coolingGH
 module KROME_cooling
 ! *************************************************************
 !  This file has been generated with:
-!  KROME 14.08.dev on 2018-09-21 11:51:18
+!  KROME 14.08.dev on 2018-09-24 12:00:23
 !  Changeset 097d98a
 !  see http://kromepackage.org
 !
@@ -6823,11 +6823,15 @@ cools(idx_cool_dust) = cooling_dust(n(:), Tgas)
 
 cools(idx_cool_CO) = cooling_CO(n(:), Tgas)
 
+cools(idx_cool_atomic) = f2 * ( cooling_Atomic(n(:), Tgas)  )
+
 cools(idx_cool_Z) = f2 * ( cooling_Z(n(:), Tgas)  )
 
 cools(idx_cool_compton) = f2 * cooling_compton(n(:), Tgas)
 
 cools(idx_cool_cont) = f2 * cooling_continuum(n(:), Tgas)
+
+cools(idx_cool_ff) = f2 * cooling_ff(n(:), Tgas)
 
 cools(idx_cool_custom) = cooling_custom(n(:),Tgas)
 
@@ -7284,6 +7288,76 @@ cooling_H2 = n(idx_H2)/(1.d0/HDL+1.d0/LDL)  !erg/cm3/s
 endif
 
 end function cooling_H2
+
+!Atomic COOLING  Cen ApJS, 78, 341, 1992
+!UNITS = erg/s/cm3
+!*******************************
+function cooling_Atomic(n, Tgas)
+use krome_commons
+use krome_subs
+real*8::Tgas,cooling_atomic,n(:)
+real*8::temp,T5,cool
+
+temp = max(Tgas,10d0) !K
+T5 = temp/1d5 !K
+cool = 0d0 !erg/cm3/s
+
+!COLLISIONAL IONIZATION: H, He, He+, He(2S)
+cool = cool+ 1.27d-21*sqrt(temp)/(1.d0+sqrt(T5))&
+    *exp(-1.578091d5/temp)*n(idx_e)*n(idx_H)
+
+cool = cool+ 9.38d-22*sqrt(temp)/(1.d0+sqrt(T5))&
+    *exp(-2.853354d5/temp)*n(idx_e)*n(idx_He)
+
+cool = cool+ 4.95d-22*sqrt(temp)/(1.d0+sqrt(T5))&
+    *exp(-6.31515d5/temp)*n(idx_e)*n(idx_Hej)
+cool = cool+ 5.01d-27*temp**(-0.1687)/(1.d0+sqrt(T5))&
+    *exp(-5.5338d4/temp)*n(idx_e)**2*n(idx_Hej)
+
+!RECOMBINATION: H+, He+,He2+
+cool = cool+ 8.7d-27*sqrt(temp)*(temp/1.d3)**(-0.2)&
+    /(1.d0+(temp/1.d6)**0.7)*n(idx_e)*n(idx_Hj)
+
+cool = cool+ 1.55d-26*temp**(0.3647)*n(idx_e)*n(idx_Hej)
+
+cool = cool+ 3.48d-26*sqrt(temp)*(temp/1.d3)**(-0.2)&
+    /(1.d0+(temp/1.d6)**0.7)*n(idx_e)*n(idx_Hejj)
+
+!DIELECTRONIC RECOMBINATION: He
+cool = cool+ 1.24d-13*temp**(-1.5)*exp(-4.7d5/temp)&
+    *(1.d0+0.3d0*exp(-9.4d4/temp))*n(idx_e)*n(idx_Hej)
+
+!COLLISIONAL EXCITATION:
+!H(all n), He(n=2,3,4 triplets), He+(n=2)
+cool = cool+ 7.5d-19/(1.d0+sqrt(T5))*exp(-1.18348d5/temp)*n(idx_e)*n(idx_H)
+
+cool = cool+ 9.1d-27*temp**(-.1687)/(1.d0+sqrt(T5))&
+    *exp(-1.3179d4/temp)*n(idx_e)**2*n(idx_Hej)
+cool = cool+ 5.54d-17*temp**(-.397)/(1.d0+sqrt(T5))&
+    *exp(-4.73638d5/temp)*n(idx_e)*n(idx_Hej)
+
+cooling_atomic = max(cool, 0d0)  !erg/cm3/s
+
+end function cooling_Atomic
+
+!**************************
+!free-free cooling (bremsstrahlung for all ions)
+! using mean Gaunt factor value (Cen+1992)
+function cooling_ff(n,Tgas)
+use krome_commons
+implicit none
+real*8::n(:),Tgas,cool,cooling_ff,gaunt_factor,bms_ions
+
+gaunt_factor = 1.5d0 !mean value
+
+!BREMSSTRAHLUNG: all ions
+bms_ions = +n(idx_Hj) +n(idx_HEj) +n(idx_Cj) +n(idx_Oj) +4.d0*n(idx_HEjj)
+cool = 1.42d-27*gaunt_factor*sqrt(Tgas)&
+    *bms_ions*n(idx_e)
+
+cooling_ff = max(cool, 0.d0)  !erg/cm3/s
+
+end function cooling_ff
 
 !*********************************************
 !function for linear interpolation of f(x), using xval(:)
@@ -8130,6 +8204,7 @@ cool_atomic = 0.d0
 cool_Z = 0.d0
 cool_dH = 0.d0
 cool_H2 = cooling_H2(n(:),Tgas)
+cool_atomic = cooling_atomic(n(:),Tgas)
 cool_Z = cooling_Z(n(:),Tgas)
 cool_tot = cool_H2 + cool_atomic + cool_HD + cool_Z + cool_dH
 cool_totGP = cool_H2GP + cool_atomic + cool_HD + cool_Z + cool_dH
@@ -8162,7 +8237,7 @@ contains
 
 ! *************************************************************
 !  This file has been generated with:
-!  KROME 14.08.dev on 2018-09-21 11:51:18
+!  KROME 14.08.dev on 2018-09-24 12:00:23
 !  Changeset 097d98a
 !  see http://kromepackage.org
 !
@@ -8491,7 +8566,7 @@ contains
 
 ! *************************************************************
 !  This file has been generated with:
-!  KROME 14.08.dev on 2018-09-21 11:51:18
+!  KROME 14.08.dev on 2018-09-24 12:00:23
 !  Changeset 097d98a
 !  see http://kromepackage.org
 !
@@ -16302,7 +16377,7 @@ implicit none
 
 ! *************************************************************
 !  This file has been generated with:
-!  KROME 14.08.dev on 2018-09-21 11:51:18
+!  KROME 14.08.dev on 2018-09-24 12:00:23
 !  Changeset 097d98a
 !  see http://kromepackage.org
 !
@@ -18858,7 +18933,7 @@ contains
 
 ! *************************************************************
 !  This file has been generated with:
-!  KROME 14.08.dev on 2018-09-21 11:51:19
+!  KROME 14.08.dev on 2018-09-24 12:00:23
 !  Changeset 097d98a
 !  see http://kromepackage.org
 !
