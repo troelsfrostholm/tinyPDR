@@ -1,0 +1,11 @@
+#!/bin/bash
+set -x
+path=$(pwd)
+expname=$(basename -- $path)
+cd $KROMEPATH
+ln -s $path build_$expname
+ln -s $path/options.opt tinyPDR-options.opt
+./krome -options=tinyPDR-options.opt -project=$expname
+rm build_$expname
+rm tinyPDR-options.opt
+cd $path
