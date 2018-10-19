@@ -6,7 +6,9 @@ contains
   subroutine step(t, dt)
     use krome_user
     use krome_main, only : krome
+#ifdef USE_COOLING
     use krome_commons, only : PLW, PHI, PHeI, PCVI
+#endif
 #ifdef USE_DUST_TABLE
     use krome_dust, only : setup_2d_dust_tables
 #endif
@@ -206,13 +208,14 @@ contains
       call krome_set_user_Av(Av_f)
       call krome_set_user_G0(G0)
 
-
+#ifdef USE_COOLING
       ! Set photo rates for cooling GH
       phrates = krome_get_photoBin_rates()
       PLW=krome_get_user_gamma_H2()
       PHI=phrates(1)
       PHeI=phrates(2)
       PCVI=1d-17 * G0 * exp(max(-5.0*Av_f,-100.0d0)) ! make sure it is small, but not too small
+#endif
 
       fluxes(:,i) = krome_get_flux(nn, Tgas(i))
 #ifdef USE_HEATING
