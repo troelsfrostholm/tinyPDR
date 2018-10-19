@@ -1,33 +1,31 @@
+#Experiment folder
+EXPERIMENT=../experiment/richings_uniform
+
 #default fortran compiler
 fc = gfortran
 
 #executable name
-exec = tinyPDR
+exec = $(EXPERIMENT)/tinyPDR
 
 #default libraries
 lib = -llapack
 
-#Krome build folder
-#KROME_BUILD=/Users/troels/Code/forks/krome/build
-#KROME_BUILD=../krome/build_HCO-ice-dust-table
-#KROME_BUILD=../krome/build_HCO-noice
-KROME_BUILD=../krome/build_HCO-heatcool
 #Shielding functions folder
 SHIELDING_DIR=../shielding
 
 #Source
 SRC=../src
 
-VPATH=$(KROME_BUILD):$(SHIELDING_DIR):$(SRC)
+VPATH=$(EXPERIMENT):$(SHIELDING_DIR):$(SRC)
 
 #flags
 switchDBG = -fbacktrace -g -O0 -ffpe-trap=zero,overflow,invalid -fbounds-check -ffree-line-length-none -finit-real=nan -cpp
 
-switchDustTable = -DUSE_DUST_TABLE
-#switchDustTable=
+#switchDustTable = -DUSE_DUST_TABLE
+switchDustTable=
 
-switchCooling = -DUSE_COOLING
-switchHeating = -DUSE_HEATING
+#switchCooling = -DUSE_COOLING
+#switchHeating = -DUSE_HEATING
 
 #default switch
 switch = $(switchDBG) $(switchDustTable) $(switchCooling) $(switchHeating)
