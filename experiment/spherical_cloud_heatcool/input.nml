@@ -11,6 +11,6 @@ initcond='MC_in_ISM'
 
 &INITCOND
 Av_max = 10.0
-n0=1d-2
+n0=1d-3
 n1=1d3
 /
