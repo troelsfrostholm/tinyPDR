@@ -3,6 +3,8 @@ import sys
 import argparse
 import numpy as np
 import matplotlib.pyplot as plt
+import reader
+
 
 llim=None
 ulim=None
@@ -12,7 +14,7 @@ parser = argparse.ArgumentParser(description="Plots heating rates")
 parser.add_argument('--ylow', type=float)
 parser.add_argument('--yhigh', type=float)
 parser.add_argument('--logx', action='store_true')
-parser.add_argument('--xaxis', type=str, default='r', choices=['r', 'Av', 'N'])
+parser.add_argument('--xaxis', type=str, default='r', choices=['r', 'Av', 'N', 'T'])
 parser.add_argument('--series', type=str, default='heating', choices=['heating', 'cooling'])
 parser.add_argument('--reverse_xaxis', action='store_true')
 
@@ -21,13 +23,25 @@ args = parser.parse_args()
 if len(sys.argv) > 2:
   ulim = float(sys.argv[2])
 
-filename = args.series+".dat"
 figpath = "plots/"+args.series+".pdf"
-# filename = "heating.dat"
-# figpath = "plots/heating.pdf"
-with open(filename, 'r') as f:
-  header = f.readline().split()
-  data = np.loadtxt(f)
+
+filename_heating = "heating.dat"
+filename_cooling = "cooling.dat"
+
+with open(filename_heating, 'r') as f:
+  header_heating = f.readline().split()
+  data_heating = np.loadtxt(f)
+
+with open(filename_cooling, 'r') as f:
+  header_cooling = f.readline().split()
+  data_cooling = np.loadtxt(f)
+
+if args.series=="heating":
+  header = header_heating
+  data = data_heating
+else:
+  header = header_cooling
+  data = data_cooling
 
 ngrid = data.shape[0]
 r = data[:,0]
@@ -42,10 +56,18 @@ nheatcool = data.shape[1] - oheatcool
 
 if args.xaxis=="r":
   xaxis = r
+  xlabel = r"$r$ (pc)"
 elif args.xaxis=="Av":
   xaxis = Av
+  xlabel = r"$Av$ (mag)"
 elif args.xaxis=="N":
   xaxis = NHtot
+  xlabel = r"$N_{H_{tot}}$ (cm$^-2$)"
+elif args.xaxis=="T":
+  run = reader.Run("output.dat")
+  T = run.getTgas(itime=100)
+  xaxis = T
+  xlabel = r"$T$ (K)"
 
 if args.reverse_xaxis:
   xaxis = np.max(xaxis) - xaxis
@@ -62,10 +84,17 @@ for i in xrange(nheatcool):
   if np.any(series > 0.0):
     pltfun(xaxis, series, label=process)
 
+total_heating = np.sum(data_heating[:,oheatcool:],axis=1)/nHtot**2
+total_cooling = np.sum(data_cooling[:,oheatcool:],axis=1)/nHtot**2
+pltfun(xaxis, total_heating, label="total heating")
+pltfun(xaxis, total_cooling, label="total cooling")
+
 if args.ylow != None:
   plt.ylim(bottom=args.ylow)
 if args.yhigh != None:
   plt.ylim(top=args.yhigh)
 
+plt.xlabel(xlabel)
+plt.ylabel(r"$\Gamma/n_{H_{tot}}^2$ (erg cm$^3)$")
 plt.legend()
 plt.savefig(figpath)
