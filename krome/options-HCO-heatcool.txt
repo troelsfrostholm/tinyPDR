@@ -1,0 +1,11 @@
+-photoBins=7
+-n=networks/react_COthin_ice_rt
+-compact
+-noExample
+-dustTabs=HM2012,H2,Photo3D,COOL
+-photoDustVarAv=user_av
+-photoDustVarG0=user_G0
+-cooling H2,CHEM,CI,CII,OI,CONT,CO,ATOMIC,FF,GH
+-heating CHEM,CR,PHOTOAV,PHOTO,PHOTODUST
+-skipODEthermo
+-project=HCO-heatcool

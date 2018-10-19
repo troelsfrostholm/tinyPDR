@@ -6,6 +6,7 @@ contains
   subroutine step(t, dt)
     use krome_user
     use krome_main, only : krome
+    use krome_commons, only : PLW, PHI, PHeI, PCVI
 #ifdef USE_DUST_TABLE
     use krome_dust, only : setup_2d_dust_tables
 #endif
@@ -27,7 +28,7 @@ contains
     real(kind=8) :: N_H2_max, N_CO_max, N_Htot_max, T_col_max, tau_H2_0, tau_CO_0, Tgas_ss, mu_H2_0, mu_CO_0
     integer :: i, ibin, iflux
 
-    real(kind=8) :: G0, Av_f
+    real(kind=8) :: G0, Av_f, phrates(krome_nPhotoRates)
 
     ! ------------------------------------------------------------
     ! Radiative transfer
@@ -204,6 +205,14 @@ contains
       write(10,*) i, G0, Av(i), Av_f, Av_f - 0.4d0*log(G0), (Av_f-Av(i))/log(G0)
       call krome_set_user_Av(Av_f)
       call krome_set_user_G0(G0)
+
+
+      ! Set photo rates for cooling GH
+      phrates = krome_get_photoBin_rates()
+      PLW=krome_get_user_gamma_H2()
+      PHI=phrates(1)
+      PHeI=phrates(2)
+      PCVI=1d-17 * G0 * exp(max(-5.0*Av_f,-100.0d0)) ! make sure it is small, but not too small
 
       fluxes(:,i) = krome_get_flux(nn, Tgas(i))
 #ifdef USE_HEATING
