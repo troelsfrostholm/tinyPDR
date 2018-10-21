@@ -1,6 +1,7 @@
 #!/usr/local/bin/python
 import sys
 sys.path.append('../../utils')
+import argparse
 import numpy as np
 from matplotlib import pyplot as plt
 from cycler import cycler
@@ -9,18 +10,26 @@ import KromeInfo as I
 import reader
 
 run = reader.Run("output.dat")
-itime = run.ntime-1
 
-if len(sys.argv) > 1:
-  itime = int(sys.argv[1])
+parser = argparse.ArgumentParser(description='Plots species')
+parser.add_argument('snapshot', metavar='i', type=int,
+                    help='Snapshot number', default=run.ntime-1, nargs="?")
+parser.add_argument('species', metavar='s', nargs="*", type=str,
+                    help='Species name', default="H")
+parser.add_argument('--xlim', metavar=('xmin','xmax'), nargs=2, type=float,
+                    help='Plot lim on x-axis')
+parser.add_argument('--ylim', metavar=('ymin','ymax'), nargs=2, type=float,
+                    help='Plot lim on y-axis')
+args = parser.parse_args()
+print args
 
-species = ["H"]
+itime = args.snapshot
+species = args.species
+xlim = args.xlim
+ylim = args.ylim
 
 print "Snapshot :", itime
 print "Species :", species
-
-if len(sys.argv) > 2:
-  species = sys.argv[2:]
 
 info = I.KromeInfo()
 abundances = run.getMolecules(itime=itime)
@@ -31,6 +40,12 @@ ntot = np.sum(abundances, axis=1)
 for sym in species:
   i = info.symbol2i(sym)
   plt.semilogy(axis, abundances[:,i]/ntot, label=sym)
+
+if xlim:
+  plt.xlim(*xlim)
+
+if ylim:
+  plt.ylim(*ylim)
 
 plt.legend()
 plt.show()
