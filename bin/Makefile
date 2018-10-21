@@ -21,8 +21,8 @@ VPATH=$(EXPERIMENT):$(SHIELDING_DIR):$(SRC)
 #flags
 switchDBG = -fbacktrace -g -O0 -ffpe-trap=zero,overflow,invalid -fbounds-check -ffree-line-length-none -finit-real=nan -cpp
 
-#switchDustTable = -DUSE_DUST_TABLE
-switchDustTable=
+switchDustTable = -DUSE_DUST_TABLE
+#switchDustTable=
 
 #switchCooling = -DUSE_COOLING
 #switchHeating = -DUSE_HEATING
