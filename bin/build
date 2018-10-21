@@ -1,0 +1,8 @@
+#!/bin/bash
+mypath=`dirname ${BASH_SOURCE[0]}`
+exppath=`pwd`
+$mypath/run_krome
+cd $mypath
+make EXPERIMENT=$exppath dependencies
+make EXPERIMENT=$exppath
+cd $exppath
