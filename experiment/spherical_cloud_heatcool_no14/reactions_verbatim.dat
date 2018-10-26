@@ -1,0 +1,281 @@
+H + E -> H+ + E + E
+H+ + E -> H
+H+ + E -> H
+HE + E -> HE+ + E + E
+HE+ + E -> HE
+HE+ + E -> HE
+HE+ + E -> HE++ + E + E
+HE+ + H -> HE + H+
+HE + H+ -> HE+ + H
+HE + H+ -> HE+ + H
+H2 + HE -> H + H + HE
+H2 + HE+ -> HE + H2+
+H2 + HE+ -> HE + H + H+
+H2 + HE+ -> HE+ + H + H
+HE++ + E -> HE+
+H + E -> H-
+H- + H -> H2 + E
+H + H+ -> H2+
+H + H+ -> H2+
+H2+ + H -> H2 + H+
+H2 + H+ -> H2+ + H
+H2 + E -> H + H + E
+H2 + H -> H + H + H
+H- + E -> H + E + E
+H- + H -> H + H + E
+H- + H -> H + H + E
+H- + H+ -> H + H
+H- + H+ -> H2+ + E
+H2+ + E -> H + H
+H2+ + E -> H + H
+H2+ + H- -> H + H2
+H2 + H2 -> H2 + H + H
+H + H + HE -> H2 + HE
+H + H + H -> H2 + H
+H2 + H + H -> H2 + H2
+C+ + E -> C
+C+ + E -> C
+C+ + E -> C
+O+ + E -> O
+O+ + E -> O
+C + E -> C+ + E + E
+O + E -> O+ + E + E
+O+ + H -> O + H+
+O + H+ -> O+ + H
+O + HE+ -> O+ + HE
+C + H+ -> C+ + H
+C+ + H -> C + H+
+C + HE+ -> C+ + HE
+C + HE+ -> C+ + HE
+C + HE+ -> C+ + HE
+OH + H -> O + H + H
+HOC+ + H2 -> HCO+ + H2
+HOC+ + CO -> HCO+ + CO
+HOC+ + CO -> HCO+ + CO
+C + H2 -> CH + H
+CH + H -> C + H2
+CH + H2 -> CH2 + H
+CH + C -> C2 + H
+CH + O -> CO + H
+CH + O -> HCO+ + E
+CH + O -> OH + C
+CH2 + H -> CH + H2
+CH2 + O -> CO + H + H
+CH2 + O -> CO + H2
+CH2 + O -> HCO + H
+CH2 + O -> CH + OH
+C2 + O -> CO + C
+C2 + O -> CO + C
+O + H2 -> OH + H
+OH + H -> O + H2
+OH + H -> O + H2
+H2 + OH -> H2O + H
+C + OH -> H + CO
+C + OH -> H + CO
+O + OH -> H + O2
+O + OH -> H + O2
+OH + OH -> H2O + O
+H2O + H -> H2 + OH
+O2 + H -> OH + O
+O2 + H2 -> OH + OH
+O2 + C -> CO + O
+O2 + C -> CO + O
+CO + H -> C + OH
+H2+ + H2 -> H3+ + H
+H3+ + H -> H2+ + H2
+C + H2+ -> CH+ + H
+C + H3+ -> CH+ + H2
+C + H3+ -> CH2+ + H
+C+ + H2 -> CH+ + H
+CH+ + H -> C+ + H2
+CH+ + H2 -> CH2+ + H
+CH+ + O -> CO+ + H
+CH2+ + H -> CH+ + H2
+CH2+ + H2 -> CH3+ + H
+CH2+ + O -> HCO+ + H
+CH3+ + H -> CH2+ + H2
+CH3+ + O -> HOC+ + H2
+CH3+ + O -> HCO+ + H2
+C2 + O+ -> CO+ + C
+O+ + H2 -> H + OH+
+O + H2+ -> H + OH+
+O + H3+ -> H2 + OH+
+O + H3+ -> H + H2O+
+OH + H3+ -> H2 + H2O+
+OH + H3+ -> H2 + H2O+
+OH + C+ -> H + CO+
+OH + C+ -> H + CO+
+OH+ + H2 -> H2O+ + H
+H2O+ + H2 -> H3O+ + H
+H2O + H3+ -> H2 + H3O+
+H2O + H3+ -> H2 + H3O+
+H2O + C+ -> HOC+ + H
+H2O + C+ -> HCO+ + H
+H2O + C+ -> HCO+ + H
+H2O + C+ -> H2O+ + C
+H3O+ + C -> HCO+ + H2
+O2 + C+ -> CO+ + O
+O2 + C+ -> CO + O+
+O2 + CH2+ -> HCO+ + OH
+C + O2+ -> O + CO+
+C + O2+ -> O2 + C+
+CO + H3+ -> H2 + HCO+
+CO + H3+ -> H2 + HCO+
+CO + H3+ -> H2 + HOC+
+CO + H3+ -> H2 + HOC+
+HCO+ + C -> CO + CH+
+HCO+ + H2O -> CO + H3O+
+HCO+ + H2O -> CO + H3O+
+CH + H+ -> CH+ + H
+CH + H+ -> CH+ + H
+CH2 + H+ -> H2 + CH+
+CH2 + H+ -> H2 + CH+
+CH2 + H+ -> H + CH2+
+CH2 + H+ -> H + CH2+
+CH2 + HE+ -> HE + H2 + C+
+CH2 + HE+ -> HE + H2 + C+
+CH2 + HE+ -> HE + H + CH+
+CH2 + HE+ -> HE + H + CH+
+C2 + HE+ -> C+ + C + HE
+OH + H+ -> OH+ + H
+OH + H+ -> OH+ + H
+OH + HE+ -> O+ + HE + H
+OH + HE+ -> O+ + HE + H
+H2O + H+ -> H + H2O+
+H2O + H+ -> H + H2O+
+H2O + HE+ -> HE + OH + H+
+H2O + HE+ -> HE + OH + H+
+H2O + HE+ -> HE + OH+ + H
+H2O + HE+ -> HE + OH+ + H
+H2O + HE+ -> HE + H2O+
+H2O + HE+ -> HE + H2O+
+O2 + H+ -> O2+ + H
+O2 + HE+ -> O2+ + HE
+O2 + HE+ -> O+ + HE + O
+CO + HE+ -> C+ + HE + O
+CO + HE+ -> C + HE + O+
+CO+ + H -> CO + H+
+C- + H+ -> C + H
+O- + H+ -> O + H
+HE+ + H- -> H + HE
+H3+ + E -> H2 + H
+H3+ + E -> H + H + H
+CH+ + E -> C + H
+CH2+ + E -> CH + H
+CH2+ + E -> C + H2
+CH2+ + E -> C + H + H
+CH3+ + E -> CH2 + H
+CH3+ + E -> CH + H2
+CH3+ + E -> CH + H + H
+OH+ + E -> O + H
+H2O+ + E -> O + H2
+H2O+ + E -> OH + H
+H2O+ + E -> O + H + H
+H3O+ + E -> OH + H + H
+H3O+ + E -> O + H + H2
+H3O+ + E -> H + H2O
+H3O+ + E -> OH + H2
+O2+ + E -> O + O
+CO+ + E -> C + O
+HCO+ + E -> CO + H
+HCO+ + E -> OH + C
+HOC+ + E -> CO + H
+H- + C -> CH + E
+H- + O -> OH + E
+H- + OH -> H2O + E
+C- + H -> CH + E
+C- + H2 -> CH2 + E
+C- + O -> CO + E
+O- + H -> OH + E
+O- + H2 -> H2O + E
+O- + C -> CO + E
+H2 + H+ -> H + H + H+
+H2 + H+ -> H3+
+C + E -> C-
+C + H -> CH
+C + H2 -> CH2
+C + C -> C2
+C + O -> CO
+C+ + H -> CH+
+C+ + H2 -> CH2+
+C+ + O -> CO+
+C+ + O -> CO+
+O + E -> O-
+O + H -> OH
+O + O -> O2
+OH + H -> H2O
+H + H -> H2
+CO -> CO_ice
+CO_ice -> CO
+H2O -> H2O_ice
+H2O_ice -> H2O
+CO_ice -> CO
+H -> H+ + E
+HE -> HE+ + E
+HE+ -> HE++ + E
+O -> O+ + E
+C -> C+ + E
+H2 -> H2+ + E
+H- -> H + E
+CH -> C + H
+CH -> CH+ + E
+C2 -> C + C
+OH -> O + H
+OH -> OH+ + E
+H2O -> OH + H
+H2O -> H2O+ + E
+O2 -> O2+ + E
+O2 -> O + O
+H2 -> H+ + H + E
+CO -> C + O
+H2 -> H + H
+H2+ -> H + H+
+H3+ -> H2 + H+
+H3+ -> H2+ + H
+C- -> C + E
+CH+ -> C + H+
+CH2 -> CH + H
+CH2 -> CH2+ + E
+CH2+ -> CH+ + H
+CH3+ -> CH2+ + H
+CH3+ -> CH+ + H2
+O- -> O + E
+OH+ -> O + H+
+H2O+ -> H2+ + O
+H2O+ -> H+ + OH
+H2O+ -> O+ + H2
+H2O+ -> OH+ + H
+H3O+ -> H+ + H2O
+H3O+ -> H2+ + OH
+H3O+ -> H2O+ + H
+H3O+ -> OH+ + H2
+H -> H+ + E
+HE -> HE+ + E
+O -> O+ + E
+CO -> C + O
+CO -> CO+ + E
+C2 -> C + C
+H2 -> H + H
+H2 -> H+ + H-
+H2 -> H2+ + E
+C -> C+ + E
+CH -> C + H
+O2 -> O + O
+O2 -> O2+ + E
+OH -> O + H
+CH2 -> CH2+ + E
+H2O -> OH + H
+HCO -> CO + H
+HCO -> HCO+ + E
+H2 -> H + H+ + E
+C + C -> C2
+C + C -> C2
+C + O -> CO
+C + O -> CO
+C+ + O -> CO+
+C+ + O -> CO+
+C + O+ -> CO+
+C + O+ -> CO+
+H + O -> OH
+OH + H -> H2O
+O + O -> O2

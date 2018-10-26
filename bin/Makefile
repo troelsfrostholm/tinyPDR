@@ -24,8 +24,8 @@ switchDBG = -fbacktrace -g -O0 -ffpe-trap=zero,overflow,invalid -fbounds-check -
 switchDustTable = -DUSE_DUST_TABLE
 #switchDustTable=
 
-#switchCooling = -DUSE_COOLING
-#switchHeating = -DUSE_HEATING
+switchCooling = -DUSE_COOLING
+switchHeating = -DUSE_HEATING
 
 #default switch
 switch = $(switchDBG) $(switchDustTable) $(switchCooling) $(switchHeating)

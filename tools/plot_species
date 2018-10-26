@@ -1,4 +1,5 @@
 #!/usr/local/bin/python
+import os
 import sys
 sys.path.append('../../utils')
 import argparse
@@ -20,26 +21,72 @@ parser.add_argument('--xlim', metavar=('xmin','xmax'), nargs=2, type=float,
                     help='Plot lim on x-axis')
 parser.add_argument('--ylim', metavar=('ymin','ymax'), nargs=2, type=float,
                     help='Plot lim on y-axis')
+parser.add_argument('--compare', metavar=('exp_folder'), nargs="*", type=str,
+                    help='Overplot experiment located at exp_folder')
+parser.add_argument('--loglog', action="store_true",
+                    help='Double log plot')
+parser.add_argument('--save', metavar='filename',
+                    help='Save figure')
 args = parser.parse_args()
-print args
 
 itime = args.snapshot
 species = args.species
 xlim = args.xlim
 ylim = args.ylim
+compare = args.compare
+loglog = args.loglog
+save = args.save
+if compare:
+  nruns = len(compare) + 1
+else:
+  nruns = 1
+nspecies = len(species)
 
 print "Snapshot :", itime
 print "Species :", species
 
+default_cycler = plt.rcParams['axes.prop_cycle']
+colors = default_cycler.by_key()['color']
+colors = colors[0:1] + colors[0:nspecies]
+my_colorcycler = cycler('color', colors[1:] + (nruns-1)*colors)
+linestyles=['-']*(nspecies) + ['--']*(nspecies+1) + [':']*(nspecies+1) + ['-.']*(nspecies+1)
+my_cycler = my_colorcycler + cycler('linestyle', linestyles[0:nspecies+(nruns-1)*(nspecies+1)])
+
 info = I.KromeInfo()
-abundances = run.getMolecules(itime=itime)
-axis = run.getR(itime=itime)
+expname = os.path.basename(os.getcwd())
+if compare:
+  compare_files = map(lambda x: x + "/output.dat", compare)
+  comparison_runs = map(reader.Run, compare_files)
+  runs = [run] + comparison_runs
+  expnames = [expname] + map(os.path.basename, compare)
+else:
+  runs = [run]
+  expnames = [expname]
 
-ntot = np.sum(abundances, axis=1)
+runlist = zip(runs, expnames, linestyles[0:len(runs)])
 
-for sym in species:
-  i = info.symbol2i(sym)
-  plt.semilogy(axis, abundances[:,i]/ntot, label=sym)
+if loglog:
+  pltfun = plt.loglog
+else:
+  pltfun = plt.semilogy
+
+label_syms=True
+for (run, expname, linestyle) in runlist:
+  plt.rc('axes', prop_cycle=my_cycler)
+  abundances = run.getMolecules(itime=itime)
+  axis = run.getR(itime=itime)
+  ntot = np.sum(abundances, axis=1)
+
+  if not label_syms:
+    pltfun([0],[0],label=expname)
+  for sym in species:
+    i = info.symbol2i(sym)
+    if label_syms: 
+      label=sym
+    else:
+      label=None
+    pltfun(axis, abundances[:,i]/ntot, label=label)
+  label_syms = False
 
 if xlim:
   plt.xlim(*xlim)
@@ -47,5 +94,12 @@ if xlim:
 if ylim:
   plt.ylim(*ylim)
 
+plt.xlabel(r"$r$ (pc)")
+plt.ylabel(r"$n_x/n_{H_{tot}}$")
+plt.title(expnames[0])
+
 plt.legend()
-plt.show()
+if save:
+  plt.savefig(save)
+else:
+  plt.show()

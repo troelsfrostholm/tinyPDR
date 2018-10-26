@@ -129,7 +129,7 @@ if show_dust_T:
 
 f.subplots_adjust(hspace=0)
 
-#plt.show()
+fig.suptitle("Fig. 27 w. reaction 14")
 plt.savefig("plots/R14II-2.pdf")
 
 plt.figure()
